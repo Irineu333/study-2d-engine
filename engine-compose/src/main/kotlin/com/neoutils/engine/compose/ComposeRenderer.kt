@@ -6,30 +6,28 @@ import androidx.compose.ui.graphics.Color as UiColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.skiaCanvas
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
-import org.jetbrains.skia.Font
-import org.jetbrains.skia.FontMgr
-import org.jetbrains.skia.FontStyle
-import org.jetbrains.skia.Paint
-import org.jetbrains.skia.Typeface
 
 /**
  * Renderer backed by a Compose `DrawScope`. The scope is rebound each frame
  * via [bind] so a single instance can be reused across frames without
- * allocations.
+ * allocations. Text rendering goes through Compose's [TextMeasurer] so the
+ * platform font fallback chain works the same way as for the rest of the
+ * Compose UI.
  */
-class ComposeRenderer : Renderer {
+class ComposeRenderer(
+    private val textMeasurer: TextMeasurer,
+) : Renderer {
 
     private var scope: DrawScope? = null
-
-    private val defaultTypeface: Typeface =
-        FontMgr.default.matchFamilyStyle(null, FontStyle.NORMAL)
-            ?: Typeface.makeEmpty()
 
     fun bind(drawScope: DrawScope) {
         scope = drawScope
@@ -70,23 +68,13 @@ class ComposeRenderer : Renderer {
 
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {
         val s = required()
-        val paint = Paint().apply {
-            this.color = color.toSkiaArgb()
-            isAntiAlias = true
-        }
-        val font = Font(defaultTypeface, size)
-        s.drawIntoCanvas { canvas ->
-            canvas.skiaCanvas.drawString(text, position.x, position.y + size, font, paint)
-        }
+        val style = TextStyle(
+            color = color.toUi(),
+            fontSize = TextUnit(size, TextUnitType.Sp),
+        )
+        val measured = textMeasurer.measure(text = text, style = style)
+        s.drawText(textLayoutResult = measured, topLeft = Offset(position.x, position.y))
     }
 }
 
 internal fun Color.toUi(): UiColor = UiColor(r, g, b, a)
-
-internal fun Color.toSkiaArgb(): Int {
-    val ai = (a.coerceIn(0f, 1f) * 255f).toInt() and 0xFF
-    val ri = (r.coerceIn(0f, 1f) * 255f).toInt() and 0xFF
-    val gi = (g.coerceIn(0f, 1f) * 255f).toInt() and 0xFF
-    val bi = (b.coerceIn(0f, 1f) * 255f).toInt() and 0xFF
-    return (ai shl 24) or (ri shl 16) or (gi shl 8) or bi
-}

@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -31,7 +32,8 @@ fun GameSurface(
 ) {
     val input = remember { ComposeInput() }
     val physics = remember { PhysicsSystem() }
-    val renderer = remember { ComposeRenderer() }
+    val textMeasurer = rememberTextMeasurer()
+    val renderer = remember(textMeasurer) { ComposeRenderer(textMeasurer) }
     val loop = remember(scene) { GameLoop(scene, renderer, input, physics) }
     val fps = remember { FpsCounter() }
     val focusRequester = remember { FocusRequester() }
