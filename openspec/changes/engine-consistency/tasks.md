@@ -72,3 +72,4 @@
 - [x] 8.7 `SpawnerDemo`: cada clique do mouse adiciona um `BoxCollider` com `Shape` filho colorido em posição aleatória, criado **dentro de `onUpdate`** do spawner; outro nó "trap" central com `BoxCollider` chama `parent.removeChild(other.parent)` em `onCollide` para remover spawns que tocam — valida A4 (mutação durante `onUpdate` e durante `onCollide` sem CME e visível na fase seguinte). F2 evidencia o overlay (valida A2).
 - [x] 8.8 Atualizar `CLAUDE.md` adicionando bloco `Para rodar Demos:` com `./gradlew :games:demos:run` e o cheat sheet das teclas.
 - [x] 8.9 Rodar `./gradlew :games:demos:run` manualmente e conferir as três demos.
+- [x] 8.10 Em `SpawnerDemo`, corrigir o bug visual em que as bolinhas atravessam a borda inferior antes de quicar — substituir o hard-coded `800f`/`600f` por `rootScene()?.width`/`height` para que o quique respeite o tamanho real do canvas (que difere do tamanho da `Window` em DP).

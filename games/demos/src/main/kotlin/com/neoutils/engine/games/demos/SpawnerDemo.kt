@@ -35,7 +35,8 @@ class SpawnerDemo : Node2D() {
         private var leftWasDown: Boolean = false
         private var autoCooldown: Float = 0f
         override fun onUpdate(dt: Float) {
-            val input = rootScene()?.input ?: return
+            val scene = rootScene() ?: return
+            val input = scene.input ?: return
             val leftDown = input.isMouseDown(MouseButton.Left)
             if (leftDown && !leftWasDown) {
                 spawn(at = input.pointerPosition)
@@ -44,7 +45,7 @@ class SpawnerDemo : Node2D() {
 
             autoCooldown -= dt
             if (autoCooldown <= 0f) {
-                spawn(at = Vec2(rng.nextFloat() * 800f, rng.nextFloat() * 600f))
+                spawn(at = Vec2(rng.nextFloat() * scene.width, rng.nextFloat() * scene.height))
                 autoCooldown = 0.75f
             }
         }
@@ -65,9 +66,15 @@ class SpawnerDemo : Node2D() {
 
     init {
         name = "SpawnerDemo"
-        trap.transform = Transform(position = Vec2(400f - Trap.SIZE / 2f, 300f - Trap.SIZE / 2f))
         addChild(trap)
         addChild(spawner)
+    }
+
+    override fun onEnter() {
+        val scene = rootScene() ?: return
+        trap.transform = Transform(
+            position = Vec2(scene.width / 2f - Trap.SIZE / 2f, scene.height / 2f - Trap.SIZE / 2f),
+        )
     }
 
     private class Trap : BoxCollider(Vec2(SIZE, SIZE)) {
@@ -110,14 +117,19 @@ class SpawnerDemo : Node2D() {
         }
 
         override fun onUpdate(dt: Float) {
-            val p = transform.position
-            val next = Vec2(p.x + velocity.x * dt, p.y + velocity.y * dt)
+            val scene = rootScene() ?: return
+            val maxX = scene.width
+            val maxY = scene.height
             var vx = velocity.x
             var vy = velocity.y
-            if (next.x < 0f || next.x + SIZE > 800f) vx = -vx
-            if (next.y < 0f || next.y + SIZE > 600f) vy = -vy
+            var nx = transform.position.x + vx * dt
+            var ny = transform.position.y + vy * dt
+            if (nx < 0f) { nx = 0f; vx = -vx }
+            if (nx + SIZE > maxX) { nx = maxX - SIZE; vx = -vx }
+            if (ny < 0f) { ny = 0f; vy = -vy }
+            if (ny + SIZE > maxY) { ny = maxY - SIZE; vy = -vy }
             velocity = Vec2(vx, vy)
-            transform = transform.copy(position = Vec2(p.x + vx * dt, p.y + vy * dt))
+            transform = transform.copy(position = Vec2(nx, ny))
         }
 
         companion object {
