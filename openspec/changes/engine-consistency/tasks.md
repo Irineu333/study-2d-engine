@@ -1,7 +1,7 @@
 ## 1. Red-first smoke tests
 
 - [x] 1.1 Adicionar `engine/src/test/kotlin/com/neoutils/engine/math/TransformComposeTest.kt` cobrindo identidade, scale componente a componente, soma de rotação, composição de posição com rotação+scale do pai. **Deve falhar** (método ainda não existe).
-- [ ] 1.2 Adicionar `engine/src/test/kotlin/com/neoutils/engine/scene/WorldTransformTest.kt` cobrindo `Node2D.worldTransform()` para translação pura, scale herdado, rotação herdada e cadeia de 3 níveis. **Deve falhar** (método ainda não existe).
+- [x] 1.2 Adicionar `engine/src/test/kotlin/com/neoutils/engine/scene/WorldTransformTest.kt` cobrindo `Node2D.worldTransform()` para translação pura, scale herdado, rotação herdada e cadeia de 3 níveis. **Deve falhar** (método ainda não existe).
 - [ ] 1.3 Adicionar `engine/src/test/kotlin/com/neoutils/engine/scene/SceneMutationDuringTraversalTest.kt` com casos: `addChild` durante `onUpdate`, `removeChild` durante `onUpdate`, `addChild` durante `onCollide`, `removeChild` durante `onCollide`. Assert: sem `ConcurrentModificationException`, estado final consistente, `onEnter`/`onExit` corretos antes da próxima fase. **Deve falhar** com CME hoje.
 - [ ] 1.4 Adicionar `engine/src/test/kotlin/com/neoutils/engine/scene/SceneCoreDecouplingTest.kt` que lê o source de `Scene.kt` como recurso de teste e assert que nenhuma linha de import começa com `com.neoutils.engine.dx`. **Deve falhar** hoje (Scene importa `Debug`).
 - [ ] 1.5 Rodar `./gradlew :engine:test` e confirmar que os 4 novos testes falham antes de qualquer mudança de produção.
