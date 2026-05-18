@@ -10,13 +10,12 @@ Stack: Kotlin + Compose Multiplatform Desktop (JVM). Compose entra como **primei
 
 ## Architectural Invariants
 
-Toda mudança deve respeitar os cinco invariantes abaixo. Eles vêm das Decisões 1–5 de `openspec/changes/engine-foundation/design.md` e não podem ser quebrados sem uma nova change OpenSpec discutindo a revisão.
+Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisões arquiteturais consolidadas em `openspec/changes/archive/2026-05-18-engine-foundation/design.md` e não podem ser quebrados sem uma nova change OpenSpec discutindo a revisão.
 
 1. **Scene graph estilo Godot, por herança.** Comportamento de gameplay é adicionado por subclasses de `Node` / `Node2D`. **Sem** `List<Component>` ou ECS. Cada Node tem sua identidade de tipo (`class Paddle : Node2D()`).
 2. **`:engine` não depende de Compose.** O módulo `:engine` não declara nenhum artefato `org.jetbrains.compose.*` ou `androidx.compose.*`, direta ou transitivamente. Quem precisa de Compose é o `:engine-compose`.
-3. **Comunicação entre nós por referência direta.** Esta iteração não tem sinais/eventos. Quando o atrito aparecer organicamente (planejado para `event-driven-games`), criamos uma change discutindo.
-4. **Colisão via `Collider`-como-Node + `PhysicsSystem` central.** `Collider` é um tipo de `Node`; o `PhysicsSystem.step(scene)` enumera todos os colliders ativos, testa pares e invoca `onCollide`. Broad phase é O(N²) intencionalmente.
-5. **`Renderer` e `Input` são SPIs.** Definidos como interfaces em `:engine`. Compose é apenas o primeiro backend. Nós nunca tocam tipos de backend; usam só a interface.
+3. **Colisão via `Collider`-como-Node + `PhysicsSystem` central.** `Collider` é um tipo de `Node`; o `PhysicsSystem.step(scene)` enumera todos os colliders ativos, testa pares e invoca `onCollide`. Broad phase é O(N²) intencionalmente.
+4. **`Renderer` e `Input` são SPIs.** Definidos como interfaces em `:engine`. Compose é apenas o primeiro backend. Nós nunca tocam tipos de backend; usam só a interface.
 
 ## Module Structure & How to Run
 
@@ -66,8 +65,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 
 | Change                | Status   | Resumo                                                                 |
 | --------------------- | -------- | ---------------------------------------------------------------------- |
-| `engine-foundation`   | Active   | Scene graph, math, SPIs, física O(N²), game loop, Compose runtime, Pong, DX e CLAUDE.md. |
-| `event-driven-games`  | Planned  | Sinais/eventos como primitiva da engine; jogos turn-based (velha, campo minado). |
+| `engine-foundation`   | Archived | Scene graph, math, SPIs, física O(N²), game loop, Compose runtime, Pong, DX e CLAUDE.md. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.

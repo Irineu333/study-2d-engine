@@ -27,12 +27,12 @@ The `CLAUDE.md` SHALL include a section explicitly describing the project's purp
 
 ### Requirement: CLAUDE.md enumerates invariant architectural decisions
 
-The `CLAUDE.md` SHALL list the architectural invariants that any change must respect, including at minimum: (1) scene graph style Godot (inheritance, no Unity-style components), (2) `:engine` has no dependency on `androidx.compose.*` or `org.jetbrains.compose.*`, (3) inter-node communication uses direct references in this iteration (signals deferred), (4) collision uses `Collider`-as-node with a central `PhysicsSystem`, (5) `Renderer`/`Input` are SPIs; Compose is one backend.
+The `CLAUDE.md` SHALL list the architectural invariants that any change must respect, including at minimum: (1) scene graph style Godot (inheritance, no Unity-style components), (2) `:engine` has no dependency on `androidx.compose.*` or `org.jetbrains.compose.*`, (3) collision uses `Collider`-as-node with a central `PhysicsSystem`, (4) `Renderer`/`Input` are SPIs; Compose is one backend.
 
-#### Scenario: Invariants section enumerates the five core decisions
+#### Scenario: Invariants section enumerates the core decisions
 
 - **WHEN** `CLAUDE.md` is opened
-- **THEN** the invariants section lists at least the five decisions above with one-line rationale each
+- **THEN** the invariants section lists at least the four decisions above with one-line rationale each
 
 ### Requirement: CLAUDE.md describes module structure and how to run
 
@@ -59,7 +59,7 @@ The `CLAUDE.md` SHALL state the project's coding conventions, including at minim
 
 ### Requirement: CLAUDE.md describes the OpenSpec workflow and roadmap
 
-The `CLAUDE.md` SHALL explain that material changes (architecture, public API, new modules, new capabilities) go through OpenSpec change proposals before implementation, and SHALL include a visible roadmap pointing to the active and planned changes (at this moment: `engine-foundation` active, `event-driven-games` planned, editor work planned). The roadmap MUST be updated when the active change advances.
+The `CLAUDE.md` SHALL explain that material changes (architecture, public API, new modules, new capabilities) go through OpenSpec change proposals before implementation, and SHALL include a visible roadmap pointing to the active and planned changes (at this moment: `engine-foundation` archived, editor work planned). The roadmap MUST be updated when the active change advances.
 
 #### Scenario: Workflow section refers contributors to OpenSpec
 
@@ -69,4 +69,4 @@ The `CLAUDE.md` SHALL explain that material changes (architecture, public API, n
 #### Scenario: Roadmap reflects current state
 
 - **WHEN** `CLAUDE.md` is read at the end of this change
-- **THEN** the roadmap lists `engine-foundation`, `event-driven-games`, and a placeholder for the editor change with clear status labels
+- **THEN** the roadmap lists `engine-foundation` and a placeholder for the editor change with clear status labels
