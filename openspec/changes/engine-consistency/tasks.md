@@ -49,11 +49,11 @@
 
 ## 6. Validação final
 
-- [ ] 6.1 Rodar `./gradlew clean test` em verde para todo o projeto (engine, engine-compose, games).
-- [ ] 6.2 Rodar `./gradlew :games:pong:run` manualmente. Conferir: paddle humano (W/S), paddle AI, colisões, F1 (FPS overlay), F2 (collider overlay) — todos como antes.
-- [ ] 6.3 Rodar `./gradlew :games:tictactoe:run` manualmente. Conferir: clique para jogar, reset por clique pós-fim, F1 (FPS).
-- [ ] 6.4 Atualizar tabela do roadmap em `CLAUDE.md` adicionando linha `engine-consistency` com status `Active`. (O status vai para `Archived` no `/opsx:archive`.)
-- [ ] 6.5 Rodar `openspec validate engine-consistency --strict` e confirmar zero issues.
+- [x] 6.1 Rodar `./gradlew clean test` em verde para todo o projeto (engine, engine-compose, games).
+- [x] 6.2 Rodar `./gradlew :games:pong:run` manualmente. Conferir: paddle humano (W/S), paddle AI, colisões, F1 (FPS overlay), F2 (collider overlay) — todos como antes.
+- [x] 6.3 Rodar `./gradlew :games:tictactoe:run` manualmente. Conferir: clique para jogar, reset por clique pós-fim, F1 (FPS).
+- [x] 6.4 Atualizar tabela do roadmap em `CLAUDE.md` adicionando linha `engine-consistency` com status `Active`. (O status vai para `Archived` no `/opsx:archive`.)
+- [x] 6.5 Rodar `openspec validate engine-consistency --strict` e confirmar zero issues.
 
 ## 7. Encerramento
 
