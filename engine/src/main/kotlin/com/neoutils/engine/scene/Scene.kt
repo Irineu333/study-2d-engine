@@ -1,11 +1,16 @@
 package com.neoutils.engine.scene
 
 import com.neoutils.engine.dx.Debug
+import com.neoutils.engine.input.Input
 import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 
 open class Scene : Node() {
+
+    /** Set by the runtime (`GameLoop`) at the start of each tick. */
+    @Volatile var input: Input? = null
+        internal set
 
     fun start() {
         if (!isLive) attachToLiveTree()

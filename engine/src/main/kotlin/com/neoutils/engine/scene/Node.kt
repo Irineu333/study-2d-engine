@@ -44,6 +44,16 @@ abstract class Node {
         isLive = false
     }
 
+    /** Walks up the parent chain to locate the owning Scene, if any. */
+    fun rootScene(): Scene? {
+        var n: Node? = this
+        while (n != null) {
+            if (n is Scene) return n
+            n = n.parent
+        }
+        return null
+    }
+
     open fun onEnter() {}
     open fun onUpdate(dt: Float) {}
     open fun onRender(renderer: Renderer) {}

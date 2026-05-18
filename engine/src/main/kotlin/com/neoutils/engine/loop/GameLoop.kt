@@ -21,6 +21,7 @@ class GameLoop(
 
     fun tick(dtNanos: Long) {
         if (!scene.isLive) scene.start()
+        scene.input = input
         val dt = (dtNanos / 1_000_000_000f).coerceAtMost(maxDt).coerceAtLeast(0f)
         scene.update(dt)
         physics.step(scene)

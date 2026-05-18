@@ -60,12 +60,12 @@
 
 ## 9. Pong sample game
 
-- [ ] 9.1 Implement `PongScene : Scene` constructing the documented tree: two paddles, ball, four boundary colliders (top, bottom, left goal, right goal), HUD with two `Score` texts and center-line decoration.
-- [ ] 9.2 Implement `Paddle : Node2D` with `BoxCollider` child, configurable input bindings (default W/S for left), AI mode (right), and frame-rate-independent movement clamped within the play field.
-- [ ] 9.3 Implement `Ball : Node2D` with `BoxCollider` child, constant-magnitude velocity, reflection in `onCollide` based on partner type (paddle → flip X; top/bottom wall → flip Y; goal → score and reset).
-- [ ] 9.4 Implement `Score : Node2D` (wraps `Text`) reflecting an integer state; expose increment.
-- [ ] 9.5 Implement `Wall` and `Goal` collider nodes (subclasses or instances of `BoxCollider` tagged by class for `is`-checks in `Ball.onCollide`).
-- [ ] 9.6 Implement `main()` in `:games:pong` that opens a Compose Desktop window hosting `GameSurface(PongScene())`. Wire key listeners through Compose so `ComposeInput` receives them.
+- [x] 9.1 Implement `PongScene : Scene` constructing the documented tree: two paddles, ball, four boundary colliders (top, bottom, left goal, right goal), HUD with two `Score` texts and center-line decoration.
+- [x] 9.2 Implement `Paddle : Node2D` with `BoxCollider` child, configurable input bindings (default W/S for left), AI mode (right), and frame-rate-independent movement clamped within the play field.
+- [x] 9.3 Implement `Ball : Node2D` with `BoxCollider` child, constant-magnitude velocity, reflection in `onCollide` based on partner type (paddle → flip X; top/bottom wall → flip Y; goal → score and reset).
+- [x] 9.4 Implement `Score : Node2D` (wraps `Text`) reflecting an integer state; expose increment.
+- [x] 9.5 Implement `Wall` and `Goal` collider nodes (subclasses or instances of `BoxCollider` tagged by class for `is`-checks in `Ball.onCollide`).
+- [x] 9.6 Implement `main()` in `:games:pong` that opens a Compose Desktop window hosting `GameSurface(PongScene())`. Wire key listeners through Compose so `ComposeInput` receives them.
 - [ ] 9.7 Manual playtest: paddle moves with W/S; ball reflects off walls and paddles; scoring works for both sides; ball resets after a goal; AI paddle tracks ball with imperfect speed.
 - [ ] 9.8 Toggle FPS overlay and collider visualization mid-game; confirm both work without disturbing gameplay.
 
