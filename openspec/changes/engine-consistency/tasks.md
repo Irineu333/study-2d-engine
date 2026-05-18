@@ -16,8 +16,8 @@
 
 ## 3. A1 — Transform composition
 
-- [ ] 3.1 Em `engine/src/main/kotlin/com/neoutils/engine/math/Transform.kt`, adicionar `fun compose(child: Transform): Transform` aplicando: `scale = this.scale .* child.scale`, `rotation = this.rotation + child.rotation`, `position = this.position + rotate(this.scale .* child.position, this.rotation)`. Adicionar helpers internos `rotate(Vec2, Float)` se ainda não existirem.
-- [ ] 3.2 Confirmar que `TransformComposeTest` (tarefa 1.1) passa.
+- [x] 3.1 Em `engine/src/main/kotlin/com/neoutils/engine/math/Transform.kt`, adicionar `fun compose(child: Transform): Transform` aplicando: `scale = this.scale .* child.scale`, `rotation = this.rotation + child.rotation`, `position = this.position + rotate(this.scale .* child.position, this.rotation)`. Adicionar helpers internos `rotate(Vec2, Float)` se ainda não existirem.
+- [x] 3.2 Confirmar que `TransformComposeTest` (tarefa 1.1) passa.
 - [ ] 3.3 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Node2D.kt`, adicionar `fun worldTransform(): Transform` que coleta os ancestrais `Node2D` (incluindo `this`) em ordem topo→base e dobra via `Transform.compose`.
 - [ ] 3.4 Reescrever `worldPosition()` como `return worldTransform().position`.
 - [ ] 3.5 Confirmar que `WorldTransformTest` (tarefa 1.2) passa.
