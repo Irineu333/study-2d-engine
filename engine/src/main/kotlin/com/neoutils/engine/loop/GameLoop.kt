@@ -23,8 +23,11 @@ class GameLoop(
         if (!scene.isLive) scene.start()
         scene.input = input
         val dt = (dtNanos / 1_000_000_000f).coerceAtMost(maxDt).coerceAtLeast(0f)
+        scene.applyPending()
         scene.update(dt)
+        scene.applyPending()
         physics.step(scene)
+        scene.applyPending()
         scene.render(renderer)
     }
 }

@@ -1,9 +1,6 @@
 package com.neoutils.engine.scene
 
-import com.neoutils.engine.dx.Debug
 import com.neoutils.engine.input.Input
-import com.neoutils.engine.physics.Collider
-import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 
 open class Scene : Node() {
@@ -15,6 +12,24 @@ open class Scene : Node() {
     var width: Float = 0f
         private set
     var height: Float = 0f
+        private set
+
+    /**
+     * `true` while the scene is inside an `onUpdate`, `onCollide` or
+     * `onRender` traversal (or another physics phase). Read by `Node.addChild`
+     * / `Node.removeChild` to decide between immediate mutation and enqueuing
+     * onto the pending queues.
+     */
+    internal var isMutationDeferred: Boolean = false
+        private set
+
+    /**
+     * `true` only during render traversal. `addChild`/`removeChild` called
+     * while this is set are logged and dropped (decision D5 in design.md):
+     * scene-graph mutation during render has no use case and would cost more
+     * complexity than it saves to support.
+     */
+    internal var isRendering: Boolean = false
         private set
 
     /** Called by the runtime when the rendering surface size changes. */
@@ -37,13 +52,41 @@ open class Scene : Node() {
 
     fun update(dt: Float) {
         if (!isLive) return
-        traverseUpdate(this, dt)
+        runTraversal(rendering = false) { traverseUpdate(this, dt) }
     }
 
     fun render(renderer: Renderer) {
         if (!isLive) return
-        traverseRender(this, renderer)
-        if (Debug.colliderVisualization) drawColliderBounds(this, renderer)
+        runTraversal(rendering = true) { traverseRender(this, renderer) }
+    }
+
+    /**
+     * Drains pending child mutations enqueued during the previous traversal.
+     * Drained in post-order (children first), removals before additions, so
+     * lifecycle is coherent across the whole subtree before the next phase
+     * begins.
+     */
+    fun applyPending() {
+        drainPending()
+    }
+
+    internal fun beginPhysicsPhase() {
+        isMutationDeferred = true
+    }
+
+    internal fun endPhysicsPhase() {
+        isMutationDeferred = false
+    }
+
+    private inline fun runTraversal(rendering: Boolean, block: () -> Unit) {
+        isMutationDeferred = true
+        isRendering = rendering
+        try {
+            block()
+        } finally {
+            isRendering = false
+            isMutationDeferred = false
+        }
     }
 
     private fun traverseUpdate(node: Node, dt: Float) {
@@ -54,14 +97,5 @@ open class Scene : Node() {
     private fun traverseRender(node: Node, renderer: Renderer) {
         node.onRender(renderer)
         for (child in node.children) traverseRender(child, renderer)
-    }
-
-    private fun drawColliderBounds(node: Node, renderer: Renderer) {
-        if (node is Collider) renderer.drawRect(node.bounds(), DEBUG_COLLIDER_COLOR, filled = false)
-        for (child in node.children) drawColliderBounds(child, renderer)
-    }
-
-    companion object {
-        private val DEBUG_COLLIDER_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
     }
 }

@@ -11,25 +11,42 @@ import com.neoutils.engine.scene.Scene
 class PhysicsSystem {
 
     fun step(scene: Scene) {
-        val colliders = mutableListOf<Collider>()
-        collect(scene, colliders)
+        val colliders = collectColliders(scene)
         val n = colliders.size
-        for (i in 0 until n) {
-            val a = colliders[i]
-            val ab = a.bounds()
-            for (j in i + 1 until n) {
-                val b = colliders[j]
-                if (ab.intersects(b.bounds())) {
-                    a.onCollide(b)
-                    b.onCollide(a)
+        scene.beginPhysicsPhase()
+        try {
+            for (i in 0 until n) {
+                val a = colliders[i]
+                if (!a.isLive) continue
+                val ab = a.bounds()
+                for (j in i + 1 until n) {
+                    val b = colliders[j]
+                    if (!b.isLive) continue
+                    if (ab.intersects(b.bounds())) {
+                        a.onCollide(b)
+                        b.onCollide(a)
+                    }
                 }
             }
+        } finally {
+            scene.endPhysicsPhase()
         }
     }
+}
 
-    private fun collect(node: Node, out: MutableList<Collider>) {
-        if (!node.isLive) return
-        if (node is Collider) out += node
-        for (child in node.children) collect(child, out)
-    }
+/**
+ * Enumerates every live `Collider` reachable from `scene`. Exposed publicly so
+ * the integrating runtime (e.g. the Compose `GameSurface`) can draw a debug
+ * overlay without `Scene` itself depending on the DX layer.
+ */
+fun collectColliders(scene: Scene): List<Collider> {
+    val out = mutableListOf<Collider>()
+    collect(scene, out)
+    return out
+}
+
+private fun collect(node: Node, out: MutableList<Collider>) {
+    if (!node.isLive) return
+    if (node is Collider) out += node
+    for (child in node.children) collect(child, out)
 }

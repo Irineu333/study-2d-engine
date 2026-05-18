@@ -28,16 +28,16 @@
 
 ## 4. A4 — Mutação segura durante traversal
 
-- [ ] 4.1 Em `Node.kt`, adicionar `private val pendingAdd = mutableListOf<Node>()` e `private val pendingRemove = mutableListOf<Node>()`.
-- [ ] 4.2 Em `Scene.kt`, adicionar `private var inTraversal: Boolean = false` e helper `internal fun setInTraversal(v: Boolean)`. Wrapping `traverseUpdate` e `traverseRender` (e o helper de coleta de colliders se aplicável) com `try { inTraversal = true; … } finally { inTraversal = false }`.
-- [ ] 4.3 Em `Node.addChild` e `Node.removeChild`, detectar via `scene?.inTraversal == true`. Quando `true`, enfileirar em `pendingAdd`/`pendingRemove` do `this` e retornar sem mutar `_children`. Quando `false`, manter o caminho síncrono atual.
-- [ ] 4.4 Em `Node`, adicionar `internal fun applyPending()` que, recursivamente pós-ordem (filhos primeiro), aplica primeiro `pendingRemove` (chamando o caminho síncrono real de `removeChild`) e em seguida `pendingAdd` (caminho síncrono real de `addChild`), e finalmente limpa as filas.
-- [ ] 4.5 Em `Scene`, expor `fun applyPending()` que invoca `applyPending()` na raiz.
-- [ ] 4.6 Em `engine/src/main/kotlin/com/neoutils/engine/loop/GameLoop.kt`, intercalar `scene.applyPending()` nos três pontos: antes de `scene.update`, antes de `physics.step`, antes de `scene.render`.
-- [ ] 4.7 Em `PhysicsSystem.step`, marcar `inTraversal` ao redor do loop de pares (cuidado: `Scene.inTraversal` precisa ser acessível; talvez expor `Scene.beginPhysicsPhase()/endPhysicsPhase()` em vez de manipular o boolean direto).
-- [ ] 4.8 Em `Scene.render` (que é traversal), garantir que mutações de `onRender` sejam detectadas e ignoradas/loggadas — usar `Log.w("Scene", "addChild called during onRender; ignored")`. Não enfileirar, conforme decisão D5.
-- [ ] 4.9 Confirmar que `SceneMutationDuringTraversalTest` (tarefa 1.3) passa.
-- [ ] 4.10 Revisar `NodeTest`, `GameLoopTest`, `PhysicsSystemTest` — tests atuais devem continuar verdes.
+- [x] 4.1 Em `Node.kt`, adicionar `private val pendingAdd = mutableListOf<Node>()` e `private val pendingRemove = mutableListOf<Node>()`.
+- [x] 4.2 Em `Scene.kt`, adicionar `private var inTraversal: Boolean = false` e helper `internal fun setInTraversal(v: Boolean)`. Wrapping `traverseUpdate` e `traverseRender` (e o helper de coleta de colliders se aplicável) com `try { inTraversal = true; … } finally { inTraversal = false }`.
+- [x] 4.3 Em `Node.addChild` e `Node.removeChild`, detectar via `scene?.inTraversal == true`. Quando `true`, enfileirar em `pendingAdd`/`pendingRemove` do `this` e retornar sem mutar `_children`. Quando `false`, manter o caminho síncrono atual.
+- [x] 4.4 Em `Node`, adicionar `internal fun applyPending()` que, recursivamente pós-ordem (filhos primeiro), aplica primeiro `pendingRemove` (chamando o caminho síncrono real de `removeChild`) e em seguida `pendingAdd` (caminho síncrono real de `addChild`), e finalmente limpa as filas.
+- [x] 4.5 Em `Scene`, expor `fun applyPending()` que invoca `applyPending()` na raiz.
+- [x] 4.6 Em `engine/src/main/kotlin/com/neoutils/engine/loop/GameLoop.kt`, intercalar `scene.applyPending()` nos três pontos: antes de `scene.update`, antes de `physics.step`, antes de `scene.render`.
+- [x] 4.7 Em `PhysicsSystem.step`, marcar `inTraversal` ao redor do loop de pares (cuidado: `Scene.inTraversal` precisa ser acessível; talvez expor `Scene.beginPhysicsPhase()/endPhysicsPhase()` em vez de manipular o boolean direto).
+- [x] 4.8 Em `Scene.render` (que é traversal), garantir que mutações de `onRender` sejam detectadas e ignoradas/loggadas — usar `Log.w("Scene", "addChild called during onRender; ignored")`. Não enfileirar, conforme decisão D5.
+- [x] 4.9 Confirmar que `SceneMutationDuringTraversalTest` (tarefa 1.3) passa.
+- [x] 4.10 Revisar `NodeTest`, `GameLoopTest`, `PhysicsSystemTest` — tests atuais devem continuar verdes.
 
 ## 5. A2 — Desacoplar Scene de Debug
 

@@ -1,5 +1,6 @@
 package com.neoutils.engine.scene
 
+import com.neoutils.engine.dx.Log
 import com.neoutils.engine.render.Renderer
 
 abstract class Node {
@@ -24,9 +25,39 @@ abstract class Node {
     var scene: Scene? = null
         internal set
 
+    private val pendingAdd: MutableList<Node> = mutableListOf()
+    private val pendingRemove: MutableList<Node> = mutableListOf()
+
     fun addChild(child: Node) {
         require(child.parent == null) { "Node '${child.name}' already has a parent" }
         require(child !== this) { "Cannot add a node as its own child" }
+        val owning = if (this is Scene) this else scene
+        if (owning != null && owning.isMutationDeferred) {
+            if (owning.isRendering) {
+                Log.w(TAG, "addChild called during onRender; ignored ('${child.name}' -> '$name')")
+                return
+            }
+            pendingAdd += child
+            return
+        }
+        applyAdd(child)
+    }
+
+    fun removeChild(child: Node) {
+        require(child.parent === this) { "Node '${child.name}' is not a child of '$name'" }
+        val owning = if (this is Scene) this else scene
+        if (owning != null && owning.isMutationDeferred) {
+            if (owning.isRendering) {
+                Log.w(TAG, "removeChild called during onRender; ignored ('${child.name}' from '$name')")
+                return
+            }
+            pendingRemove += child
+            return
+        }
+        applyRemove(child)
+    }
+
+    private fun applyAdd(child: Node) {
         child.parent = this
         _children.add(child)
         if (isLive) {
@@ -35,8 +66,7 @@ abstract class Node {
         }
     }
 
-    fun removeChild(child: Node) {
-        require(child.parent === this) { "Node '${child.name}' is not a child of '$name'" }
+    private fun applyRemove(child: Node) {
         if (isLive) child.detachFromLiveTree()
         _children.remove(child)
         child.parent = null
@@ -58,6 +88,29 @@ abstract class Node {
         scene = null
     }
 
+    /**
+     * Drains the per-node pending queues in post-order (children first),
+     * applying removals before additions to prevent reattaching a node that
+     * was just scheduled for removal in the same drain.
+     */
+    internal fun drainPending() {
+        for (child in _children.toList()) child.drainPending()
+        if (pendingRemove.isNotEmpty()) {
+            val drained = pendingRemove.toList()
+            pendingRemove.clear()
+            for (child in drained) {
+                if (child.parent === this) applyRemove(child)
+            }
+        }
+        if (pendingAdd.isNotEmpty()) {
+            val drained = pendingAdd.toList()
+            pendingAdd.clear()
+            for (child in drained) {
+                if (child.parent == null) applyAdd(child)
+            }
+        }
+    }
+
     /** Returns the owning `Scene` in O(1) when live, or `null` otherwise. */
     fun rootScene(): Scene? = scene
 
@@ -65,4 +118,8 @@ abstract class Node {
     open fun onUpdate(dt: Float) {}
     open fun onRender(renderer: Renderer) {}
     open fun onExit() {}
+
+    companion object {
+        private const val TAG = "Scene"
+    }
 }
