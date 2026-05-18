@@ -20,7 +20,7 @@
 - [x] 3.1 Add `games/tictactoe/` directory with `build.gradle.kts` (depends on `:engine` and `:engine-compose`, applies Kotlin JVM + Compose Desktop application plugins)
 - [x] 3.2 Register `:games:tictactoe` in `settings.gradle.kts`
 - [x] 3.3 Create `com.neoutils.engine.games.tictactoe.Main.kt` with a Compose `application { Window { GameSurface(scene) } }` mirroring `:games:pong`
-- [ ] 3.4 Wire F1 (FPS) and F2 (collider visualization, harmless without colliders) toggles in `Main.kt`
+- [x] 3.4 Wire F1 (FPS) and F2 (collider visualization, harmless without colliders) toggles in `Main.kt`
 
 ## 4. Board node and game state
 
