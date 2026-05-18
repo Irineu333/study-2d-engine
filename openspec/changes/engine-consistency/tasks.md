@@ -18,9 +18,9 @@
 
 - [x] 3.1 Em `engine/src/main/kotlin/com/neoutils/engine/math/Transform.kt`, adicionar `fun compose(child: Transform): Transform` aplicando: `scale = this.scale .* child.scale`, `rotation = this.rotation + child.rotation`, `position = this.position + rotate(this.scale .* child.position, this.rotation)`. Adicionar helpers internos `rotate(Vec2, Float)` se ainda não existirem.
 - [x] 3.2 Confirmar que `TransformComposeTest` (tarefa 1.1) passa.
-- [ ] 3.3 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Node2D.kt`, adicionar `fun worldTransform(): Transform` que coleta os ancestrais `Node2D` (incluindo `this`) em ordem topo→base e dobra via `Transform.compose`.
-- [ ] 3.4 Reescrever `worldPosition()` como `return worldTransform().position`.
-- [ ] 3.5 Confirmar que `WorldTransformTest` (tarefa 1.2) passa.
+- [x] 3.3 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Node2D.kt`, adicionar `fun worldTransform(): Transform` que coleta os ancestrais `Node2D` (incluindo `this`) em ordem topo→base e dobra via `Transform.compose`.
+- [x] 3.4 Reescrever `worldPosition()` como `return worldTransform().position`.
+- [x] 3.5 Confirmar que `WorldTransformTest` (tarefa 1.2) passa.
 - [ ] 3.6 Em `engine/src/main/kotlin/com/neoutils/engine/physics/BoxCollider.kt`, reescrever `bounds()` para usar `worldTransform()`. Se `worldTransform().rotation == 0f`, devolver `Rect(worldTransform().position, size * worldTransform().scale)`. Se for ≠ 0, calcular os 4 cantos do OBB e devolver o AABB que os envolve.
 - [ ] 3.7 Adicionar cenários de regressão em `PhysicsSystemTest`: collider com pai escalado, collider com pai rotacionado a 45°.
 - [ ] 3.8 Em `engine/src/main/kotlin/com/neoutils/engine/scene/Shape.kt`, atualizar `onRender` para usar `worldTransform()` em vez de `worldPosition()` + `transform.scale`. Adicionar KDoc no topo da classe documentando que rotação **não** é aplicada visualmente até a futura change `Renderer.withTransform`.
