@@ -41,11 +41,11 @@
 
 ## 5. A2 — Desacoplar Scene de Debug
 
-- [ ] 5.1 Em `Scene.kt`, remover o import `com.neoutils.engine.dx.Debug` e a função `drawColliderBounds`. Remover a chamada condicional em `Scene.render`. Remover a constante `DEBUG_COLLIDER_COLOR` (mover para a etapa 5.3).
-- [ ] 5.2 Confirmar que `SceneCoreDecouplingTest` (tarefa 1.4) passa.
-- [ ] 5.3 Em `engine/src/main/kotlin/com/neoutils/engine/physics/PhysicsSystem.kt` (ou um arquivo novo `Colliders.kt`), expor utilitário público `fun collectColliders(scene: Scene): List<Collider>` reutilizando a lógica interna existente.
-- [ ] 5.4 Em `engine-compose/src/main/kotlin/com/neoutils/engine/compose/GameSurface.kt`, após `loop.tick(pendingDt)` e ainda dentro do `try` que mantém `renderer.bind`, ler `Debug.colliderVisualization`. Quando `true`, iterar `collectColliders(scene)` e chamar `renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)`. Adicionar `DEBUG_COLLIDER_COLOR` como `private` no top-level do arquivo.
-- [ ] 5.5 Rodar Pong com F2 ativado e confirmar visualmente que o overlay continua aparecendo idêntico ao comportamento anterior.
+- [x] 5.1 Em `Scene.kt`, remover o import `com.neoutils.engine.dx.Debug` e a função `drawColliderBounds`. Remover a chamada condicional em `Scene.render`. Remover a constante `DEBUG_COLLIDER_COLOR` (mover para a etapa 5.3).
+- [x] 5.2 Confirmar que `SceneCoreDecouplingTest` (tarefa 1.4) passa.
+- [x] 5.3 Em `engine/src/main/kotlin/com/neoutils/engine/physics/PhysicsSystem.kt` (ou um arquivo novo `Colliders.kt`), expor utilitário público `fun collectColliders(scene: Scene): List<Collider>` reutilizando a lógica interna existente.
+- [x] 5.4 Em `engine-compose/src/main/kotlin/com/neoutils/engine/compose/GameSurface.kt`, após `loop.tick(pendingDt)` e ainda dentro do `try` que mantém `renderer.bind`, ler `Debug.colliderVisualization`. Quando `true`, iterar `collectColliders(scene)` e chamar `renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)`. Adicionar `DEBUG_COLLIDER_COLOR` como `private` no top-level do arquivo.
+- [x] 5.5 Rodar Pong com F2 ativado e confirmar visualmente que o overlay continua aparecendo idêntico ao comportamento anterior.
 
 ## 6. Validação final
 

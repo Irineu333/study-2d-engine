@@ -27,8 +27,11 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
+import com.neoutils.engine.physics.collectColliders
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Scene
+
+private val DEBUG_COLLIDER_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -96,6 +99,11 @@ fun GameSurface(
         renderer.bind(this)
         try {
             loop.tick(pendingDt)
+            if (Debug.colliderVisualization) {
+                for (collider in collectColliders(scene)) {
+                    renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)
+                }
+            }
             if (Debug.showFps) {
                 val text = "fps ${Debug.currentFps.toInt()}"
                 renderer.drawText(text, Vec2(8f, 24f), size = 18f, color = Color.WHITE)
