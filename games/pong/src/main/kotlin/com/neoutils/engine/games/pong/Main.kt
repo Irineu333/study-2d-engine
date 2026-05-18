@@ -11,14 +11,13 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.neoutils.engine.compose.GameSurface
 import com.neoutils.engine.dx.Debug
 
 fun main() = application {
-    val state: WindowState = rememberWindowState(width = 800.dp, height = 600.dp)
+    val state = rememberWindowState(width = 800.dp, height = 600.dp)
     Window(
         onCloseRequest = ::exitApplication,
         title = "Pong",
@@ -26,16 +25,29 @@ fun main() = application {
         onKeyEvent = { event ->
             if (event.type == KeyEventType.KeyDown) {
                 when (event.key) {
-                    androidx.compose.ui.input.key.Key.F1 -> { Debug.showFps = !Debug.showFps; true }
-                    androidx.compose.ui.input.key.Key.F2 -> { Debug.colliderVisualization = !Debug.colliderVisualization; true }
+                    androidx.compose.ui.input.key.Key.F1 -> {
+                        Debug.showFps = !Debug.showFps; true
+                    }
+
+                    androidx.compose.ui.input.key.Key.F2 -> {
+                        Debug.colliderVisualization = !Debug.colliderVisualization; true
+                    }
+
                     else -> false
                 }
             } else false
         },
     ) {
         val scene = remember { PongScene() }
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            GameSurface(scene = scene, modifier = Modifier.fillMaxSize())
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            GameSurface(
+                scene = scene,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
