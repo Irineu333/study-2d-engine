@@ -39,6 +39,19 @@ Durante o jogo:
 - `F1` liga/desliga overlay de FPS
 - `F2` liga/desliga visualização de colliders
 
+Para rodar Velha:
+
+```sh
+./gradlew :games:tictactoe:run
+```
+
+Durante o jogo:
+
+- Clique esquerdo numa célula vazia faz a jogada do jogador atual (X começa, depois alterna O)
+- Quando a partida termina (vitória ou empate), o próximo clique esquerdo em qualquer lugar reinicia (esse clique só reinicia — não joga)
+- `F1` liga/desliga overlay de FPS
+- `F2` liga/desliga visualização de colliders (Velha não usa colliders, mas o overlay continua disponível)
+
 ## Coding Conventions
 
 - **Comentários só para o "por quê" não-óbvio.** Nunca para o "o quê" (nomes já dizem). Evite docstrings cerimoniais.

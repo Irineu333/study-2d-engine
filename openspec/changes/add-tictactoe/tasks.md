@@ -55,7 +55,7 @@
 ## 8. Documentation and roadmap
 
 - [x] 8.1 Update the roadmap table in `CLAUDE.md` to list `add-tictactoe` as Active (or Archived once merged)
-- [ ] 8.2 Add a "Para rodar Velha" section in `CLAUDE.md` with the gradle command and controls (left-click to play, left-click after end to reset, F1/F2 overlays)
+- [x] 8.2 Add a "Para rodar Velha" section in `CLAUDE.md` with the gradle command and controls (left-click to play, left-click after end to reset, F1/F2 overlays)
 - [ ] 8.3 Update `README.md` if it references the runnable samples
 
 ## 9. Validation
