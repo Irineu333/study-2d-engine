@@ -45,10 +45,10 @@
 
 ## 7. Compose runtime
 
-- [ ] 7.1 Implement `ComposeRenderer(drawScope: DrawScope)` translating each `Renderer` method to corresponding `DrawScope` operation.
-- [ ] 7.2 Implement `ComposeInput` aggregating Compose `KeyEvent`/`PointerEvent` into snapshot state; translate Compose key codes to engine `Key`.
-- [ ] 7.3 Implement `GameSurface(scene: Scene)` composable: hosts `Canvas`, wires focus + key/pointer listeners to `ComposeInput`, runs a `LaunchedEffect` loop with `withFrameNanos` calling `GameLoop.tick`, requests redraw each frame.
-- [ ] 7.4 Verify `GameSurface` stops ticking when removed from composition.
+- [x] 7.1 Implement `ComposeRenderer(drawScope: DrawScope)` translating each `Renderer` method to corresponding `DrawScope` operation.
+- [x] 7.2 Implement `ComposeInput` aggregating Compose `KeyEvent`/`PointerEvent` into snapshot state; translate Compose key codes to engine `Key`.
+- [x] 7.3 Implement `GameSurface(scene: Scene)` composable: hosts `Canvas`, wires focus + key/pointer listeners to `ComposeInput`, runs a `LaunchedEffect` loop with `withFrameNanos` calling `GameLoop.tick`, requests redraw each frame.
+- [x] 7.4 Verify `GameSurface` stops ticking when removed from composition.
 
 ## 8. DX tooling
 
