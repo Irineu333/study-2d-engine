@@ -85,6 +85,10 @@ class Board : Node2D() {
             val mark = cells[i] ?: continue
             drawMark(renderer, i, mark, MARK_COLOR)
         }
+        val hovered = hoveredCell
+        if (!gameOver && hovered != null && cells[hovered] == null) {
+            drawMark(renderer, hovered, currentPlayer, GHOST_COLOR)
+        }
     }
 
     private fun drawMark(renderer: Renderer, index: Int, mark: Mark, color: Color) {
@@ -150,5 +154,6 @@ class Board : Node2D() {
         private const val MARK_INSET_RATIO: Float = 0.18f
         private const val MARK_THICKNESS_RATIO: Float = 0.08f
         private val MARK_COLOR: Color = Color.WHITE
+        private val GHOST_COLOR: Color = Color(1f, 1f, 1f, 0.3f)
     }
 }

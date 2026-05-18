@@ -42,7 +42,7 @@
 
 - [x] 6.1 In `Board.onRender(renderer)`: draw the 4 grid lines as `drawLine` with thickness proportional to `cellSize`
 - [x] 6.2 Draw each cell's mark — X as two `drawLine` diagonals, O as `drawCircle(filled = false)` with inner radius proportional to `cellSize`
-- [ ] 6.3 If `!gameOver` and `hoveredCell != null` and cell is empty, draw the ghost mark with reduced alpha (~0.3)
+- [x] 6.3 If `!gameOver` and `hoveredCell != null` and cell is empty, draw the ghost mark with reduced alpha (~0.3)
 - [ ] 6.4 If `winningLine != null`, draw a highlight `drawLine` from the center of the first cell to the center of the third cell with a contrasting color/thickness
 
 ## 7. Scene assembly and status text
