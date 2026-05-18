@@ -66,8 +66,8 @@
 - [x] 9.4 Implement `Score : Node2D` (wraps `Text`) reflecting an integer state; expose increment.
 - [x] 9.5 Implement `Wall` and `Goal` collider nodes (subclasses or instances of `BoxCollider` tagged by class for `is`-checks in `Ball.onCollide`).
 - [x] 9.6 Implement `main()` in `:games:pong` that opens a Compose Desktop window hosting `GameSurface(PongScene())`. Wire key listeners through Compose so `ComposeInput` receives them.
-- [ ] 9.7 Manual playtest: paddle moves with W/S; ball reflects off walls and paddles; scoring works for both sides; ball resets after a goal; AI paddle tracks ball with imperfect speed.
-- [ ] 9.8 Toggle FPS overlay and collider visualization mid-game; confirm both work without disturbing gameplay. (F1 / F2)
+- [x] 9.7 Manual playtest: paddle moves with W/S; ball reflects off walls and paddles; scoring works for both sides; ball resets after a goal; AI paddle tracks ball with imperfect speed.
+- [x] 9.8 Toggle FPS overlay and collider visualization mid-game; confirm both work without disturbing gameplay. (F1 / F2)
 
 ## 10. Project conventions and docs
 
@@ -79,7 +79,7 @@
 ## 11. Acceptance and verification
 
 - [x] 11.1 Run `./gradlew build` clean from the root; no warnings about unused legacy modules.
-- [ ] 11.2 Run `./gradlew :games:pong:run`; confirm Pong opens, runs at ~60fps, is fully playable.
+- [x] 11.2 Run `./gradlew :games:pong:run`; confirm Pong opens, runs at ~60fps, is fully playable.
 - [x] 11.3 Manually walk the Pong source against the `engine-core` and `compose-runtime` capability lists; confirm every feature is exercised at least once.
 - [x] 11.4 Run `openspec validate engine-foundation --strict` (or equivalent) and resolve any reported gaps.
 - [ ] 11.5 Run `/opsx:verify engine-foundation` to confirm implementation matches the change artifacts before archiving.
