@@ -26,10 +26,10 @@
 
 - [x] 4.1 Define `Mark` sealed/enum type (`X`, `O`) with `other()` helper inside `:games:tictactoe`
 - [x] 4.2 Create `Board : Node2D` with fields: `cells: Array<Mark?>(9)`, `currentPlayer: Mark`, `winner: Mark?`, `isDraw: Boolean`, `winningLine: Triple<Int, Int, Int>?`, plus layout fields (`origin`, `cellSize`)
-- [ ] 4.3 Implement `Board.cellRect(index: Int): Rect` returning world-space rectangle for hit-testing and rendering
-- [ ] 4.4 Implement `Board.cellAt(point: Vec2): Int?` using `Rect.contains` against each cell
-- [ ] 4.5 Implement `Board.checkWinner()` returning the winning trinca (or null) by scanning rows, columns, and the two diagonals
-- [ ] 4.6 Implement `Board.reset()` clearing cells, winner, winningLine, draw flag and setting `currentPlayer = X`
+- [x] 4.3 Implement `Board.cellRect(index: Int): Rect` returning world-space rectangle for hit-testing and rendering
+- [x] 4.4 Implement `Board.cellAt(point: Vec2): Int?` using `Rect.contains` against each cell
+- [x] 4.5 Implement `Board.checkWinner()` returning the winning trinca (or null) by scanning rows, columns, and the two diagonals
+- [x] 4.6 Implement `Board.reset()` clearing cells, winner, winningLine, draw flag and setting `currentPlayer = X`
 
 ## 5. Board lifecycle and input
 
