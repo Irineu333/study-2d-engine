@@ -62,6 +62,6 @@
 
 - [x] 9.1 Run `./gradlew :engine:test` — all tests green, including new `Rect.contains` cases
 - [x] 9.2 Run `./gradlew :games:tictactoe:run` — verify: X starts; click places mark; turn alternates; ghost on hover; win → line drawn + status updates; draw scenario; click after end resets without playing on that click
-- [ ] 9.3 Resize window mid-partida — verify board recenters and remains fully visible; state preserved
-- [ ] 9.4 Run `./gradlew :games:pong:run` — verify Pong still works (no regression from SPI changes)
+- [x] 9.3 Resize window mid-partida — verify board recenters and remains fully visible; state preserved
+- [x] 9.4 Run `./gradlew :games:pong:run` — verify Pong still works (no regression from SPI changes)
 - [x] 9.5 Run `openspec validate add-tictactoe --strict` (or `openspec verify`) — passes
