@@ -16,13 +16,13 @@
 
 ## 3. Scene graph core
 
-- [ ] 3.1 Implement abstract `Node` with `name`, `parent`, `children`, `addChild`, `removeChild`. Track liveness propagated from the owning `Scene`.
-- [ ] 3.2 Implement lifecycle methods on `Node`: `onEnter`, `onUpdate(dt)`, `onRender(renderer)`, `onExit` (all `open` with empty defaults).
-- [ ] 3.3 Implement pre-order propagation of `onEnter` and post-order propagation of `onExit` when nodes attach/detach from a live tree.
-- [ ] 3.4 Implement `Node2D` adding `transform: Transform`.
-- [ ] 3.5 Implement `Shape` (rect or circle, with `size`, `color`, `filled`) and `Text` (string, size, color) as `Node2D` subclasses whose `onRender` delegates to `Renderer` primitives.
-- [ ] 3.6 Implement `Scene` extending `Node` with `update(dt)` and `render(renderer)` traversal methods (parents before children for render).
-- [ ] 3.7 Unit tests: child attach/detach, lifecycle order, transform isolation between siblings, render order.
+- [x] 3.1 Implement abstract `Node` with `name`, `parent`, `children`, `addChild`, `removeChild`. Track liveness propagated from the owning `Scene`.
+- [x] 3.2 Implement lifecycle methods on `Node`: `onEnter`, `onUpdate(dt)`, `onRender(renderer)`, `onExit` (all `open` with empty defaults).
+- [x] 3.3 Implement pre-order propagation of `onEnter` and post-order propagation of `onExit` when nodes attach/detach from a live tree.
+- [x] 3.4 Implement `Node2D` adding `transform: Transform`.
+- [x] 3.5 Implement `Shape` (rect or circle, with `size`, `color`, `filled`) and `Text` (string, size, color) as `Node2D` subclasses whose `onRender` delegates to `Renderer` primitives.
+- [x] 3.6 Implement `Scene` extending `Node` with `update(dt)` and `render(renderer)` traversal methods (parents before children for render).
+- [x] 3.7 Unit tests: child attach/detach, lifecycle order, transform isolation between siblings, render order.
 
 ## 4. Renderer and Input SPIs
 
