@@ -81,6 +81,32 @@ class Board : Node2D() {
 
     override fun onRender(renderer: Renderer) {
         drawGrid(renderer)
+        for (i in 0 until 9) {
+            val mark = cells[i] ?: continue
+            drawMark(renderer, i, mark, MARK_COLOR)
+        }
+    }
+
+    private fun drawMark(renderer: Renderer, index: Int, mark: Mark, color: Color) {
+        val rect = cellRect(index)
+        val cx = rect.origin.x + rect.size.x / 2f
+        val cy = rect.origin.y + rect.size.y / 2f
+        val inset = cellSize * MARK_INSET_RATIO
+        val thickness = (cellSize * MARK_THICKNESS_RATIO).coerceAtLeast(1f)
+        when (mark) {
+            Mark.X -> {
+                val l = rect.origin.x + inset
+                val r = rect.origin.x + rect.size.x - inset
+                val t = rect.origin.y + inset
+                val b = rect.origin.y + rect.size.y - inset
+                renderer.drawLine(Vec2(l, t), Vec2(r, b), thickness, color)
+                renderer.drawLine(Vec2(r, t), Vec2(l, b), thickness, color)
+            }
+            Mark.O -> {
+                val radius = rect.size.x / 2f - inset
+                renderer.drawCircle(Vec2(cx, cy), radius, color, filled = false)
+            }
+        }
     }
 
     private fun drawGrid(renderer: Renderer) {
@@ -121,5 +147,8 @@ class Board : Node2D() {
 
         private const val GRID_THICKNESS_RATIO: Float = 0.04f
         private val GRID_COLOR: Color = Color(0.9f, 0.9f, 0.9f)
+        private const val MARK_INSET_RATIO: Float = 0.18f
+        private const val MARK_THICKNESS_RATIO: Float = 0.08f
+        private val MARK_COLOR: Color = Color.WHITE
     }
 }
