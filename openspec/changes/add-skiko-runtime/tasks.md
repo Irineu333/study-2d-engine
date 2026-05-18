@@ -7,9 +7,9 @@
 
 ## 2. DX: unified debug overlay utility
 
-- [ ] 2.1 Add `renderDebugOverlay(renderer: Renderer, scene: Scene)` in `com.neoutils.engine.dx.DebugOverlay.kt`: consults `Debug.colliderVisualization` (then `collectColliders(scene)` + `renderer.drawRect(_, _, filled = false)`) and `Debug.showFps` (then `renderer.drawText("fps ${Debug.currentFps.toInt()}", Vec2(8f, 24f), 18f, Color.WHITE)`)
-- [ ] 2.2 Move the `DEBUG_COLLIDER_COLOR` constant from `GameSurface.kt` into `DebugOverlay.kt` (same RGBA: green 0.8 alpha)
-- [ ] 2.3 Add unit test `DebugOverlayTest.kt` in `:engine/src/test/`: a `RecordingRenderer : Renderer` collects calls; assert (a) both flags off → zero calls; (b) only FPS on → one `drawText`; (c) only colliders on → one `drawRect(_, _, filled = false)` per collider; (d) both on → both
+- [x] 2.1 Add `renderDebugOverlay(renderer: Renderer, scene: Scene)` in `com.neoutils.engine.dx.DebugOverlay.kt`: consults `Debug.colliderVisualization` (then `collectColliders(scene)` + `renderer.drawRect(_, _, filled = false)`) and `Debug.showFps` (then `renderer.drawText("fps ${Debug.currentFps.toInt()}", Vec2(8f, 24f), 18f, Color.WHITE)`)
+- [x] 2.2 Move the `DEBUG_COLLIDER_COLOR` constant from `GameSurface.kt` into `DebugOverlay.kt` (same RGBA: green 0.8 alpha)
+- [x] 2.3 Add unit test `DebugOverlayTest.kt` in `:engine/src/test/`: a `RecordingRenderer : Renderer` collects calls; assert (a) both flags off → zero calls; (b) only FPS on → one `drawText`; (c) only colliders on → one `drawRect(_, _, filled = false)` per collider; (d) both on → both
 
 ## 3. Compose-runtime: ComposeHost and overlay delegation
 
