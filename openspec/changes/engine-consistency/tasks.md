@@ -60,3 +60,15 @@
 - [ ] 7.1 Pedir a um humano para revisar a change e os jogos.
 - [ ] 7.2 Após aprovação, executar `/opsx:verify engine-consistency` para checagem cruzada com os artefatos.
 - [ ] 7.3 Executar `/opsx:archive engine-consistency` para sincronizar specs principais e mover a change para `archive/`.
+
+## 8. Módulo `:games:demos` (validação visual das melhorias)
+
+- [ ] 8.1 Adicionar `include(":games:demos")` em `settings.gradle.kts`.
+- [ ] 8.2 Criar `games/demos/build.gradle.kts` espelhando `games/pong/build.gradle.kts` (`kotlinJvm` + `composeMultiplatform` + `composeCompiler`, depende de `:engine` e `:engine-compose`, `mainClass = "com.neoutils.engine.games.demos.MainKt"`).
+- [ ] 8.3 Criar `Main.kt` em `com.neoutils.engine.games.demos` com `application { Window { ... GameSurface(scene = switcher) ... } }`. Teclas `1/2/3` trocam a demo ativa, `F1` FPS, `F2` overlay de colliders.
+- [ ] 8.4 Criar `DemoSwitcherScene.kt`: hospeda os três demos como filhos, mas só um está vivo por vez (attach/detach via `addChild`/`removeChild`). Mostra um `Text` no topo com o nome da demo ativa e as teclas disponíveis.
+- [ ] 8.5 `TransformOrbitDemo`: pai `Node2D` no centro com `rotation` animada em `onUpdate`; dois `Shape` filhos com `position` local `(R, 0)` e `(-R, 0)`. Como `worldTransform` compõe rotação do pai sobre a posição local, os filhos **orbitam** — valida A1 (rotação composta sobre posição). Adiciona um `Shape` de referência no centro para destacar o eixo.
+- [ ] 8.6 `ScaleHierarchyDemo`: pai com `scale` oscilando entre 0.5 e 2.0 em `onUpdate`; `Shape` filho fixo em tamanho local. Visual: o filho cresce e encolhe — valida A1 (scale composto via `Shape.onRender` lendo `worldTransform().scale`).
+- [ ] 8.7 `SpawnerDemo`: cada clique do mouse adiciona um `BoxCollider` com `Shape` filho colorido em posição aleatória, criado **dentro de `onUpdate`** do spawner; outro nó "trap" central com `BoxCollider` chama `parent.removeChild(other.parent)` em `onCollide` para remover spawns que tocam — valida A4 (mutação durante `onUpdate` e durante `onCollide` sem CME e visível na fase seguinte). F2 evidencia o overlay (valida A2).
+- [ ] 8.8 Atualizar `CLAUDE.md` adicionando bloco `Para rodar Demos:` com `./gradlew :games:demos:run` e o cheat sheet das teclas.
+- [ ] 8.9 Rodar `./gradlew :games:demos:run` manualmente e conferir as três demos.

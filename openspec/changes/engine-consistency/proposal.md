@@ -32,6 +32,10 @@ A change limpa esses quatro pontos como uma unidade ("engine-consistency") antes
 - As filas são drenadas em pontos determinísticos do tick (ordem travada em `design.md`).
 - Chamadas fora de traversal continuam aplicando imediatamente, como hoje.
 
+### Módulo `:games:demos` (validação visual)
+- Novo módulo Compose Desktop espelhando o padrão de `:games:pong`, com três cenas (`TransformOrbitDemo`, `ScaleHierarchyDemo`, `SpawnerDemo`) escolhidas em tempo de execução via teclas `1`/`2`/`3`.
+- As demos exercitam respectivamente: composição de rotação sobre posição (A1), composição de scale via `Shape.onRender` (A1), e mutação durante `onUpdate`/`onCollide` com overlay F2 ativo (A4 + A2).
+
 ### Smoke tests (red→green) que nascem com a change
 - `SceneMutationDuringTraversalTest` (A4): cobre `addChild`/`removeChild` dentro de `onUpdate` e dentro de `onCollide`, com assert de não-CME e de aplicação na próxima fase.
 - `WorldTransformTest` (A1): cobre `worldTransform()` para combinações de translação, scale e rotação aninhadas.
