@@ -71,10 +71,10 @@
 
 ## 10. Project conventions and docs
 
-- [ ] 10.1 Create `CLAUDE.md` at repo root with sections: Purpose, Architectural Invariants (the five listed), Module Structure & How to Run, Coding Conventions, OpenSpec Workflow, Roadmap.
-- [ ] 10.2 Roadmap section lists `engine-foundation` (active), `event-driven-games` (planned), and editor change (placeholder).
-- [ ] 10.3 Cross-link `CLAUDE.md` from `README.md`.
-- [ ] 10.4 Verify all five architectural invariants from `design.md` Decision 1–5 are reflected in `CLAUDE.md`.
+- [x] 10.1 Create `CLAUDE.md` at repo root with sections: Purpose, Architectural Invariants (the five listed), Module Structure & How to Run, Coding Conventions, OpenSpec Workflow, Roadmap.
+- [x] 10.2 Roadmap section lists `engine-foundation` (active), `event-driven-games` (planned), and editor change (placeholder).
+- [x] 10.3 Cross-link `CLAUDE.md` from `README.md`.
+- [x] 10.4 Verify all five architectural invariants from `design.md` Decision 1–5 are reflected in `CLAUDE.md`.
 
 ## 11. Acceptance and verification
 
