@@ -49,7 +49,7 @@
 
 - [x] 7.1 Create `TicTacToeScene : Scene` instantiating the `Board` and a `Text` node for status
 - [x] 7.2 Implement `TicTacToeScene.onResize(width, height)`: reserve space for status text (e.g., 60px), set `Board.origin` and `Board.cellSize` so the board is centered and fits within the smaller axis
-- [ ] 7.3 In `TicTacToeScene.onUpdate(dt)` (or via a small `StatusText` node): update displayed text based on `board.winner`/`board.isDraw`/`board.currentPlayer`
+- [x] 7.3 In `TicTacToeScene.onUpdate(dt)` (or via a small `StatusText` node): update displayed text based on `board.winner`/`board.isDraw`/`board.currentPlayer`
 - [ ] 7.4 Default window size 800x600 in `Main.kt`, black background like Pong
 
 ## 8. Documentation and roadmap

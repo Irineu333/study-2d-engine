@@ -29,6 +29,10 @@ class TicTacToeScene(
         layout(width, height)
     }
 
+    override fun onUpdate(dt: Float) {
+        status.text = statusFor(board)
+    }
+
     private fun layout(width: Float, height: Float) {
         val availableHeight = (height - STATUS_RESERVED).coerceAtLeast(0f)
         val side = minOf(width, availableHeight).coerceAtLeast(0f)
