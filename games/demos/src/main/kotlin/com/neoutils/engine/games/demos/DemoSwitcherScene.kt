@@ -1,5 +1,6 @@
 package com.neoutils.engine.games.demos
 
+import com.neoutils.engine.input.Key
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
@@ -37,6 +38,15 @@ class DemoSwitcherScene : Scene() {
         active = slot
         activeNode = factories.getValue(slot)()
         addChild(activeNode)
+    }
+
+    override fun onUpdate(dt: Float) {
+        val input = this.input ?: return
+        when {
+            input.wasKeyPressed(Key.DIGIT_1) -> select(Slot.Orbit)
+            input.wasKeyPressed(Key.DIGIT_2) -> select(Slot.Scale)
+            input.wasKeyPressed(Key.DIGIT_3) -> select(Slot.Spawner)
+        }
     }
 }
 

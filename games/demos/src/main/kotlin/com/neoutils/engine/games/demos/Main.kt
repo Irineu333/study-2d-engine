@@ -29,9 +29,6 @@ fun main() = application {
             when (event.key) {
                 ComposeKey.F1 -> { Debug.showFps = !Debug.showFps; true }
                 ComposeKey.F2 -> { Debug.colliderVisualization = !Debug.colliderVisualization; true }
-                ComposeKey.One -> { scene.select(DemoSwitcherScene.Slot.Orbit); true }
-                ComposeKey.Two -> { scene.select(DemoSwitcherScene.Slot.Scale); true }
-                ComposeKey.Three -> { scene.select(DemoSwitcherScene.Slot.Spawner); true }
                 else -> false
             }
         },
