@@ -1,5 +1,6 @@
 package com.neoutils.engine.games.tictactoe
 
+import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node2D
@@ -65,6 +66,15 @@ class Board : Node2D() {
     override fun onUpdate(dt: Float) {
         val input = (rootScene() as? Scene)?.input ?: return
         hoveredCell = cellAt(input.pointerPosition)
+
+        if (!input.wasMouseClicked(MouseButton.Left)) return
+        if (gameOver) {
+            reset()
+            return
+        }
+        val target = hoveredCell ?: return
+        if (cells[target] != null) return
+        placeMove(target)
     }
 
     internal fun placeMove(index: Int) {

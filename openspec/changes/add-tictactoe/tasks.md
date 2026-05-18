@@ -34,9 +34,9 @@
 ## 5. Board lifecycle and input
 
 - [x] 5.1 In `Board.onUpdate(dt)`: compute `hoveredCell` from `scene.input!!.pointerPosition`
-- [ ] 5.2 In `Board.onUpdate(dt)`: handle `wasMouseClicked(MouseButton.Left)` — branch on `gameOver`: reset, else play move if hovered cell is empty
-- [ ] 5.3 After a move, run `checkWinner()`; if winner found, store `winningLine` and `winner`; else if all cells filled, set `isDraw = true`; else advance turn
-- [ ] 5.4 Ensure a single click that resets does NOT also play a move (consume the click for reset only)
+- [x] 5.2 In `Board.onUpdate(dt)`: handle `wasMouseClicked(MouseButton.Left)` — branch on `gameOver`: reset, else play move if hovered cell is empty
+- [x] 5.3 After a move, run `checkWinner()`; if winner found, store `winningLine` and `winner`; else if all cells filled, set `isDraw = true`; else advance turn
+- [x] 5.4 Ensure a single click that resets does NOT also play a move (consume the click for reset only)
 
 ## 6. Board rendering
 
