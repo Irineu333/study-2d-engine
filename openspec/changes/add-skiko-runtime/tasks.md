@@ -13,11 +13,11 @@
 
 ## 3. Compose-runtime: ComposeHost and overlay delegation
 
-- [ ] 3.1 Add `Compose.Key.F1` / `Compose.Key.F2` entries to `ComposeInput.toEngineKey()` mapping to `Key.F1` / `Key.F2`
-- [ ] 3.2 Edit `GameSurface.kt`: replace the inline collider loop and inline FPS `drawText` block with a single call to `renderDebugOverlay(renderer, scene)`. Verify no `DEBUG_COLLIDER_COLOR` or `collectColliders` remains in this file
-- [ ] 3.3 Inside `GameSurface`, after `loop.tick(...)` and before `renderDebugOverlay`, read `input.wasKeyPressed(toggleFpsKey)` / `input.wasKeyPressed(toggleCollidersKey)` from currently-active `GameConfig` (passed via parameter) and toggle `Debug.showFps` / `Debug.colliderVisualization`. Default the parameter to `GameConfig()` so existing callers keep working
-- [ ] 3.4 Add `ComposeHost.kt` in `:engine-compose`: implements `GameHost`. `run(scene, config)` calls `application { Window(title = config.title, state = rememberWindowState(width = config.width.dp, height = config.height.dp), onCloseRequest = ::exitApplication) { Box(Modifier.fillMaxSize().background(Color.Black)) { GameSurface(scene, config = config, modifier = Modifier.fillMaxSize()) } } }`
-- [ ] 3.5 Verify `application { }` blocking semantics return from `ComposeHost.run(...)` after window close (Compose Multiplatform's `application` is already blocking)
+- [x] 3.1 Add `Compose.Key.F1` / `Compose.Key.F2` entries to `ComposeInput.toEngineKey()` mapping to `Key.F1` / `Key.F2`
+- [x] 3.2 Edit `GameSurface.kt`: replace the inline collider loop and inline FPS `drawText` block with a single call to `renderDebugOverlay(renderer, scene)`. Verify no `DEBUG_COLLIDER_COLOR` or `collectColliders` remains in this file
+- [x] 3.3 Inside `GameSurface`, after `loop.tick(...)` and before `renderDebugOverlay`, read `input.wasKeyPressed(toggleFpsKey)` / `input.wasKeyPressed(toggleCollidersKey)` from currently-active `GameConfig` (passed via parameter) and toggle `Debug.showFps` / `Debug.colliderVisualization`. Default the parameter to `GameConfig()` so existing callers keep working
+- [x] 3.4 Add `ComposeHost.kt` in `:engine-compose`: implements `GameHost`. `run(scene, config)` calls `application { Window(title = config.title, state = rememberWindowState(width = config.width.dp, height = config.height.dp), onCloseRequest = ::exitApplication) { Box(Modifier.fillMaxSize().background(Color.Black)) { GameSurface(scene, config = config, modifier = Modifier.fillMaxSize()) } } }`
+- [x] 3.5 Verify `application { }` blocking semantics return from `ComposeHost.run(...)` after window close (Compose Multiplatform's `application` is already blocking)
 
 ## 4. Skiko-runtime: new module
 

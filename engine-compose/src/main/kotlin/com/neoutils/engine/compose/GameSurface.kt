@@ -23,21 +23,19 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import com.neoutils.engine.dx.Debug
 import com.neoutils.engine.dx.FpsCounter
+import com.neoutils.engine.dx.renderDebugOverlay
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.loop.GameLoop
-import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
-import com.neoutils.engine.physics.collectColliders
-import com.neoutils.engine.render.Color
+import com.neoutils.engine.runtime.GameConfig
 import com.neoutils.engine.scene.Scene
-
-private val DEBUG_COLLIDER_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GameSurface(
     scene: Scene,
     modifier: Modifier = Modifier,
+    config: GameConfig = GameConfig(),
 ) {
     val input = remember { ComposeInput() }
     val physics = remember { PhysicsSystem() }
@@ -99,15 +97,11 @@ fun GameSurface(
         renderer.bind(this)
         try {
             loop.tick(pendingDt)
-            if (Debug.colliderVisualization) {
-                for (collider in collectColliders(scene)) {
-                    renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)
-                }
+            if (input.wasKeyPressed(config.toggleFpsKey)) Debug.showFps = !Debug.showFps
+            if (input.wasKeyPressed(config.toggleCollidersKey)) {
+                Debug.colliderVisualization = !Debug.colliderVisualization
             }
-            if (Debug.showFps) {
-                val text = "fps ${Debug.currentFps.toInt()}"
-                renderer.drawText(text, Vec2(8f, 24f), size = 18f, color = Color.WHITE)
-            }
+            renderDebugOverlay(renderer, scene)
         } finally {
             renderer.unbind()
         }
