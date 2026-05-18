@@ -89,6 +89,16 @@ class NodeTest {
     }
 
     @Test
+    fun `worldPosition sums ancestor transforms`() {
+        val scene = Scene()
+        val parent = Node2D().apply { transform = transform.copy(position = Vec2(100f, 50f)) }
+        val child = Node2D().apply { transform = transform.copy(position = Vec2(5f, 7f)) }
+        scene.addChild(parent)
+        parent.addChild(child)
+        assertEquals(Vec2(105f, 57f), child.worldPosition())
+    }
+
+    @Test
     fun `transform isolation between siblings`() {
         val scene = Scene()
         val left = Node2D()

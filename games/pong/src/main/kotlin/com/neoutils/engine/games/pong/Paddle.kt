@@ -53,7 +53,7 @@ class Paddle(
     }
 
     override fun onRender(renderer: Renderer) {
-        renderer.drawRect(Rect(transform.position, size), Color.WHITE, filled = true)
+        renderer.drawRect(Rect(worldPosition(), size), Color.WHITE, filled = true)
     }
 
     companion object {

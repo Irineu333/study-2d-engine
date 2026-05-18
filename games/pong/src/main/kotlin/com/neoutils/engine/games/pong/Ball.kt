@@ -41,7 +41,7 @@ class Ball(
     }
 
     override fun onRender(renderer: Renderer) {
-        val center = transform.position + Vec2(size / 2f, size / 2f)
+        val center = worldPosition() + Vec2(size / 2f, size / 2f)
         renderer.drawCircle(center, radius = size / 2f, color = Color.WHITE, filled = true)
     }
 

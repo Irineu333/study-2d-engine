@@ -17,6 +17,6 @@ class Score(
     }
 
     override fun onRender(renderer: Renderer) {
-        renderer.drawText(value.toString(), transform.position, textSize, color)
+        renderer.drawText(value.toString(), worldPosition(), textSize, color)
     }
 }

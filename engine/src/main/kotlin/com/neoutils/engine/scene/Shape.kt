@@ -15,7 +15,7 @@ class Shape(
     enum class Kind { Rect, Circle }
 
     override fun onRender(renderer: Renderer) {
-        val pos = transform.position
+        val pos = worldPosition()
         val w = size.x * transform.scale.x
         val h = size.y * transform.scale.y
         when (kind) {
