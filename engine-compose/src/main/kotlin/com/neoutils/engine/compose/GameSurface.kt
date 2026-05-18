@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
@@ -39,11 +40,10 @@ fun GameSurface(
     val focusRequester = remember { FocusRequester() }
 
     var frameNanos by remember { mutableStateOf(0L) }
-    var lastNanos by remember { mutableStateOf(0L) }
     var pendingDt by remember { mutableStateOf(0L) }
 
     LaunchedEffect(scene) {
-        lastNanos = 0L
+        var lastNanos = 0L
         while (true) {
             withFrameNanos { now ->
                 pendingDt = if (lastNanos == 0L) 16_666_666L else now - lastNanos
@@ -65,6 +65,7 @@ fun GameSurface(
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { input.onKeyEvent(it) }
+            .onSizeChanged { scene.resize(it.width.toFloat(), it.height.toFloat()) }
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
@@ -75,8 +76,10 @@ fun GameSurface(
                 }
             }
     ) {
-        @Suppress("UNUSED_EXPRESSION") frameNanos // subscribe to recomposition
-        scene.resize(size.width, size.height)
+        // `frameNanos` is monotonic, so reading it here subscribes the draw
+        // block to every withFrameNanos pulse without the side-effect smell of
+        // resizing the scene from inside DrawScope.
+        @Suppress("UNUSED_VARIABLE") val recomposeTrigger = frameNanos
         renderer.bind(this)
         try {
             loop.tick(pendingDt)
