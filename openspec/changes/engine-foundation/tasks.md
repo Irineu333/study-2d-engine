@@ -39,9 +39,9 @@
 
 ## 6. Game loop
 
-- [ ] 6.1 Implement `GameLoop(scene, renderer, input, physics)` with `tick(dtNanos: Long)`. Compute `dt: Float` in seconds; call order: `scene.update(dt)` → `physics.step(scene)` → `scene.render(renderer)`.
-- [ ] 6.2 Document/clamp first-frame `dt` to a reasonable maximum (~0.05s) to avoid initial spikes.
-- [ ] 6.3 Unit test: order of operations within a tick; nanos-to-seconds conversion.
+- [x] 6.1 Implement `GameLoop(scene, renderer, input, physics)` with `tick(dtNanos: Long)`. Compute `dt: Float` in seconds; call order: `scene.update(dt)` → `physics.step(scene)` → `scene.render(renderer)`.
+- [x] 6.2 Document/clamp first-frame `dt` to a reasonable maximum (~0.05s) to avoid initial spikes.
+- [x] 6.3 Unit test: order of operations within a tick; nanos-to-seconds conversion.
 
 ## 7. Compose runtime
 
