@@ -6,7 +6,6 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Scene
 
 class Board : Node2D() {
 
@@ -66,7 +65,7 @@ class Board : Node2D() {
     }
 
     override fun onUpdate(dt: Float) {
-        val input = (rootScene() as? Scene)?.input ?: return
+        val input = rootScene()?.input ?: return
         hoveredCell = cellAt(input.pointerPosition)
 
         if (!input.wasMouseClicked(MouseButton.Left)) return
