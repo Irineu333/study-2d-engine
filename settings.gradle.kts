@@ -35,3 +35,4 @@ plugins {
 include(":engine")
 include(":engine-compose")
 include(":games:pong")
+include(":games:tictactoe")
