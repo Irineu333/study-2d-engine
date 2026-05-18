@@ -16,8 +16,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import com.neoutils.engine.dx.Debug
+import com.neoutils.engine.dx.FpsCounter
 import com.neoutils.engine.loop.GameLoop
+import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
+import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Scene
 
 @Composable
@@ -29,6 +33,7 @@ fun GameSurface(
     val physics = remember { PhysicsSystem() }
     val renderer = remember { ComposeRenderer() }
     val loop = remember(scene) { GameLoop(scene, renderer, input, physics) }
+    val fps = remember { FpsCounter() }
     val focusRequester = remember { FocusRequester() }
 
     var frameNanos by remember { mutableStateOf(0L) }
@@ -42,6 +47,7 @@ fun GameSurface(
                 pendingDt = if (lastNanos == 0L) 16_666_666L else now - lastNanos
                 lastNanos = now
                 input.beginTick()
+                Debug.currentFps = fps.record(now)
                 frameNanos = now
             }
         }
@@ -71,6 +77,10 @@ fun GameSurface(
         renderer.bind(this)
         try {
             loop.tick(pendingDt)
+            if (Debug.showFps) {
+                val text = "fps ${Debug.currentFps.toInt()}"
+                renderer.drawText(text, Vec2(8f, 8f), size = 14f, color = Color.WHITE)
+            }
         } finally {
             renderer.unbind()
         }

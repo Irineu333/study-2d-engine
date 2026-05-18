@@ -52,11 +52,11 @@
 
 ## 8. DX tooling
 
-- [ ] 8.1 Implement a `Debug` configuration object in `:engine` with mutable flags `showFps`, `colliderVisualization`, plus log-level configuration.
-- [ ] 8.2 Implement `Log` facility in `:engine` supporting `d`/`i`/`w`/`e` with `tag` parameter, global minimum level, and per-tag overrides. Emit timestamped output.
-- [ ] 8.3 Implement FPS overlay: compute moving average over ≥1s; expose data to runtime; in `:engine-compose`, draw the value as a `Text` overlay when `Debug.showFps` is true.
-- [ ] 8.4 Implement collider visualization: in `Scene.render`, if `Debug.colliderVisualization` is true, draw each `Collider.bounds()` as an outlined `Rect` after normal rendering.
-- [ ] 8.5 Unit test for `Log` filtering (global and per-tag).
+- [x] 8.1 Implement a `Debug` configuration object in `:engine` with mutable flags `showFps`, `colliderVisualization`, plus log-level configuration.
+- [x] 8.2 Implement `Log` facility in `:engine` supporting `d`/`i`/`w`/`e` with `tag` parameter, global minimum level, and per-tag overrides. Emit timestamped output.
+- [x] 8.3 Implement FPS overlay: compute moving average over ≥1s; expose data to runtime; in `:engine-compose`, draw the value as a `Text` overlay when `Debug.showFps` is true.
+- [x] 8.4 Implement collider visualization: in `Scene.render`, if `Debug.colliderVisualization` is true, draw each `Collider.bounds()` as an outlined `Rect` after normal rendering.
+- [x] 8.5 Unit test for `Log` filtering (global and per-tag).
 
 ## 9. Pong sample game
 
