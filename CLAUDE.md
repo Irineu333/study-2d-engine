@@ -80,7 +80,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | Change                | Status   | Resumo                                                                 |
 | --------------------- | -------- | ---------------------------------------------------------------------- |
 | `engine-foundation`   | Archived | Scene graph, math, SPIs, física O(N²), game loop, Compose runtime, Pong, DX e CLAUDE.md. |
-| `add-tictactoe`       | Active   | Mouse buttons na SPI de `Input`, `drawLine` no `Renderer`, `Rect.contains`, e jogo da Velha humano vs humano em `:games:tictactoe`. |
+| `add-tictactoe`       | Archived | Mouse buttons na SPI de `Input`, `drawLine` e `measureText` no `Renderer`, `Rect.contains`, e jogo da Velha humano vs humano em `:games:tictactoe`. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.
