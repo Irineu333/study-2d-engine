@@ -3,8 +3,12 @@ package com.neoutils.engine.games.tictactoe
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.scene.Scene
 
 class Board : Node2D() {
+
+    var hoveredCell: Int? = null
+        private set
 
     val cells: Array<Mark?> = arrayOfNulls(9)
 
@@ -56,6 +60,11 @@ class Board : Node2D() {
         isDraw = false
         winningLine = null
         currentPlayer = Mark.X
+    }
+
+    override fun onUpdate(dt: Float) {
+        val input = (rootScene() as? Scene)?.input ?: return
+        hoveredCell = cellAt(input.pointerPosition)
     }
 
     internal fun placeMove(index: Int) {
