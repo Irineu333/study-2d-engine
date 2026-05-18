@@ -15,7 +15,6 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.neoutils.engine.compose.GameSurface
 import com.neoutils.engine.dx.Debug
-import com.neoutils.engine.scene.Scene
 
 fun main() = application {
     val state = rememberWindowState(width = 800.dp, height = 600.dp)
@@ -39,7 +38,7 @@ fun main() = application {
             } else false
         },
     ) {
-        val scene = remember { Scene() }
+        val scene = remember { TicTacToeScene() }
         Box(
             modifier = Modifier
                 .fillMaxSize()
