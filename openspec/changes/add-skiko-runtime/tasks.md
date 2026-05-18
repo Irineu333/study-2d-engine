@@ -1,9 +1,9 @@
 ## 1. Engine-core: GameHost, GameConfig and toggle keys
 
-- [ ] 1.1 Add `Key.F1` and `Key.F2` to `com.neoutils.engine.input.Key`
-- [ ] 1.2 Create package `com.neoutils.engine.runtime` and add `GameHost.kt` declaring `interface GameHost { fun run(scene: Scene, config: GameConfig = GameConfig()) }`
-- [ ] 1.3 Add `GameConfig.kt` in the same package with `title: String = "Game"`, `width: Int = 800`, `height: Int = 600`, `toggleFpsKey: Key = Key.F1`, `toggleCollidersKey: Key = Key.F2`; data class
-- [ ] 1.4 Verify no import in `runtime/*.kt` begins with `org.jetbrains.compose.*`, `androidx.compose.*`, `org.jetbrains.skia.*`, `org.jetbrains.skiko.*`, or `javax.swing.*`
+- [x] 1.1 Add `Key.F1` and `Key.F2` to `com.neoutils.engine.input.Key`
+- [x] 1.2 Create package `com.neoutils.engine.runtime` and add `GameHost.kt` declaring `interface GameHost { fun run(scene: Scene, config: GameConfig = GameConfig()) }`
+- [x] 1.3 Add `GameConfig.kt` in the same package with `title: String = "Game"`, `width: Int = 800`, `height: Int = 600`, `toggleFpsKey: Key = Key.F1`, `toggleCollidersKey: Key = Key.F2`; data class
+- [x] 1.4 Verify no import in `runtime/*.kt` begins with `org.jetbrains.compose.*`, `androidx.compose.*`, `org.jetbrains.skia.*`, `org.jetbrains.skiko.*`, or `javax.swing.*`
 
 ## 2. DX: unified debug overlay utility
 
