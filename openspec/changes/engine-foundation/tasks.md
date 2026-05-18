@@ -32,10 +32,10 @@
 
 ## 5. Collision and physics
 
-- [ ] 5.1 Implement abstract `Collider : Node2D` with `bounds(): Rect` (world space) and `open fun onCollide(other: Collider)`.
-- [ ] 5.2 Implement `BoxCollider(size: Vec2)` deriving bounds from its node's transform position and size.
-- [ ] 5.3 Implement `PhysicsSystem.step(scene)`: collect all live `Collider` nodes, test each pair (O(N²)) via `Rect.intersects`, invoke `onCollide` on both partners. Ensure each pair is tested exactly once per tick.
-- [ ] 5.4 Unit tests: bounds derived correctly from transform; non-overlapping pair never triggers `onCollide`; each pair triggered at most once per `step`.
+- [x] 5.1 Implement abstract `Collider : Node2D` with `bounds(): Rect` (world space) and `open fun onCollide(other: Collider)`.
+- [x] 5.2 Implement `BoxCollider(size: Vec2)` deriving bounds from its node's transform position and size.
+- [x] 5.3 Implement `PhysicsSystem.step(scene)`: collect all live `Collider` nodes, test each pair (O(N²)) via `Rect.intersects`, invoke `onCollide` on both partners. Ensure each pair is tested exactly once per tick.
+- [x] 5.4 Unit tests: bounds derived correctly from transform; non-overlapping pair never triggers `onCollide`; each pair triggered at most once per `step`.
 
 ## 6. Game loop
 
