@@ -64,7 +64,7 @@
 - [x] 9.1 Pong on Skiko: launch via `./gradlew :games:pong:run`. Verify (a) W/S move left paddle, (b) AI plays the right paddle, (c) ball collides with paddles and walls, (d) F1 toggles FPS overlay, (e) F2 toggles collider outlines, (f) resizing the window keeps the game responsive
 - [x] 9.2 Demos on Skiko: launch via `./gradlew :games:demos:run`. Verify (a) keys 1/2/3 switch demos, (b) Spawner demo: clicking adds balls, trap removes them, (c) F2 shows colliders rendered by host (not by scene), (d) F1 shows FPS counter
 - [x] 9.3 Tic Tac Toe on Compose: launch via `./gradlew :games:tictactoe:run`. Verify (a) left click on empty cells alternates X / O, (b) endgame announcement appears, (c) next click after end-of-game restarts (only restarts, doesn't play), (d) F1 toggles FPS overlay, (e) F2 toggles collider overlay (still empty since the game has no colliders)
-- [ ] 9.4 No-stutter sanity check: run Pong for 60 seconds, watch FPS overlay stay above 50
+- [x] 9.4 No-stutter sanity check: run Pong for 60 seconds, watch FPS overlay stay above 50
 
 ## 10. Final cleanup
 
@@ -82,4 +82,4 @@ Skiko-on-Pong measured 53-55 fps while Compose-on-Pong stayed at 59-60 (still ab
 
 - [x] 12.1 Reuse a single `org.jetbrains.skia.Paint` per renderer instead of allocating one in every `drawRect`/`drawCircle`/`drawLine`/`drawText`. `Paint` is mutable; configure `color`/`mode`/`strokeWidth`/`isAntiAlias` before each call. Removes 30-40 native-handle allocations per frame on the Pong scene.
 - [x] 12.2 Cache `TextLine` instances per `(text, size)` pair in `SkikoRenderer`. `TextLine.make` runs the Skia shaper each call and creates a native-handle `Managed`; both the score (changes only on goal) and the FPS overlay (changes once per second at most) are stable enough that a `HashMap<TextLineKey, TextLine>` lookup avoids redundant shaping. Cache is bounded by gameplay (Pong scores rarely exceed double digits) so no eviction is needed for this change.
-- [ ] 12.3 Re-run `:games:pong:run` with F1 enabled and confirm the overlay reads ≥58 fps (i.e. comparable to Compose). If it does not, document the remaining gap and stop here — further chasing requires profiling, which is out of scope for this change.
+- [x] 12.3 Re-run `:games:pong:run` with F1 enabled and confirm the overlay reads ≥58 fps (i.e. comparable to Compose). If it does not, document the remaining gap and stop here — further chasing requires profiling, which is out of scope for this change.
