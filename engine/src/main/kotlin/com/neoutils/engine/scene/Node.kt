@@ -122,6 +122,12 @@ abstract class Node {
     /** Returns the owning `Scene` in O(1) when live, or `null` otherwise. */
     fun rootScene(): Scene? = scene
 
+    /**
+     * Single-level lookup of a direct child by `name`. Returns `null` when
+     * absent. Used by `NodeRef` to walk down a relative path.
+     */
+    fun findChild(name: String): Node? = _children.firstOrNull { it.name == name }
+
     open fun onEnter() {}
     open fun onUpdate(dt: Float) {}
     open fun onRender(renderer: Renderer) {}
