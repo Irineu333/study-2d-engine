@@ -8,6 +8,9 @@ import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Shape
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -25,115 +28,143 @@ import kotlin.random.Random
  * runs smoothly. F2 shows that the collider overlay is now drawn by
  * `GameSurface` (A2), not by `Scene` itself.
  */
+@Serializable
 class SpawnerDemo : Node2D() {
-
-    private val rng = Random(System.nanoTime())
-
-    private val trap = Trap()
-
-    private val spawner = object : Node2D() {
-        private var leftWasDown: Boolean = false
-        private var autoCooldown: Float = 0f
-        override fun onUpdate(dt: Float) {
-            val scene = rootScene() ?: return
-            val input = scene.input ?: return
-            val leftDown = input.isMouseDown(MouseButton.Left)
-            if (leftDown && !leftWasDown) {
-                spawn(at = input.pointerPosition)
-            }
-            leftWasDown = leftDown
-
-            autoCooldown -= dt
-            if (autoCooldown <= 0f) {
-                spawn(at = Vec2(rng.nextFloat() * scene.width, rng.nextFloat() * scene.height))
-                autoCooldown = 0.75f
-            }
-        }
-
-        private fun spawn(at: Vec2) {
-            val ball = Ball(velocity = randomVelocity()).apply {
-                transform = Transform(position = at)
-            }
-            this@SpawnerDemo.addChild(ball)
-        }
-
-        private fun randomVelocity(): Vec2 {
-            val angle = rng.nextFloat() * 2f * kotlin.math.PI.toFloat()
-            val speed = 60f + rng.nextFloat() * 80f
-            return Vec2(cos(angle) * speed, sin(angle) * speed)
-        }
-    }.apply { name = "Spawner" }
 
     init {
         name = "SpawnerDemo"
-        addChild(trap)
-        addChild(spawner)
+        if (children.isEmpty()) {
+            addChild(Trap().apply { name = "Trap" })
+            addChild(Spawner().apply { name = "Spawner" })
+        }
     }
 
     override fun onEnter() {
         val scene = rootScene() ?: return
+        val trap = findChild("Trap") as? Trap ?: return
         trap.transform = Transform(
             position = Vec2(scene.width / 2f - Trap.SIZE / 2f, scene.height / 2f - Trap.SIZE / 2f),
         )
     }
+}
 
-    private class Trap : BoxCollider(Vec2(SIZE, SIZE)) {
-        private val art = Shape(
-            kind = Shape.Kind.Rect,
-            size = Vec2(SIZE, SIZE),
-            color = Color(1f, 0.2f, 0.2f, 0.6f),
-            filled = false,
-        )
+@Serializable
+class Spawner : Node2D() {
 
-        init {
-            name = "Trap"
-            addChild(art)
+    @Inspect
+    var autoSpawnInterval: Float = 0.75f
+
+    @Transient
+    private val rng = Random(System.nanoTime())
+
+    @Transient
+    private var leftWasDown: Boolean = false
+
+    @Transient
+    private var autoCooldown: Float = 0f
+
+    override fun onUpdate(dt: Float) {
+        val scene = rootScene() ?: return
+        val input = scene.input ?: return
+        val leftDown = input.isMouseDown(MouseButton.Left)
+        if (leftDown && !leftWasDown) {
+            spawn(at = input.pointerPosition)
         }
+        leftWasDown = leftDown
 
-        override fun onCollide(other: Collider) {
-            val victim = other as? Ball ?: return
-            // Mutation during physics traversal — gets enqueued and drained
-            // by GameLoop before the next render. Pre-change this would have
-            // thrown ConcurrentModificationException.
-            val parent = victim.parent ?: return
-            parent.removeChild(victim)
-        }
-
-        companion object {
-            const val SIZE: Float = 80f
+        autoCooldown -= dt
+        if (autoCooldown <= 0f) {
+            spawn(at = Vec2(rng.nextFloat() * scene.width, rng.nextFloat() * scene.height))
+            autoCooldown = autoSpawnInterval
         }
     }
 
-    private class Ball(private var velocity: Vec2) : BoxCollider(Vec2(SIZE, SIZE)) {
-        private val art = Shape(
-            kind = Shape.Kind.Circle,
-            size = Vec2(SIZE, SIZE),
-            color = Color(0.3f, 0.85f, 0.95f),
-        )
-
-        init {
-            name = "Ball"
-            addChild(art)
+    private fun spawn(at: Vec2) {
+        val parent = parent ?: return
+        val ball = SpawnerBall().apply {
+            transform = Transform(position = at)
+            setVelocity(randomVelocity())
         }
+        parent.addChild(ball)
+    }
 
-        override fun onUpdate(dt: Float) {
-            val scene = rootScene() ?: return
-            val maxX = scene.width
-            val maxY = scene.height
-            var vx = velocity.x
-            var vy = velocity.y
-            var nx = transform.position.x + vx * dt
-            var ny = transform.position.y + vy * dt
-            if (nx < 0f) { nx = 0f; vx = -vx }
-            if (nx + SIZE > maxX) { nx = maxX - SIZE; vx = -vx }
-            if (ny < 0f) { ny = 0f; vy = -vy }
-            if (ny + SIZE > maxY) { ny = maxY - SIZE; vy = -vy }
-            velocity = Vec2(vx, vy)
-            transform = transform.copy(position = Vec2(nx, ny))
-        }
+    private fun randomVelocity(): Vec2 {
+        val angle = rng.nextFloat() * 2f * kotlin.math.PI.toFloat()
+        val speed = 60f + rng.nextFloat() * 80f
+        return Vec2(cos(angle) * speed, sin(angle) * speed)
+    }
+}
 
-        companion object {
-            const val SIZE: Float = 18f
+@Serializable
+class Trap : BoxCollider() {
+
+    init {
+        size = Vec2(SIZE, SIZE)
+        if (children.isEmpty()) {
+            addChild(
+                Shape().apply {
+                    name = "art"
+                    kind = Shape.Kind.Rect
+                    size = Vec2(SIZE, SIZE)
+                    color = Color(1f, 0.2f, 0.2f, 0.6f)
+                    filled = false
+                }
+            )
         }
+    }
+
+    override fun onCollide(other: Collider) {
+        val victim = other as? SpawnerBall ?: return
+        val parent = victim.parent ?: return
+        parent.removeChild(victim)
+    }
+
+    companion object {
+        const val SIZE: Float = 80f
+    }
+}
+
+@Serializable
+class SpawnerBall : BoxCollider() {
+
+    @Transient
+    private var velocity: Vec2 = Vec2.ZERO
+
+    init {
+        size = Vec2(SIZE, SIZE)
+        if (children.isEmpty()) {
+            addChild(
+                Shape().apply {
+                    name = "art"
+                    kind = Shape.Kind.Circle
+                    size = Vec2(SIZE, SIZE)
+                    color = Color(0.3f, 0.85f, 0.95f)
+                }
+            )
+        }
+    }
+
+    fun setVelocity(v: Vec2) {
+        velocity = v
+    }
+
+    override fun onUpdate(dt: Float) {
+        val scene = rootScene() ?: return
+        val maxX = scene.width
+        val maxY = scene.height
+        var vx = velocity.x
+        var vy = velocity.y
+        var nx = transform.position.x + vx * dt
+        var ny = transform.position.y + vy * dt
+        if (nx < 0f) { nx = 0f; vx = -vx }
+        if (nx + SIZE > maxX) { nx = maxX - SIZE; vx = -vx }
+        if (ny < 0f) { ny = 0f; vy = -vy }
+        if (ny + SIZE > maxY) { ny = maxY - SIZE; vy = -vy }
+        velocity = Vec2(vx, vy)
+        transform = transform.copy(position = Vec2(nx, ny))
+    }
+
+    companion object {
+        const val SIZE: Float = 18f
     }
 }

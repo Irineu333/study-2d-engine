@@ -81,10 +81,10 @@
 
 ## 11. Refactor :games:demos (SpawnerDemo)
 
-- [ ] 11.1 Promover `Spawner` (object anônimo) a classe top-level `Spawner : Node2D` no mesmo arquivo ou em arquivo separado. Construtor no-args; propriedades como `autoSpawnInterval`, `spawnArea` viram `@Inspect var`
-- [ ] 11.2 `Trap` (private class) já é classe nomeada — adicionar `@Serializable` + `@Inspect` para `size` etc.
-- [ ] 11.3 `Ball` interno (private class) idem. Propriedades `velocity` ficam `@Transient`
-- [ ] 11.4 Rodar `./gradlew :games:demos:run` e verificar comportamento idêntico (transform orbit, scale hierarchy, spawner)
+- [x] 11.1 Promover `Spawner` (object anônimo) a classe top-level `Spawner : Node2D` no mesmo arquivo ou em arquivo separado. Construtor no-args; propriedades como `autoSpawnInterval`, `spawnArea` viram `@Inspect var`
+- [x] 11.2 `Trap` (private class) já é classe nomeada — adicionar `@Serializable` + `@Inspect` para `size` etc.
+- [x] 11.3 `Ball` interno (private class) idem. Propriedades `velocity` ficam `@Transient`
+- [x] 11.4 Rodar `./gradlew :games:demos:run` e verificar comportamento idêntico (transform orbit, scale hierarchy, spawner)
 
 ## 12. Ajustes mínimos em :games:tictactoe
 
