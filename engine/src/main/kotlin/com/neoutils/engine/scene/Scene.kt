@@ -2,15 +2,22 @@ package com.neoutils.engine.scene
 
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.render.Renderer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
+@Serializable
 open class Scene : Node() {
 
     /** Set by the runtime (`GameLoop`) at the start of each tick. */
+    @Transient
     @Volatile var input: Input? = null
         internal set
 
+    @Transient
     var width: Float = 0f
         private set
+
+    @Transient
     var height: Float = 0f
         private set
 
@@ -20,6 +27,7 @@ open class Scene : Node() {
      * / `Node.removeChild` to decide between immediate mutation and enqueuing
      * onto the pending queues.
      */
+    @Transient
     internal var isMutationDeferred: Boolean = false
         private set
 
@@ -29,6 +37,7 @@ open class Scene : Node() {
      * scene-graph mutation during render has no use case and would cost more
      * complexity than it saves to support.
      */
+    @Transient
     internal var isRendering: Boolean = false
         private set
 
