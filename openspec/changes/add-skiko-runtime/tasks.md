@@ -48,8 +48,8 @@
 
 ## 7. Adapt `:games:tictactoe` to use ComposeHost (keep Compose backend)
 
-- [ ] 7.1 Edit `games/tictactoe/src/main/kotlin/com/neoutils/engine/games/tictactoe/Main.kt`: replace the `application { Window { ... GameSurface(...) } }` body with `fun main() { ComposeHost().run(TicTacToeScene(), GameConfig("Tic Tac Toe", 600, 600)) }`. Remove the F1/F2 `onKeyEvent` handler (now lives in the host)
-- [ ] 7.2 Verify `./gradlew :games:tictactoe:dependencies | grep skiko` does NOT show `:engine-skiko` (Tic Tac Toe stays Compose-only as the sentinel)
+- [x] 7.1 Edit `games/tictactoe/src/main/kotlin/com/neoutils/engine/games/tictactoe/Main.kt`: replace the `application { Window { ... GameSurface(...) } }` body with `fun main() { ComposeHost().run(TicTacToeScene(), GameConfig("Tic Tac Toe", 600, 600)) }`. Remove the F1/F2 `onKeyEvent` handler (now lives in the host)
+- [x] 7.2 Verify `./gradlew :games:tictactoe:dependencies | grep skiko` does NOT show `:engine-skiko` (Tic Tac Toe stays Compose-only as the sentinel)
 - [ ] 7.3 Verify `./gradlew :games:tictactoe:run` launches the game and F1/F2 still toggle overlays
 
 ## 8. CLAUDE.md updates
