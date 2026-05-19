@@ -35,7 +35,7 @@
 ## 6. @Inspect annotation
 
 - [x] 6.1 Criar `com.neoutils.engine.serialization.Inspect` (`@Target(PROPERTY)`, `@Retention(RUNTIME)`, `displayName: String = ""`)
-- [ ] 6.2 Documentar no `CLAUDE.md` o contrato: classes serializáveis levam `@Serializable`; toda `var` deve ter `@Inspect` ou `@Transient` explícito
+- [x] 6.2 Documentar no `CLAUDE.md` o contrato: classes serializáveis levam `@Serializable`; toda `var` deve ter `@Inspect` ou `@Transient` explícito
 
 ## 7. Engine Node classes — no-args + @Serializable + @Inspect
 
