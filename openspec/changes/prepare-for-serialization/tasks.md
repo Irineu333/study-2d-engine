@@ -67,16 +67,16 @@
 
 ## 10. Refactor :games:pong
 
-- [ ] 10.1 `Ball` passa a estender `BoxCollider`. Remover `Ball.collider` (subclasse anônima). Mover `handleCollision` para `override fun onCollide` do próprio `Ball`
-- [ ] 10.2 `Ball.onScore` vira `Signal<Goal.Side>` (campo `@Transient`)
-- [ ] 10.3 Construtor de `Ball` vira no-args. Propriedades `size`, `initialSpeed`, `maxSpeed`, `speedupPerHit`, `fieldCenter` viram `@Inspect var` com defaults. `velocity`, `scoredThisTick`, `random` viram `@Transient` (ou `random` injetável via método `setRandom` se for o caso de teste)
-- [ ] 10.4 `Paddle.aiTargetY` lambda → `var target: NodeRef<Node2D> = NodeRef("")`. Computação do AI usa `target.resolve(this)` + `worldPosition().y`
-- [ ] 10.5 Construtor de `Paddle` vira no-args. `size`, `playFieldHeight`, `upKey`, `downKey`, `ai`, `speed`, `aiMaxSpeed`, `aiTolerance` viram `@Inspect var`. Recriar `PaddleCollider` como child no `init {}` ou via `onEnter` (verificar fluxo de lifecycle)
-- [ ] 10.6 `Score` continua simples: `textSize`, `color` viram `@Inspect var` com defaults. `value` continua `@Transient` (estado runtime)
-- [ ] 10.7 `Wall`, `Goal`, `PaddleCollider`: construtores no-args. `size` herda de `BoxCollider`. `Goal.side` vira `@Inspect var Side = Side.Left`
-- [ ] 10.8 `CenterLine` (private class em `PongScene.kt`) promovida a top-level com `@Serializable`. Construtor no-args; `x`, `height` viram `@Inspect var`
-- [ ] 10.9 `PongScene`: construtor no-args. Layout inicial via `onEnter` (já que `width`/`height` chegam por `onResize`). Conexão Ball→Score via `ball.onScore += { side -> ... }` dentro de `onEnter`
-- [ ] 10.10 Registrar todos os tipos de Pong em `NodeRegistry` no `Main.kt` (e na nova `MainFromFile.kt`)
+- [x] 10.1 `Ball` passa a estender `BoxCollider`. Remover `Ball.collider` (subclasse anônima). Mover `handleCollision` para `override fun onCollide` do próprio `Ball`
+- [x] 10.2 `Ball.onScore` vira `Signal<Goal.Side>` (campo `@Transient`)
+- [x] 10.3 Construtor de `Ball` vira no-args. Propriedades `size`, `initialSpeed`, `maxSpeed`, `speedupPerHit`, `fieldCenter` viram `@Inspect var` com defaults. `velocity`, `scoredThisTick`, `random` viram `@Transient` (ou `random` injetável via método `setRandom` se for o caso de teste)
+- [x] 10.4 `Paddle.aiTargetY` lambda → `var target: NodeRef<Node2D> = NodeRef("")`. Computação do AI usa `target.resolve(this)` + `worldPosition().y`
+- [x] 10.5 Construtor de `Paddle` vira no-args. `size`, `playFieldHeight`, `upKey`, `downKey`, `ai`, `speed`, `aiMaxSpeed`, `aiTolerance` viram `@Inspect var`. Recriar `PaddleCollider` como child no `init {}` ou via `onEnter` (verificar fluxo de lifecycle)
+- [x] 10.6 `Score` continua simples: `textSize`, `color` viram `@Inspect var` com defaults. `value` continua `@Transient` (estado runtime)
+- [x] 10.7 `Wall`, `Goal`, `PaddleCollider`: construtores no-args. `size` herda de `BoxCollider`. `Goal.side` vira `@Inspect var Side = Side.Left`
+- [x] 10.8 `CenterLine` (private class em `PongScene.kt`) promovida a top-level com `@Serializable`. Construtor no-args; `x`, `height` viram `@Inspect var`
+- [x] 10.9 `PongScene`: construtor no-args. Layout inicial via `onEnter` (já que `width`/`height` chegam por `onResize`). Conexão Ball→Score via `ball.onScore += { side -> ... }` dentro de `onEnter`
+- [x] 10.10 Registrar todos os tipos de Pong em `NodeRegistry` no `Main.kt` (e na nova `MainFromFile.kt`)
 - [ ] 10.11 Rodar `./gradlew :games:pong:run` e verificar gameplay igual ao anterior
 
 ## 11. Refactor :games:demos (SpawnerDemo)

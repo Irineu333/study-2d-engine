@@ -6,26 +6,54 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.serialization.Inspect
+import com.neoutils.engine.serialization.NodeRef
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-class Paddle(
-    val size: Vec2 = Vec2(WIDTH, HEIGHT),
-    var playFieldHeight: Float,
-    var upKey: Key? = null,
-    var downKey: Key? = null,
-    var ai: Boolean = false,
-    val speed: Float = 360f,
-    val aiMaxSpeed: Float = 220f,
-    val aiTolerance: Float = 8f,
-    var aiTargetY: (() -> Float)? = null,
-) : Node2D() {
+@Serializable
+class Paddle : Node2D() {
 
-    val collider: PaddleCollider = PaddleCollider(size)
+    @Inspect
+    var size: Vec2 = Vec2(WIDTH, HEIGHT)
 
-    init {
-        addChild(collider)
+    @Inspect
+    var playFieldHeight: Float = 600f
+
+    @Inspect
+    var upKey: Key? = null
+
+    @Inspect
+    var downKey: Key? = null
+
+    @Inspect
+    var ai: Boolean = false
+
+    @Inspect
+    var speed: Float = 360f
+
+    @Inspect
+    var aiMaxSpeed: Float = 220f
+
+    @Inspect
+    var aiTolerance: Float = 8f
+
+    @Inspect
+    var target: NodeRef<Node2D> = NodeRef("")
+
+    @Transient
+    private var collider: PaddleCollider? = null
+
+    override fun onEnter() {
+        if (collider == null) {
+            val c = PaddleCollider().apply { size = this@Paddle.size }
+            collider = c
+            addChild(c)
+        }
     }
 
     override fun onUpdate(dt: Float) {
+        collider?.size = size
         val dy = if (ai) computeAi(dt) else computeHuman(dt)
         if (dy == 0f) return
         val newY = (transform.position.y + dy).coerceIn(0f, playFieldHeight - size.y)
@@ -41,7 +69,8 @@ class Paddle(
     }
 
     private fun computeAi(dt: Float): Float {
-        val targetY = aiTargetY?.invoke() ?: return 0f
+        val resolved = target.resolve(this) ?: return 0f
+        val targetY = resolved.worldPosition().y
         val center = transform.position.y + size.y / 2f
         val delta = targetY - center
         val direction = when {

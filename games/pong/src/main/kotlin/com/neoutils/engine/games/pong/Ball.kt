@@ -5,54 +5,79 @@ import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.serialization.Inspect
+import com.neoutils.engine.serialization.Signal
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-class Ball(
-    val size: Float = 16f,
-    val initialSpeed: Float = 280f,
-    val maxSpeed: Float = 560f,
-    val speedupPerHit: Float = 1.05f,
-    var fieldCenter: Vec2,
-    private val random: Random = Random.Default,
-    private val onScore: (Goal.Side) -> Unit = {},
-) : Node2D() {
+@Serializable
+class Ball : BoxCollider() {
 
+    @Inspect
+    var ballSize: Float = 16f
+
+    @Inspect
+    var initialSpeed: Float = 280f
+
+    @Inspect
+    var maxSpeed: Float = 560f
+
+    @Inspect
+    var speedupPerHit: Float = 1.05f
+
+    @Inspect
+    var fieldCenter: Vec2 = Vec2(400f, 300f)
+
+    /** Emitted on every scoring event with the side that scored. */
+    @Transient
+    val onScore: Signal<Goal.Side> = Signal()
+
+    @Transient
     var velocity: Vec2 = Vec2.ZERO
         private set
 
-    val collider: BoxCollider = object : BoxCollider(Vec2(size, size)) {
-        override fun onCollide(other: Collider) {
-            handleCollision(other)
+    @Transient
+    private var random: Random = Random.Default
+
+    @Transient
+    private var scoredThisTick: Boolean = false
+
+    @Transient
+    private var initialized: Boolean = false
+
+    fun setRandom(rng: Random) {
+        random = rng
+    }
+
+    override fun onEnter() {
+        size = Vec2(ballSize, ballSize)
+        if (!initialized) {
+            reset(serveToward = if (random.nextBoolean()) 1f else -1f)
+            initialized = true
         }
     }
 
-    init {
-        addChild(collider)
-        reset(serveToward = if (random.nextBoolean()) 1f else -1f)
-    }
-
-    private var scoredThisTick: Boolean = false
-
     override fun onUpdate(dt: Float) {
         scoredThisTick = false
+        size = Vec2(ballSize, ballSize)
         transform = transform.copy(position = transform.position + velocity * dt)
     }
 
     override fun onRender(renderer: Renderer) {
-        val center = worldPosition() + Vec2(size / 2f, size / 2f)
-        renderer.drawCircle(center, radius = size / 2f, color = Color.WHITE, filled = true)
+        val center = worldPosition() + Vec2(ballSize / 2f, ballSize / 2f)
+        renderer.drawCircle(center, radius = ballSize / 2f, color = Color.WHITE, filled = true)
     }
 
-    private fun handleCollision(other: Collider) {
+    override fun onCollide(other: Collider) {
         if (scoredThisTick) return
         when (other) {
             is Goal -> {
                 val scorer = if (other.side == Goal.Side.Left) Goal.Side.Right else Goal.Side.Left
-                onScore(scorer)
+                onScore.emit(scorer)
                 reset(serveToward = if (other.side == Goal.Side.Left) 1f else -1f)
                 scoredThisTick = true
             }
@@ -60,22 +85,21 @@ class Ball(
             is PaddleCollider -> {
                 val paddleBounds = other.bounds()
                 val paddleCenterY = paddleBounds.top + paddleBounds.size.y / 2f
-                val ballCenterY = transform.position.y + size / 2f
+                val ballCenterY = transform.position.y + ballSize / 2f
                 val relative = ((ballCenterY - paddleCenterY) /
                     (paddleBounds.size.y / 2f)).coerceIn(-1f, 1f)
 
                 val newSpeed = (velocity.length * speedupPerHit).coerceAtMost(maxSpeed)
                 val horizontalSign = if (velocity.x > 0f) -1f else 1f
-                val maxAngleRad = (PI / 3f).toFloat() // ±60°
+                val maxAngleRad = (PI / 3f).toFloat()
                 val angle = relative * maxAngleRad
                 velocity = Vec2(
                     horizontalSign * newSpeed * cos(angle),
                     newSpeed * sin(angle),
                 )
 
-                // Nudge ball out of paddle to prevent re-collision next tick.
                 val ballPos = transform.position
-                val ballRight = ballPos.x + size
+                val ballRight = ballPos.x + ballSize
                 val ballLeft = ballPos.x
                 val shift = if (horizontalSign < 0f) paddleBounds.left - ballRight - 0.5f
                 else paddleBounds.right - ballLeft + 0.5f
@@ -85,10 +109,9 @@ class Ball(
     }
 
     fun reset(serveToward: Float) {
-        transform = transform.copy(position = fieldCenter - Vec2(size / 2f, size / 2f))
-        // Wider angle range so the AI paddle has visible vertical work to do
-        // and the ball doesn't degenerate into a horizontal line.
-        val angle = (random.nextFloat() - 0.5f) * 1.4f // ~ ±0.7 rad (~40deg)
+        size = Vec2(ballSize, ballSize)
+        transform = transform.copy(position = fieldCenter - Vec2(ballSize / 2f, ballSize / 2f))
+        val angle = (random.nextFloat() - 0.5f) * 1.4f
         val sx = if (serveToward >= 0f) 1f else -1f
         velocity = Vec2(
             sx * initialSpeed * cos(angle),

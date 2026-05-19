@@ -3,12 +3,20 @@ package com.neoutils.engine.games.pong
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-class Score(
-    val textSize: Float = 48f,
-    val color: Color = Color.WHITE,
-) : Node2D() {
+@Serializable
+class Score : Node2D() {
 
+    @Inspect
+    var textSize: Float = 48f
+
+    @Inspect
+    var color: Color = Color.WHITE
+
+    @Transient
     var value: Int = 0
         private set
 
