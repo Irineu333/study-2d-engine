@@ -1,27 +1,13 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
     alias(libs.plugins.kotlinJvm)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
+    application
 }
 
 dependencies {
     implementation(projects.engine)
-    implementation(projects.engineCompose)
-
-    implementation(compose.desktop.currentOs)
-    implementation(libs.kotlinx.coroutinesSwing)
+    implementation(projects.engineSkiko)
 }
 
-compose.desktop {
-    application {
-        mainClass = "com.neoutils.engine.games.demos.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.neoutils.engine.games.demos"
-            packageVersion = "1.0.0"
-        }
-    }
+application {
+    mainClass.set("com.neoutils.engine.games.demos.MainKt")
 }
