@@ -77,7 +77,7 @@
 - [x] 10.8 `CenterLine` (private class em `PongScene.kt`) promovida a top-level com `@Serializable`. Construtor no-args; `x`, `height` viram `@Inspect var`
 - [x] 10.9 `PongScene`: construtor no-args. Layout inicial via `onEnter` (já que `width`/`height` chegam por `onResize`). Conexão Ball→Score via `ball.onScore += { side -> ... }` dentro de `onEnter`
 - [x] 10.10 Registrar todos os tipos de Pong em `NodeRegistry` no `Main.kt` (e na nova `MainFromFile.kt`)
-- [ ] 10.11 Rodar `./gradlew :games:pong:run` e verificar gameplay igual ao anterior
+- [x] 10.11 Rodar `./gradlew :games:pong:run` e verificar gameplay igual ao anterior
 
 ## 11. Refactor :games:demos (SpawnerDemo)
 
