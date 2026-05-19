@@ -16,8 +16,8 @@
 - [x] 3.1 Implementar auto-suffix em `Node.applyAdd` quando há conflito de nome entre irmãos
 - [x] 3.2 Garantir que auto-suffix aplica também em drenagem de pending adds (`Node.drainPending`)
 - [x] 3.3 Implementar `Node.findChild(name: String): Node?` (lookup single-level O(n))
-- [ ] 3.4 Adicionar testes em `NodeTest`: auto-suffix em conflito, incremento sucessivo, preservação sem conflito, sobrevivência ao detach, sem renumeração na remoção
-- [ ] 3.5 Adicionar testes em `NodeTest`: `findChild` happy path, retorno `null`, não recursivo
+- [x] 3.4 Adicionar testes em `NodeTest`: auto-suffix em conflito, incremento sucessivo, preservação sem conflito, sobrevivência ao detach, sem renumeração na remoção
+- [x] 3.5 Adicionar testes em `NodeTest`: `findChild` happy path, retorno `null`, não recursivo
 
 ## 4. Signal primitive
 

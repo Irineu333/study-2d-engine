@@ -122,6 +122,94 @@ class NodeTest {
     }
 
     @Test
+    fun `addChild auto-suffixes on name conflict`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        val first = Spy("Ball", log)
+        val second = Spy("Ball", log)
+        parent.addChild(first)
+        parent.addChild(second)
+        assertEquals("Ball", first.name)
+        assertEquals("Ball_2", second.name)
+    }
+
+    @Test
+    fun `addChild increments past existing suffixed siblings`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        parent.addChild(Spy("Ball", log))
+        parent.addChild(Spy("Ball", log))
+        val third = Spy("Ball", log)
+        parent.addChild(third)
+        assertEquals("Ball_3", third.name)
+    }
+
+    @Test
+    fun `addChild keeps name when no conflict`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        val paddle = Spy("Paddle", log)
+        parent.addChild(paddle)
+        assertEquals("Paddle", paddle.name)
+    }
+
+    @Test
+    fun `auto-suffixed name survives detach`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        parent.addChild(Spy("Ball", log))
+        val second = Spy("Ball", log)
+        parent.addChild(second)
+        parent.removeChild(second)
+        assertEquals("Ball_2", second.name)
+    }
+
+    @Test
+    fun `removing a child does not renumber siblings`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        val first = Spy("Ball", log)
+        val second = Spy("Ball", log)
+        val third = Spy("Ball", log)
+        parent.addChild(first)
+        parent.addChild(second)
+        parent.addChild(third)
+        parent.removeChild(first)
+        assertEquals("Ball_2", second.name)
+        assertEquals("Ball_3", third.name)
+    }
+
+    @Test
+    fun `findChild returns the matching child`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        val b = Spy("B", log)
+        parent.addChild(Spy("A", log))
+        parent.addChild(b)
+        parent.addChild(Spy("C", log))
+        assertSame(b, parent.findChild("B"))
+    }
+
+    @Test
+    fun `findChild returns null for missing name`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        parent.addChild(Spy("A", log))
+        parent.addChild(Spy("B", log))
+        assertNull(parent.findChild("Z"))
+    }
+
+    @Test
+    fun `findChild does not descend into grandchildren`() {
+        val log = mutableListOf<String>()
+        val parent = Spy("p", log)
+        val a = Spy("A", log)
+        a.addChild(Spy("Target", log))
+        parent.addChild(a)
+        assertNull(parent.findChild("Target"))
+    }
+
+    @Test
     fun `scene render visits parents before children in pre-order`() {
         val scene = Scene()
         val order = mutableListOf<String>()
