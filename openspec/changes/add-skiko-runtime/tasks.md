@@ -50,7 +50,7 @@
 
 - [x] 7.1 Edit `games/tictactoe/src/main/kotlin/com/neoutils/engine/games/tictactoe/Main.kt`: replace the `application { Window { ... GameSurface(...) } }` body with `fun main() { ComposeHost().run(TicTacToeScene(), GameConfig("Tic Tac Toe", 600, 600)) }`. Remove the F1/F2 `onKeyEvent` handler (now lives in the host)
 - [x] 7.2 Verify `./gradlew :games:tictactoe:dependencies | grep skiko` does NOT show `:engine-skiko` (Tic Tac Toe stays Compose-only as the sentinel)
-- [ ] 7.3 Verify `./gradlew :games:tictactoe:run` launches the game and F1/F2 still toggle overlays
+- [x] 7.3 Verify `./gradlew :games:tictactoe:run` launches the game and F1/F2 still toggle overlays
 
 ## 8. CLAUDE.md updates
 
@@ -63,7 +63,7 @@
 
 - [ ] 9.1 Pong on Skiko: launch via `./gradlew :games:pong:run`. Verify (a) W/S move left paddle, (b) AI plays the right paddle, (c) ball collides with paddles and walls, (d) F1 toggles FPS overlay, (e) F2 toggles collider outlines, (f) resizing the window keeps the game responsive
 - [x] 9.2 Demos on Skiko: launch via `./gradlew :games:demos:run`. Verify (a) keys 1/2/3 switch demos, (b) Spawner demo: clicking adds balls, trap removes them, (c) F2 shows colliders rendered by host (not by scene), (d) F1 shows FPS counter
-- [ ] 9.3 Tic Tac Toe on Compose: launch via `./gradlew :games:tictactoe:run`. Verify (a) left click on empty cells alternates X / O, (b) endgame announcement appears, (c) next click after end-of-game restarts (only restarts, doesn't play), (d) F1 toggles FPS overlay, (e) F2 toggles collider overlay (still empty since the game has no colliders)
+- [x] 9.3 Tic Tac Toe on Compose: launch via `./gradlew :games:tictactoe:run`. Verify (a) left click on empty cells alternates X / O, (b) endgame announcement appears, (c) next click after end-of-game restarts (only restarts, doesn't play), (d) F1 toggles FPS overlay, (e) F2 toggles collider overlay (still empty since the game has no colliders)
 - [ ] 9.4 No-stutter sanity check: run Pong for 60 seconds, watch FPS overlay stay above 50
 
 ## 10. Final cleanup
