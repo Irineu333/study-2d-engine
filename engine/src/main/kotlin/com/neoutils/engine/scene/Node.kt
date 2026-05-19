@@ -58,12 +58,20 @@ abstract class Node {
     }
 
     private fun applyAdd(child: Node) {
+        child.name = uniqueChildName(child.name)
         child.parent = this
         _children.add(child)
         if (isLive) {
             val owning = if (this is Scene) this else scene
             if (owning != null) child.attachToLiveTree(owning)
         }
+    }
+
+    private fun uniqueChildName(desired: String): String {
+        if (_children.none { it.name == desired }) return desired
+        var i = 2
+        while (_children.any { it.name == "${desired}_$i" }) i++
+        return "${desired}_$i"
     }
 
     private fun applyRemove(child: Node) {
