@@ -57,8 +57,8 @@
 
 ## 9. SceneLoader
 
-- [ ] 9.1 Definir o modelo de nó serializado: `data class NodeEntry(type: String, name: String, properties: JsonObject, children: List<NodeEntry>)` em `:engine`
-- [ ] 9.2 Definir wrapper `data class SceneFile(version: Int = 1, root: NodeEntry)`
+- [x] 9.1 Definir o modelo de nó serializado: `data class NodeEntry(type: String, name: String, properties: JsonObject, children: List<NodeEntry>)` em `:engine`
+- [x] 9.2 Definir wrapper `data class SceneFile(version: Int = 1, root: NodeEntry)`
 - [ ] 9.3 Implementar `SceneLoader.save(scene: Scene): String` caminhando a árvore e extraindo as propriedades `@Inspect` via reflexão (Kotlin reflect ou serializer da classe)
 - [ ] 9.4 Implementar `SceneLoader.load(json: String): Scene` parseando, criando nodes via `NodeRegistry`, populando propriedades, e anexando children por `addChild`
 - [ ] 9.5 Garantir que `load` retorna scene detached (`isLive == false`)
