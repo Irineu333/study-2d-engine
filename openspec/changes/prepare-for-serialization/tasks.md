@@ -2,7 +2,7 @@
 
 - [x] 1.1 Apply `org.jetbrains.kotlin.plugin.serialization` no `:engine/build.gradle.kts`
 - [x] 1.2 Adicionar `org.jetbrains.kotlinx:kotlinx-serialization-json` em `libs.versions.toml` e como `api` dependency em `:engine`
-- [ ] 1.3 Confirmar via `./gradlew :engine:dependencies` que nada do Compose entrou transitivamente
+- [x] 1.3 Confirmar via `./gradlew :engine:dependencies` que nada do Compose entrou transitivamente
 
 ## 2. Math and render primitives become @Serializable
 
