@@ -2,17 +2,25 @@ package com.neoutils.engine.scene
 
 import com.neoutils.engine.dx.Log
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
+@Serializable
 abstract class Node {
 
+    @Inspect
     var name: String = this::class.simpleName ?: "Node"
 
+    @Transient
     var parent: Node? = null
         private set
 
+    @Transient
     private val _children: MutableList<Node> = mutableListOf()
     val children: List<Node> get() = _children
 
+    @Transient
     var isLive: Boolean = false
         private set
 
@@ -22,6 +30,7 @@ abstract class Node {
      * `detachFromLiveTree` after `onExit` returns. Lets `rootScene()` run in
      * O(1) instead of walking the parent chain every frame.
      */
+    @Transient
     var scene: Scene? = null
         internal set
 
@@ -30,10 +39,14 @@ abstract class Node {
      * Read by `NodeRef` to detect that its cached resolution may be stale
      * (path-relative resolution can land elsewhere after a re-attach).
      */
+    @Transient
     internal var attachGeneration: Long = 0L
         private set
 
+    @Transient
     private val pendingAdd: MutableList<Node> = mutableListOf()
+
+    @Transient
     private val pendingRemove: MutableList<Node> = mutableListOf()
 
     fun addChild(child: Node) {

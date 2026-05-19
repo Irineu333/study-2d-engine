@@ -2,9 +2,13 @@ package com.neoutils.engine.scene
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
 
+@Serializable
 open class Node2D : Node() {
 
+    @Inspect
     var transform: Transform = Transform()
 
     /**
