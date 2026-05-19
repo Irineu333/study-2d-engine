@@ -25,18 +25,29 @@ class NodeRef<T : Node>(
     @Transient
     private var resolvedFrom: Node? = null
 
-    /** Drop any cached resolution. Called by the engine when the bearer re-attaches. */
+    @Transient
+    private var cachedGeneration: Long = -1L
+
+    /** Drop any cached resolution. Called when the bearer re-attaches. */
     fun invalidate() {
         cached = null
         resolvedFrom = null
+        cachedGeneration = -1L
     }
 
     @Suppress("UNCHECKED_CAST")
     fun resolve(from: Node): T? {
-        if (cached != null && resolvedFrom === from) return cached as? T
-        val resolved = walk(from, path) ?: return null
+        if (cached != null &&
+            resolvedFrom === from &&
+            cachedGeneration == from.attachGeneration
+        ) return cached as? T
+        val resolved = walk(from, path) ?: run {
+            invalidate()
+            return null
+        }
         cached = resolved
         resolvedFrom = from
+        cachedGeneration = from.attachGeneration
         return resolved as? T
     }
 

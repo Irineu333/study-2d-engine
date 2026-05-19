@@ -25,6 +25,14 @@ abstract class Node {
     var scene: Scene? = null
         internal set
 
+    /**
+     * Monotonic counter bumped each time the node re-enters the live tree.
+     * Read by `NodeRef` to detect that its cached resolution may be stale
+     * (path-relative resolution can land elsewhere after a re-attach).
+     */
+    internal var attachGeneration: Long = 0L
+        private set
+
     private val pendingAdd: MutableList<Node> = mutableListOf()
     private val pendingRemove: MutableList<Node> = mutableListOf()
 
@@ -83,6 +91,7 @@ abstract class Node {
     internal fun attachToLiveTree(owningScene: Scene) {
         if (isLive) return
         scene = owningScene
+        attachGeneration++
         isLive = true
         onEnter()
         for (child in _children) child.attachToLiveTree(owningScene)
