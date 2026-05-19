@@ -41,7 +41,7 @@
 
 - [x] 7.1 `Node` e `Node2D` ganham `@Serializable`. `transform` em `Node2D` vira `@Inspect`. `name` em `Node` vira `@Inspect` (com `@Transient` ou serializável conforme decidido — provavelmente `@Inspect`, faz parte da identidade)
 - [x] 7.2 Marcar campos internos de `Node` (`parent`, `_children`, `isLive`, `scene`, `pendingAdd`, `pendingRemove`) com `@Transient`
-- [ ] 7.3 `Shape`: construtor no-args; `kind`, `size`, `color`, `filled` viram `@Inspect var` com defaults atuais
+- [x] 7.3 `Shape`: construtor no-args; `kind`, `size`, `color`, `filled` viram `@Inspect var` com defaults atuais
 - [ ] 7.4 `Text`: construtor no-args; `text`, `size`, `color` viram `@Inspect var`
 - [ ] 7.5 `BoxCollider`: construtor no-args; `size` vira `@Inspect var = Vec2(10f, 10f)`
 - [ ] 7.6 `Collider` (abstrato) anotado `@Serializable` para permitir polimorfismo das subclasses

@@ -4,6 +4,8 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.serialization.Inspect
+import kotlinx.serialization.Serializable
 
 /**
  * Renders a primitive (rectangle or circle) in world space. Position and
@@ -13,12 +15,20 @@ import com.neoutils.engine.render.Renderer
  * change. Setting a non-zero rotation today will affect collider bounds but
  * not the rendered shape.
  */
-class Shape(
-    var kind: Kind = Kind.Rect,
-    var size: Vec2 = Vec2(10f, 10f),
-    var color: Color = Color.WHITE,
-    var filled: Boolean = true,
-) : Node2D() {
+@Serializable
+class Shape : Node2D() {
+
+    @Inspect
+    var kind: Kind = Kind.Rect
+
+    @Inspect
+    var size: Vec2 = Vec2(10f, 10f)
+
+    @Inspect
+    var color: Color = Color.WHITE
+
+    @Inspect
+    var filled: Boolean = true
 
     enum class Kind { Rect, Circle }
 
