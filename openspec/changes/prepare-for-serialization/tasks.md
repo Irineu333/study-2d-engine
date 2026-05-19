@@ -30,7 +30,7 @@
 - [x] 5.1 Criar `com.neoutils.engine.serialization.NodeRef<T : Node>` como `@Serializable` com `path: String`
 - [x] 5.2 Implementar `resolve(from: Node): T?` com walk relativo (`..`, segmentos por `/`, path vazio = self)
 - [x] 5.3 Implementar cache lazy de resolução com invalidação ao re-attach do bearer (hook em `attachToLiveTree`)
-- [ ] 5.4 Adicionar testes `NodeRefTest`: walk up/down, tipo incompatível devolve `null`, path inválido devolve `null`, empty path resolve to bearer, round-trip JSON, invalidação após re-attach
+- [x] 5.4 Adicionar testes `NodeRefTest`: walk up/down, tipo incompatível devolve `null`, path inválido devolve `null`, empty path resolve to bearer, round-trip JSON, invalidação após re-attach
 
 ## 6. @Inspect annotation
 
