@@ -108,7 +108,7 @@
 
 ## 14. Tests and verification
 
-- [ ] 14.1 Rodar `./gradlew test` em todos os módulos — todos verdes
-- [ ] 14.2 Validar manualmente: Pong (code-only), Pong (from file), Demos, Tic Tac Toe
-- [ ] 14.3 Rodar `openspec validate --strict --change prepare-for-serialization`
-- [ ] 14.4 Atualizar `CLAUDE.md` (Roadmap table, regras de @Inspect/@Transient, instruções de run from file)
+- [x] 14.1 Rodar `./gradlew test` em todos os módulos — todos verdes
+- [x] 14.2 Validar manualmente Pong (carrega de `pong.scene.json`), Demos e Velha (code-only do Pong foi retirado, ver redireção em §13)
+- [x] 14.3 Rodar `openspec validate --strict --changes prepare-for-serialization`
+- [x] 14.4 Atualizar `CLAUDE.md` (Roadmap → Active, contrato `@Inspect`/`@Transient`, run de Pong via `pong.scene.json`)
