@@ -1,0 +1,109 @@
+package com.neoutils.engine.skiko
+
+import com.neoutils.engine.dx.Debug
+import com.neoutils.engine.dx.FpsCounter
+import com.neoutils.engine.dx.renderDebugOverlay
+import com.neoutils.engine.loop.GameLoop
+import com.neoutils.engine.physics.PhysicsSystem
+import com.neoutils.engine.runtime.GameConfig
+import com.neoutils.engine.runtime.GameHost
+import com.neoutils.engine.scene.Scene
+import org.jetbrains.skia.Canvas
+import org.jetbrains.skiko.SkiaLayer
+import org.jetbrains.skiko.SkikoRenderDelegate
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
+import java.util.concurrent.CountDownLatch
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
+
+/**
+ * `GameHost` backed by Skiko's `SkiaLayer` embedded in a Swing `JFrame`. Each
+ * `SkikoView.onRender(...)` callback drives one tick of the engine loop, then
+ * calls `skiaLayer.needRedraw()` to schedule the next frame. Blocking is
+ * achieved through a `CountDownLatch` released when the window disposes.
+ */
+class SkikoHost : GameHost {
+
+    override fun run(scene: Scene, config: GameConfig) {
+        val latch = CountDownLatch(1)
+
+        SwingUtilities.invokeLater {
+            val frame = JFrame(config.title).apply {
+                defaultCloseOperation = JFrame.DISPOSE_ON_CLOSE
+                preferredSize = Dimension(config.width, config.height)
+                layout = BorderLayout()
+            }
+
+            val input = SkikoInput()
+            val renderer = SkikoRenderer()
+            val physics = PhysicsSystem()
+            val loop = GameLoop(scene, renderer, input, physics)
+            val fps = FpsCounter()
+
+            val skiaLayer = SkiaLayer()
+            var lastNanos = 0L
+
+            skiaLayer.renderDelegate = SkikoRenderDelegate { canvas, width, height, nanoTime ->
+                val pendingDt = if (lastNanos == 0L) 16_666_666L else nanoTime - lastNanos
+                lastNanos = nanoTime
+
+                input.beginTick()
+                Debug.currentFps = fps.record(nanoTime)
+                scene.resize(width.toFloat(), height.toFloat())
+                renderer.bind(canvas)
+                try {
+                    loop.tick(pendingDt)
+                    if (input.wasKeyPressed(config.toggleFpsKey)) {
+                        Debug.showFps = !Debug.showFps
+                    }
+                    if (input.wasKeyPressed(config.toggleCollidersKey)) {
+                        Debug.colliderVisualization = !Debug.colliderVisualization
+                    }
+                    renderDebugOverlay(renderer, scene)
+                } finally {
+                    renderer.unbind()
+                }
+                skiaLayer.needRedraw()
+            }
+
+            frame.contentPane.add(skiaLayer, BorderLayout.CENTER)
+
+            frame.addKeyListener(object : KeyAdapter() {
+                override fun keyPressed(e: KeyEvent) = input.onAwtKey(e, pressed = true)
+                override fun keyReleased(e: KeyEvent) = input.onAwtKey(e, pressed = false)
+            })
+            skiaLayer.addMouseListener(object : MouseAdapter() {
+                override fun mousePressed(e: MouseEvent) = input.onAwtMouseButton(e, pressed = true)
+                override fun mouseReleased(e: MouseEvent) = input.onAwtMouseButton(e, pressed = false)
+            })
+            skiaLayer.addMouseMotionListener(object : MouseMotionAdapter() {
+                override fun mouseMoved(e: MouseEvent) = input.onAwtMouseMoved(e)
+                override fun mouseDragged(e: MouseEvent) = input.onAwtMouseMoved(e)
+            })
+
+            frame.addWindowListener(object : WindowAdapter() {
+                override fun windowClosed(e: WindowEvent) {
+                    scene.stop()
+                    skiaLayer.dispose()
+                    latch.countDown()
+                }
+            })
+
+            frame.pack()
+            frame.setLocationRelativeTo(null)
+            frame.isVisible = true
+            frame.requestFocusInWindow()
+            skiaLayer.needRedraw()
+        }
+
+        latch.await()
+    }
+}

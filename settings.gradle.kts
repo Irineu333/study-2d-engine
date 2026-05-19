@@ -34,6 +34,7 @@ plugins {
 
 include(":engine")
 include(":engine-compose")
+include(":engine-skiko")
 include(":games:pong")
 include(":games:tictactoe")
 include(":games:demos")
