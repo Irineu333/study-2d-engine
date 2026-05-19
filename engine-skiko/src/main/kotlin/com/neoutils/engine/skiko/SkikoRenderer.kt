@@ -6,10 +6,13 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.Font
+import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.FontStyle
 import org.jetbrains.skia.Paint
 import org.jetbrains.skia.PaintMode
 import org.jetbrains.skia.Rect as SkRect
 import org.jetbrains.skia.TextLine
+import org.jetbrains.skia.Typeface
 
 /**
  * `Renderer` backed by a Skia `Canvas`. Bound per frame via [bind] so the same
@@ -19,6 +22,7 @@ import org.jetbrains.skia.TextLine
 class SkikoRenderer : Renderer {
 
     private var canvas: Canvas? = null
+    private val defaultTypeface: Typeface = resolveDefaultTypeface()
     private val fontCache: HashMap<Float, Font> = HashMap()
 
     fun bind(canvas: Canvas) {
@@ -33,7 +37,7 @@ class SkikoRenderer : Renderer {
         "SkikoRenderer used outside a bound Skia Canvas; call bind() first."
     }
 
-    private fun fontOf(size: Float): Font = fontCache.getOrPut(size) { Font(null, size) }
+    private fun fontOf(size: Float): Font = fontCache.getOrPut(size) { Font(defaultTypeface, size) }
 
     private fun paint(color: Color, filled: Boolean, thickness: Float): Paint = Paint().apply {
         this.color = color.toSkiaArgb()
@@ -78,6 +82,28 @@ class SkikoRenderer : Renderer {
         val line = TextLine.make(text, font)
         return Vec2(line.width, font.metrics.height)
     }
+}
+
+// `FontMgr.default.matchFamilyStyle(null, ...)` may return an empty typeface on
+// some platforms (its docs warn that "most systems don't have a default system
+// family"). With zeroed metrics, `font.metrics.ascent == 0` and `drawText`'s
+// baseline math collapses, putting glyphs above the requested top-anchored y.
+// Resolve against a prioritized list of platform families, then any enumerated
+// family, before falling back to the empty typeface.
+private fun resolveDefaultTypeface(): Typeface {
+    val mgr = FontMgr.default
+    val preferred: Array<String?> = arrayOf(
+        "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica",
+        "Arial", "Segoe UI", "DejaVu Sans", "Liberation Sans",
+    )
+    mgr.matchFamiliesStyle(preferred, FontStyle.NORMAL)?.let { return it }
+    val familiesCount = mgr.familiesCount
+    for (idx in 0 until familiesCount) {
+        val name = mgr.getFamilyName(idx)
+        val typeface = mgr.matchFamilyStyle(name, FontStyle.NORMAL)
+        if (typeface != null) return typeface
+    }
+    return Typeface.makeEmpty()
 }
 
 internal fun Color.toSkiaArgb(): Int {

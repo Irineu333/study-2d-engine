@@ -70,3 +70,8 @@
 
 - [x] 10.1 Run `./gradlew build` from the repo root; all tests pass and all modules compile
 - [x] 10.2 Run `openspec validate add-skiko-runtime --strict` and resolve any reported issues
+
+## 11. Validation regressions found in step 9.1 (Pong on Skiko)
+
+- [x] 11.1 `SkikoRenderer` text uses an empty default typeface (`Font(null, size)`) whose metrics are zeroed, so `position.y` is treated as baseline and `Score` (48 px, `y = 24`) renders with its top at `y ≈ -24` — visible glyphs cross the top edge of the window. Resolve the default typeface by walking a prioritized list of well-known system families (`SF Pro Display`, `Helvetica Neue`, `Helvetica`, `Arial`), falling back to the first family enumerated by `FontMgr.default`, and only then to `Typeface.makeEmpty()`. With a real typeface, `font.metrics.ascent` returns the real negative value and the top-anchored coordinate the `Renderer` SPI promises is honored.
+- [x] 11.2 `SkikoHost` never clears the canvas, so the OS-provided initial buffer (white) bleeds through, dropping contrast against the white scene content (a regression versus `ComposeHost`, where the wrapping `Box(Modifier.background(Color.Black))` paints black before `GameSurface` draws). Add `renderer.clear(Color.BLACK)` at the start of each frame in `SkikoHost.onRender` — after `renderer.bind(canvas)` and before `loop.tick(...)` — so background paint is the host's responsibility on both backends.

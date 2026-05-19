@@ -5,6 +5,7 @@ import com.neoutils.engine.dx.FpsCounter
 import com.neoutils.engine.dx.renderDebugOverlay
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.physics.PhysicsSystem
+import com.neoutils.engine.render.Color
 import com.neoutils.engine.runtime.GameConfig
 import com.neoutils.engine.runtime.GameHost
 import com.neoutils.engine.scene.Scene
@@ -60,6 +61,7 @@ class SkikoHost : GameHost {
                 scene.resize(width.toFloat(), height.toFloat())
                 renderer.bind(canvas)
                 try {
+                    renderer.clear(Color.BLACK)
                     loop.tick(pendingDt)
                     if (input.wasKeyPressed(config.toggleFpsKey)) {
                         Debug.showFps = !Debug.showFps
