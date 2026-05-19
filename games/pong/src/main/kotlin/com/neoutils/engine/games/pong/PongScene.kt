@@ -1,56 +1,11 @@
 package com.neoutils.engine.games.pong
 
-import com.neoutils.engine.input.Key
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Scene
-import com.neoutils.engine.serialization.NodeRef
 import kotlinx.serialization.Serializable
 
 @Serializable
 class PongScene : Scene() {
-
-    init {
-        name = "PongScene"
-        buildInitialTree()
-    }
-
-    private fun buildInitialTree() {
-        if (children.isNotEmpty()) return
-
-        val leftPaddle = Paddle().apply {
-            name = "left"
-            playFieldHeight = 600f
-            upKey = Key.W
-            downKey = Key.S
-        }
-        val rightPaddle = Paddle().apply {
-            name = "right"
-            playFieldHeight = 600f
-            ai = true
-            target = NodeRef(path = "../Ball")
-        }
-        val ball = Ball().apply { name = "Ball" }
-
-        val topWall = Wall().apply { name = "topWall" }
-        val bottomWall = Wall().apply { name = "bottomWall" }
-        val leftGoal = Goal().apply { name = "leftGoal"; side = Goal.Side.Left }
-        val rightGoal = Goal().apply { name = "rightGoal"; side = Goal.Side.Right }
-        val centerLine = CenterLine().apply { name = "centerLine" }
-
-        val leftScore = Score().apply { name = "leftScore" }
-        val rightScore = Score().apply { name = "rightScore" }
-
-        addChild(centerLine)
-        addChild(leftPaddle)
-        addChild(rightPaddle)
-        addChild(ball)
-        addChild(topWall)
-        addChild(bottomWall)
-        addChild(leftGoal)
-        addChild(rightGoal)
-        addChild(leftScore)
-        addChild(rightScore)
-    }
 
     override fun onEnter() {
         wireScoring()

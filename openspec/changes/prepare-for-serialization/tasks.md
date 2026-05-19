@@ -94,11 +94,17 @@
 
 ## 13. Pong file end-to-end
 
-- [ ] 13.1 Gerar `pong.scene.json` rodando programaticamente `SceneLoader.save(PongScene())` e copiando o output para `:games:pong/src/main/resources/pong.scene.json`
-- [ ] 13.2 Adicionar `MainFromFile.kt` em `:games:pong`: lê resource, registra tipos, faz `SceneLoader.load`, executa via `SkikoHost`
-- [ ] 13.3 Adicionar entry no `build.gradle.kts` de `:games:pong` para um second `application` ou um `JavaExec` task `runFromFile`
-- [ ] 13.4 Documentar no `CLAUDE.md` como executar Pong via arquivo (`./gradlew :games:pong:runFromFile` ou equivalente)
-- [ ] 13.5 Rodar os dois entrypoints e verificar paridade visual e comportamental
+> Redireção durante aplicação: `pong.scene.json` foi escrito à mão (não via
+> `SceneLoader.save`) e o arquivo passou a ser o **único** entry point de Pong
+> — `Main.kt` carrega `pong.scene.json` via `SceneLoader.load`. Não há
+> `MainFromFile.kt` separado nem task `runFromFile`. Os subitens abaixo ficam
+> marcados pela nova leitura.
+
+- [x] 13.1 Escrever `pong.scene.json` à mão no formato `SceneFile`/`NodeEntry` em `:games:pong/src/main/resources/`
+- [x] 13.2 `Main.kt` lê o resource, registra tipos, faz `SceneLoader.load`, executa via `SkikoHost`
+- [x] 13.3 Sem entry adicional no `build.gradle.kts`: o `application { mainClass }` já aponta para `MainKt`, que agora carrega do arquivo
+- [x] 13.4 Documentar no `CLAUDE.md` que `./gradlew :games:pong:run` carrega `pong.scene.json` como fonte da verdade da árvore
+- [x] 13.5 Rodar `./gradlew :pong:pong:run` e verificar comportamento idêntico
 
 ## 14. Tests and verification
 

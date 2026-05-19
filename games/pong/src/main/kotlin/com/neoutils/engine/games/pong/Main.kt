@@ -1,12 +1,24 @@
 package com.neoutils.engine.games.pong
 
 import com.neoutils.engine.runtime.GameConfig
+import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.serialization.NodeRegistry
+import com.neoutils.engine.serialization.SceneLoader
 import com.neoutils.engine.skiko.SkikoHost
+
+private const val SCENE_RESOURCE = "pong.scene.json"
 
 fun main() {
     registerPongTypes()
-    SkikoHost().run(PongScene(), GameConfig(title = "Pong", width = 800, height = 600))
+    val scene = loadScene()
+    SkikoHost().run(scene, GameConfig(title = "Pong", width = 800, height = 600))
+}
+
+private fun loadScene(): Scene {
+    val text = checkNotNull(
+        Scene::class.java.classLoader.getResource(SCENE_RESOURCE)
+    ) { "Resource not found on classpath: $SCENE_RESOURCE" }.readText()
+    return SceneLoader.load(text)
 }
 
 internal fun registerPongTypes() {

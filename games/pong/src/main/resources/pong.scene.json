@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "root": {
+    "type": "com.neoutils.engine.games.pong.PongScene",
+    "name": "PongScene",
+    "properties": {},
+    "children": [
+      {
+        "type": "com.neoutils.engine.games.pong.CenterLine",
+        "name": "centerLine",
+        "properties": {
+          "x": 400.0,
+          "height": 600.0
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Paddle",
+        "name": "left",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 16.0, "y": 96.0 },
+          "playFieldHeight": 600.0,
+          "upKey": "W",
+          "downKey": "S",
+          "ai": false,
+          "speed": 360.0,
+          "aiMaxSpeed": 220.0,
+          "aiTolerance": 8.0,
+          "target": ""
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Paddle",
+        "name": "right",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 16.0, "y": 96.0 },
+          "playFieldHeight": 600.0,
+          "upKey": null,
+          "downKey": null,
+          "ai": true,
+          "speed": 360.0,
+          "aiMaxSpeed": 220.0,
+          "aiTolerance": 8.0,
+          "target": "../Ball"
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Ball",
+        "name": "Ball",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 16.0, "y": 16.0 },
+          "ballSize": 16.0,
+          "initialSpeed": 280.0,
+          "maxSpeed": 560.0,
+          "speedupPerHit": 1.05,
+          "fieldCenter": { "x": 400.0, "y": 300.0 }
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Wall",
+        "name": "topWall",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 10.0, "y": 10.0 }
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Wall",
+        "name": "bottomWall",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 10.0, "y": 10.0 }
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Goal",
+        "name": "leftGoal",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 10.0, "y": 10.0 },
+          "side": "Left"
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Goal",
+        "name": "rightGoal",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 10.0, "y": 10.0 },
+          "side": "Right"
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Score",
+        "name": "leftScore",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "textSize": 48.0,
+          "color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 }
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.games.pong.Score",
+        "name": "rightScore",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "textSize": 48.0,
+          "color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 }
+        },
+        "children": []
+      }
+    ]
+  }
+}
