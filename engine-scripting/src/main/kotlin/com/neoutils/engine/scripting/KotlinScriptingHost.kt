@@ -12,7 +12,8 @@ import java.security.MessageDigest
 import kotlin.reflect.KClass
 import kotlin.script.experimental.api.*
 import kotlin.script.experimental.host.toScriptSource
-import kotlin.script.experimental.jvm.KJvmCompiledScript
+import kotlin.script.experimental.jvm.impl.KJvmCompiledScript
+import kotlin.script.experimental.jvm.dependenciesFromCurrentContext
 import kotlin.script.experimental.jvm.jvm
 import kotlin.script.experimental.jvm.updateClasspath
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
@@ -23,9 +24,10 @@ class KotlinScriptingHost(
 ) : ScriptHost {
 
     private val version = "1.0"
-    private val classesDir = File(cacheDir, "classes").apply { mkdirs() }
+    private val classesDir = File(cacheDir, "classes").absoluteFile.apply { mkdirs() }
     private val compiledClasses = mutableMapOf<String, KClass<out Node>>()
     private val reverseMapping = mutableMapOf<KClass<out Node>, String>()
+    private val compiledWrapperClasses = mutableListOf<String>()
     private val classLoader: URLClassLoader
 
     init {
@@ -60,7 +62,7 @@ class KotlinScriptingHost(
         val filesMap = if (cacheFile.exists()) {
             loadFromCache(cacheFile)
         } else {
-            val compiledFiles = performCompilation(path, scriptContent)
+            val compiledFiles = performCompilation(path, scriptContent, compiledWrapperClasses)
             saveToCache(cacheFile, compiledFiles)
             compiledFiles
         }
@@ -76,6 +78,8 @@ class KotlinScriptingHost(
             ?.removeSuffix(".class")
             ?.replace('/', '.')
             ?: throw IllegalStateException("No wrapper class found in compiled files for script $path")
+
+        compiledWrapperClasses.add(wrapperClassName)
 
         val nodeClasses = mutableListOf<Class<*>>()
         for (filename in filesMap.keys) {
@@ -107,15 +111,24 @@ class KotlinScriptingHost(
         return nodeKClass
     }
 
-    private fun performCompilation(path: String, scriptContent: String): Map<String, ByteArray> {
+    private fun performCompilation(path: String, scriptContent: String, wrapperClasses: List<String>): Map<String, ByteArray> {
         val host = BasicJvmScriptingHost()
-        val source = scriptContent.toScriptSource(path)
+        val prependedContent = "package scripts\n\n$scriptContent"
+        val source = prependedContent.toScriptSource(path)
 
         val config = ScriptCompilationConfiguration(NEngineScriptCompilationConfiguration) {
+            defaultImports(wrapperClasses.map { "$it.*" })
             jvm {
-                updateClasspath(listOf(classesDir))
+                dependenciesFromCurrentContext(wholeClasspath = true)
+                val classpathStr = System.getProperty("java.class.path") ?: ""
+                val systemClasspath = classpathStr
+                    .split(File.pathSeparator)
+                    .map { File(it) }
+                    .filter { it.exists() }
+                updateClasspath(systemClasspath + classesDir)
             }
         }
+
 
         val result = runBlocking { host.compiler(source, config) }
         val errors = result.reports.filter { it.severity == ScriptDiagnostic.Severity.ERROR }

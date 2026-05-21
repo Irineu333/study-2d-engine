@@ -15,8 +15,8 @@
 - [x] 2.6 Implement disk cache keyed by `sha256(scriptSource) + engineScriptingVersion`, persisted under the configured `cacheDir`.
 - [x] 2.7 Implement manifest-ordered compilation: pre-compile every script listed in `manifest` (in order) so each later script sees earlier ones on its classpath.
 - [x] 2.8 Implement reverse mapping `pathFor(klass)`, populated as each script compiles.
-- [ ] 2.9 Add a smoke test that compiles a trivial `Hello : Node()` script, verifies the returned `KClass`, instantiates it, and asserts it is assignable to `Node`.
-- [ ] 2.10 Add tests covering: missing script throws, syntax error throws, zero-class throws, two-class throws, non-Node top-level throws, cache hit avoids recompile, cache deletion forces recompile, manifest order makes earlier scripts visible to later ones.
+- [x] 2.9 Add a smoke test that compiles a trivial `Hello : Node()` script, verifies the returned `KClass`, instantiates it, and asserts it is assignable to `Node`.
+- [x] 2.10 Add tests covering: missing script throws, syntax error throws, zero-class throws, two-class throws, non-Node top-level throws, cache hit avoids recompile, cache deletion forces recompile, manifest order makes earlier scripts visible to later ones.
 
 ## 3. SceneLoader routing (E1)
 
