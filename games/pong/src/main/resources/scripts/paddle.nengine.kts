@@ -1,4 +1,3 @@
-import scripts.PaddleCollider
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "root": {
-    "type": "com.neoutils.engine.games.pong.PongScene",
+    "type": "scripts/pong-scene.nengine.kts",
     "name": "PongScene",
     "properties": {},
     "children": [
