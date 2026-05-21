@@ -61,11 +61,11 @@
 
 ## 8. Migrate Ball (E3b)
 
-- [ ] 8.1 Create `scripts/ball.nengine.kts` equivalent to `Ball.kt`. Confirm the script can still reference `BoxCollider` from `:engine` (pre-imported via the `physics.*` default import).
-- [ ] 8.2 Add to manifest after `walls`/`score` (`Ball` does not depend on `Paddle` directly; verify).
-- [ ] 8.3 Update `pong.scene.json` to reference the script.
-- [ ] 8.4 Delete `Ball.kt` and remove its `NodeRegistry` registration.
-- [ ] 8.5 **GATE E3b**: Run `./gradlew :games:pong:run`. Manual verification: ball moves, reflects off walls and paddles, emits scoring signal correctly.
+- [x] 8.1 Create `scripts/ball.nengine.kts` equivalent to `Ball.kt`. Confirm the script can still reference `BoxCollider` from `:engine` (pre-imported via the `physics.*` default import).
+- [x] 8.2 Add to manifest after `walls`/`score` (`Ball` does not depend on `Paddle` directly; verify).
+- [x] 8.3 Update `pong.scene.json` to reference the script.
+- [x] 8.4 Delete `Ball.kt` and remove its `NodeRegistry` registration.
+- [x] 8.5 **GATE E3b**: Run `./gradlew :games:pong:run`. Manual verification: ball moves, reflects off walls and paddles, emits scoring signal correctly.
 
 ## 9. Migrate Paddle (E4)
 

@@ -57,7 +57,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Ball",
+        "type": "scripts/ball.nengine.kts",
         "name": "Ball",
         "properties": {
           "transform": {

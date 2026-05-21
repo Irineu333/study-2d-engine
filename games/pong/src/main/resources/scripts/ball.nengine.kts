@@ -1,20 +1,11 @@
-package com.neoutils.engine.games.pong
-
-import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
-import com.neoutils.engine.physics.Collider
-import com.neoutils.engine.render.Color
-import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.serialization.Inspect
-import com.neoutils.engine.serialization.Signal
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
+import com.neoutils.engine.games.pong.GoalSide
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-@Serializable
 class Ball : BoxCollider() {
 
     @Inspect

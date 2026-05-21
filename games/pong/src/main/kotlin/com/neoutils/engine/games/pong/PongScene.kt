@@ -13,14 +13,20 @@ class PongScene : Scene() {
     }
 
     private fun wireScoring() {
-        val ball = findChild("Ball") as? Ball ?: return
+        val ball = findChild("Ball") ?: return
         val leftScore = findChild("leftScore")
         val rightScore = findChild("rightScore")
-        ball.onScore += { scorer ->
-            when (scorer) {
-                GoalSide.Left -> incrementScore(leftScore)
-                GoalSide.Right -> incrementScore(rightScore)
+        try {
+            @Suppress("UNCHECKED_CAST")
+            val onScoreSignal = ball::class.java.getMethod("getOnScore").invoke(ball) as com.neoutils.engine.serialization.Signal<GoalSide>
+            onScoreSignal += { scorer ->
+                when (scorer) {
+                    GoalSide.Left -> incrementScore(leftScore)
+                    GoalSide.Right -> incrementScore(rightScore)
+                }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -44,7 +50,7 @@ class PongScene : Scene() {
         val rightGoal = findChild("rightGoal") as? BoxCollider ?: return
         val leftPaddle = findChild("left") as? Paddle ?: return
         val rightPaddle = findChild("right") as? Paddle ?: return
-        val ball = findChild("Ball") as? Ball ?: return
+        val ball = findChild("Ball") ?: return
         val centerLine = findChild("centerLine") ?: return
 
         topWall.size = Vec2(width, WALL_THICKNESS)
@@ -68,9 +74,16 @@ class PongScene : Scene() {
             position = Vec2(width - PADDLE_MARGIN - Paddle.WIDTH, height / 2f - Paddle.HEIGHT / 2f)
         )
 
-        ball.fieldCenter = Vec2(width / 2f, height / 2f)
-        if (isLive) {
-            ball.reset(serveToward = if (ball.velocity.x >= 0f) 1f else -1f)
+        try {
+            val ballClass = ball::class.java
+            ballClass.getMethod("setFieldCenter", Vec2::class.java).invoke(ball, Vec2(width / 2f, height / 2f))
+            if (isLive) {
+                val velocity = ballClass.getMethod("getVelocity").invoke(ball) as Vec2
+                val serveToward = if (velocity.x >= 0f) 1f else -1f
+                ballClass.getMethod("reset", Float::class.java).invoke(ball, serveToward)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         val clClass = centerLine::class.java
         clClass.methods.firstOrNull { it.name == "setX" }?.invoke(centerLine, width / 2f)
