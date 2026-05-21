@@ -78,10 +78,12 @@ class SkikoHost : GameHost {
 
             frame.contentPane.add(skiaLayer, BorderLayout.CENTER)
 
-            frame.addKeyListener(object : KeyAdapter() {
+            val keyListener = object : KeyAdapter() {
                 override fun keyPressed(e: KeyEvent) = input.onAwtKey(e, pressed = true)
                 override fun keyReleased(e: KeyEvent) = input.onAwtKey(e, pressed = false)
-            })
+            }
+            frame.addKeyListener(keyListener)
+            skiaLayer.addKeyListener(keyListener)
             skiaLayer.addMouseListener(object : MouseAdapter() {
                 override fun mousePressed(e: MouseEvent) = input.onAwtMouseButton(e, pressed = true)
                 override fun mouseReleased(e: MouseEvent) = input.onAwtMouseButton(e, pressed = false)
