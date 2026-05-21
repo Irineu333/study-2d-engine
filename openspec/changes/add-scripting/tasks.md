@@ -7,7 +7,7 @@
 
 ## 2. Scripting backend module (E0b)
 
-- [ ] 2.1 Create the `:engine-scripting` Gradle module with `build.gradle.kts` depending on `:engine` and `org.jetbrains.kotlin:kotlin-scripting-jvm-host` (pinned version aligned with the project's Kotlin version).
+- [x] 2.1 Create the `:engine-scripting` Gradle module with `build.gradle.kts` depending on `:engine` and `org.jetbrains.kotlin:kotlin-scripting-jvm-host` (pinned version aligned with the project's Kotlin version).
 - [ ] 2.2 Register the module in `settings.gradle.kts`.
 - [ ] 2.3 Implement `KotlinScriptingHost(manifest: List<String>, cacheDir: File)` implementing `ScriptHost`.
 - [ ] 2.4 Define a custom `ScriptDefinition` for the `.nengine.kts` extension with default imports for `com.neoutils.engine.scene.*`, `math.*`, `render.*`, `input.*`, `serialization.*`, `physics.*`.
