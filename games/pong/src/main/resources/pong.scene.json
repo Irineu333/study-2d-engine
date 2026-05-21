@@ -75,7 +75,7 @@
         "children": []
       },
       {
-        "type": "scripts/walls.nengine.kts",
+        "type": "com.neoutils.engine.physics.BoxCollider",
         "name": "topWall",
         "properties": {
           "transform": {
@@ -88,7 +88,7 @@
         "children": []
       },
       {
-        "type": "scripts/walls.nengine.kts",
+        "type": "com.neoutils.engine.physics.BoxCollider",
         "name": "bottomWall",
         "properties": {
           "transform": {

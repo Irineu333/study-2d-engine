@@ -16,8 +16,8 @@
 
 ## 4. Atualizar o pong.scene.json
 
-- [ ] 4.1 Em `games/pong/src/main/resources/pong.scene.json`, mudar `"type"` de `topWall` de `scripts/walls.nengine.kts` para `com.neoutils.engine.physics.BoxCollider`. Manter `name`, `properties` e `children` inalterados.
-- [ ] 4.2 Repetir para `bottomWall`.
+- [x] 4.1 Em `games/pong/src/main/resources/pong.scene.json`, mudar `"type"` de `topWall` de `scripts/walls.nengine.kts` para `com.neoutils.engine.physics.BoxCollider`. Manter `name`, `properties` e `children` inalterados.
+- [x] 4.2 Repetir para `bottomWall`.
 
 ## 5. Atualizar o Main.kt do Pong
 
