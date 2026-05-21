@@ -14,6 +14,8 @@ fun main() {
     registerPongTypes()
     val scriptingHost = KotlinScriptingHost(
         manifest = listOf(
+            "scripts/walls.nengine.kts",
+            "scripts/goal.nengine.kts",
             "scripts/center-line.nengine.kts",
             "scripts/score.nengine.kts"
         ),
@@ -37,6 +39,4 @@ internal fun registerPongTypes() {
     NodeRegistry.register(Paddle::class) { Paddle() }
     NodeRegistry.register(PaddleCollider::class) { PaddleCollider() }
     NodeRegistry.register(Ball::class) { Ball() }
-    NodeRegistry.register(Wall::class) { Wall() }
-    NodeRegistry.register(Goal::class) { Goal() }
 }

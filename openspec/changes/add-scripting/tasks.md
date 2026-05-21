@@ -53,11 +53,11 @@
 
 ## 7. Migrate Walls (E3a)
 
-- [ ] 7.1 Create `scripts/walls.nengine.kts` equivalent to `Walls.kt` (and any `Goal` colliders if currently part of `Walls`).
-- [ ] 7.2 Add to manifest before any script that depends on it.
-- [ ] 7.3 Update `pong.scene.json` to reference the script path.
-- [ ] 7.4 Delete `Walls.kt` and remove its `NodeRegistry` registration.
-- [ ] 7.5 **GATE E3a**: Run `./gradlew :games:pong:run`. Manual verification: ball reflects off top/bottom walls and goal collisions trigger scoring.
+- [x] 7.1 Create `scripts/walls.nengine.kts` equivalent to `Walls.kt` (and any `Goal` colliders if currently part of `Walls`).
+- [x] 7.2 Add to manifest before any script that depends on it.
+- [x] 7.3 Update `pong.scene.json` to reference the script path.
+- [x] 7.4 Delete `Walls.kt` and remove its `NodeRegistry` registration.
+- [x] 7.5 **GATE E3a**: Run `./gradlew :games:pong:run`. Manual verification: ball reflects off top/bottom walls and goal collisions trigger scoring.
 
 ## 8. Migrate Ball (E3b)
 

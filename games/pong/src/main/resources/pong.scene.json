@@ -75,7 +75,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Wall",
+        "type": "scripts/walls.nengine.kts",
         "name": "topWall",
         "properties": {
           "transform": {
@@ -88,7 +88,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Wall",
+        "type": "scripts/walls.nengine.kts",
         "name": "bottomWall",
         "properties": {
           "transform": {
@@ -101,7 +101,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Goal",
+        "type": "scripts/goal.nengine.kts",
         "name": "leftGoal",
         "properties": {
           "transform": {
@@ -115,7 +115,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Goal",
+        "type": "scripts/goal.nengine.kts",
         "name": "rightGoal",
         "properties": {
           "transform": {

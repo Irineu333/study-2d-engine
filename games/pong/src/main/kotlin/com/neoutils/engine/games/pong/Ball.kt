@@ -34,7 +34,7 @@ class Ball : BoxCollider() {
 
     /** Emitted on every scoring event with the side that scored. */
     @Transient
-    val onScore: Signal<Goal.Side> = Signal()
+    val onScore: Signal<GoalSide> = Signal()
 
     @Transient
     var velocity: Vec2 = Vec2.ZERO
@@ -74,15 +74,20 @@ class Ball : BoxCollider() {
 
     override fun onCollide(other: Collider) {
         if (scoredThisTick) return
-        when (other) {
-            is Goal -> {
-                val scorer = if (other.side == Goal.Side.Left) Goal.Side.Right else Goal.Side.Left
+        val otherClassName = other::class.java.simpleName
+        when (otherClassName) {
+            "Goal" -> {
+                val sideMethod = other::class.java.getMethod("getSide")
+                val sideValue = sideMethod.invoke(other) as GoalSide
+                val scorer = if (sideValue == GoalSide.Left) GoalSide.Right else GoalSide.Left
                 onScore.emit(scorer)
-                reset(serveToward = if (other.side == Goal.Side.Left) 1f else -1f)
+                reset(serveToward = if (sideValue == GoalSide.Left) 1f else -1f)
                 scoredThisTick = true
             }
-            is Wall -> velocity = velocity.copy(y = -velocity.y)
-            is PaddleCollider -> {
+            "Wall" -> {
+                velocity = velocity.copy(y = -velocity.y)
+            }
+            "PaddleCollider" -> {
                 val paddleBounds = other.bounds()
                 val paddleCenterY = paddleBounds.top + paddleBounds.size.y / 2f
                 val ballCenterY = transform.position.y + ballSize / 2f

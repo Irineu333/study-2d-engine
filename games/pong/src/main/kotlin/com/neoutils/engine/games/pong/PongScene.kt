@@ -2,6 +2,7 @@ package com.neoutils.engine.games.pong
 
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.physics.BoxCollider
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -17,8 +18,8 @@ class PongScene : Scene() {
         val rightScore = findChild("rightScore")
         ball.onScore += { scorer ->
             when (scorer) {
-                Goal.Side.Left -> incrementScore(leftScore)
-                Goal.Side.Right -> incrementScore(rightScore)
+                GoalSide.Left -> incrementScore(leftScore)
+                GoalSide.Right -> incrementScore(rightScore)
             }
         }
     }
@@ -37,10 +38,10 @@ class PongScene : Scene() {
     }
 
     private fun layout(width: Float, height: Float) {
-        val topWall = findChild("topWall") as? Wall ?: return
-        val bottomWall = findChild("bottomWall") as? Wall ?: return
-        val leftGoal = findChild("leftGoal") as? Goal ?: return
-        val rightGoal = findChild("rightGoal") as? Goal ?: return
+        val topWall = findChild("topWall") as? BoxCollider ?: return
+        val bottomWall = findChild("bottomWall") as? BoxCollider ?: return
+        val leftGoal = findChild("leftGoal") as? BoxCollider ?: return
+        val rightGoal = findChild("rightGoal") as? BoxCollider ?: return
         val leftPaddle = findChild("left") as? Paddle ?: return
         val rightPaddle = findChild("right") as? Paddle ?: return
         val ball = findChild("Ball") as? Ball ?: return
