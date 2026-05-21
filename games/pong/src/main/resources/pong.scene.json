@@ -129,7 +129,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Score",
+        "type": "scripts/score.nengine.kts",
         "name": "leftScore",
         "properties": {
           "transform": {
@@ -143,7 +143,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.games.pong.Score",
+        "type": "scripts/score.nengine.kts",
         "name": "rightScore",
         "properties": {
           "transform": {

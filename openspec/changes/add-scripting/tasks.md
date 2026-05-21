@@ -45,11 +45,11 @@
 
 ## 6. Migrate Score (E2-bis)
 
-- [ ] 6.1 Create `scripts/score.nengine.kts` equivalent to `Score.kt`.
-- [ ] 6.2 Update the manifest in `Main.kt` to include the new script (after `center-line`, before any script that depends on `Score`).
-- [ ] 6.3 Update `pong.scene.json` entries for Score nodes to reference `"scripts/score.nengine.kts"`.
-- [ ] 6.4 Delete `Score.kt` and remove its `NodeRegistry` registration.
-- [ ] 6.5 **GATE E2-bis**: Run `./gradlew :games:pong:run`. Manual verification: HUD scores still update when balls cross goals.
+- [x] 6.1 Create `scripts/score.nengine.kts` equivalent to `Score.kt`.
+- [x] 6.2 Update the manifest in `Main.kt` to include the new script (after `center-line`, before any script that depends on `Score`).
+- [x] 6.3 Update `pong.scene.json` entries for Score nodes to reference `"scripts/score.nengine.kts"`.
+- [x] 6.4 Delete `Score.kt` and remove its `NodeRegistry` registration.
+- [x] 6.5 **GATE E2-bis**: Run `./gradlew :games:pong:run`. Manual verification: HUD scores still update when balls cross goals.
 
 ## 7. Migrate Walls (E3a)
 

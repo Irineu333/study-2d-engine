@@ -13,13 +13,22 @@ class PongScene : Scene() {
 
     private fun wireScoring() {
         val ball = findChild("Ball") as? Ball ?: return
-        val leftScore = findChild("leftScore") as? Score
-        val rightScore = findChild("rightScore") as? Score
+        val leftScore = findChild("leftScore")
+        val rightScore = findChild("rightScore")
         ball.onScore += { scorer ->
             when (scorer) {
-                Goal.Side.Left -> leftScore?.increment()
-                Goal.Side.Right -> rightScore?.increment()
+                Goal.Side.Left -> incrementScore(leftScore)
+                Goal.Side.Right -> incrementScore(rightScore)
             }
+        }
+    }
+
+    private fun incrementScore(scoreNode: Any?) {
+        if (scoreNode == null) return
+        try {
+            scoreNode::class.java.getMethod("increment").invoke(scoreNode)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -66,8 +75,8 @@ class PongScene : Scene() {
         clClass.methods.firstOrNull { it.name == "setX" }?.invoke(centerLine, width / 2f)
         clClass.methods.firstOrNull { it.name == "setHeight" }?.invoke(centerLine, height)
 
-        val leftScore = findChild("leftScore") as? Score ?: return
-        val rightScore = findChild("rightScore") as? Score ?: return
+        val leftScore = findChild("leftScore") as? com.neoutils.engine.scene.Node2D ?: return
+        val rightScore = findChild("rightScore") as? com.neoutils.engine.scene.Node2D ?: return
         val scoreY = 24f
         val scoreOffset = 80f
         leftScore.transform = leftScore.transform.copy(

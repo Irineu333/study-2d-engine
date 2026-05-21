@@ -1,13 +1,6 @@
-package com.neoutils.engine.games.pong
-
-import com.neoutils.engine.render.Color
-import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
-@Serializable
 class Score : Node2D() {
 
     @Inspect
