@@ -19,7 +19,7 @@ class Paddle : Node2D() {
     var ai: Boolean = false
 
     @Inspect
-    var speed: Float = 360f
+    var speed: Float = 370f
 
     @Inspect
     var aiMaxSpeed: Float = 220f
