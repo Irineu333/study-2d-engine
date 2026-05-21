@@ -64,9 +64,8 @@ class Ball : BoxCollider() {
 
     override fun onCollide(other: Collider) {
         if (scoredThisTick) return
-        val otherClassName = other::class.java.simpleName
-        when (otherClassName) {
-            "Goal" -> {
+        when {
+            other::class.java.simpleName == "Goal" -> {
                 val sideMethod = other::class.java.getMethod("getSide")
                 val sideValue = sideMethod.invoke(other) as GoalSide
                 val scorer = if (sideValue == GoalSide.Left) GoalSide.Right else GoalSide.Left
@@ -74,10 +73,7 @@ class Ball : BoxCollider() {
                 reset(serveToward = if (sideValue == GoalSide.Left) 1f else -1f)
                 scoredThisTick = true
             }
-            "Wall" -> {
-                velocity = velocity.copy(y = -velocity.y)
-            }
-            "PaddleCollider" -> {
+            other.parent?.let { it::class.java.simpleName == "Paddle" } == true -> {
                 val paddleBounds = other.bounds()
                 val paddleCenterY = paddleBounds.top + paddleBounds.size.y / 2f
                 val ballCenterY = transform.position.y + ballSize / 2f
@@ -99,6 +95,10 @@ class Ball : BoxCollider() {
                 val shift = if (horizontalSign < 0f) paddleBounds.left - ballRight - 0.5f
                 else paddleBounds.right - ballLeft + 0.5f
                 transform = transform.copy(position = ballPos.copy(x = ballPos.x + shift))
+            }
+            // Fall-through: qualquer outro BoxCollider (topWall/bottomWall) é parede.
+            else -> {
+                velocity = velocity.copy(y = -velocity.y)
             }
         }
     }

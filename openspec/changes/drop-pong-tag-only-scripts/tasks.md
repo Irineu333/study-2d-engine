@@ -1,7 +1,7 @@
 ## 1. Refatorar dispatch de colisão do Ball
 
-- [ ] 1.1 Em `games/pong/src/main/resources/scripts/ball.nengine.kts`, substituir o `when (otherClassName)` por três checks estruturais: `other is Goal` (gol), `other.parent is Paddle` (paddle), `else` para `BoxCollider` (parede). Manter a leitura reflexiva de `getSide()` no ramo do gol — não é objetivo desta change. Remover a variável `otherClassName`.
-- [ ] 1.2 Confirmar que a ordem dos checks faz sentido: gol primeiro (caso especial), depois paddle (estrutural via parent), depois parede (fallback). Adicionar um único comentário curto explicando "o fall-through corresponde às paredes" — só o "porquê" não-óbvio.
+- [x] 1.1 Em `games/pong/src/main/resources/scripts/ball.nengine.kts`, substituir o `when (otherClassName)` por três checks estruturais: `other is Goal` (gol), `other.parent is Paddle` (paddle), `else` para `BoxCollider` (parede). Manter a leitura reflexiva de `getSide()` no ramo do gol — não é objetivo desta change. Remover a variável `otherClassName`.
+- [x] 1.2 Confirmar que a ordem dos checks faz sentido: gol primeiro (caso especial), depois paddle (estrutural via parent), depois parede (fallback). Adicionar um único comentário curto explicando "o fall-through corresponde às paredes" — só o "porquê" não-óbvio.
 
 ## 2. Trocar PaddleCollider por BoxCollider no Paddle
 
