@@ -1,7 +1,7 @@
 ## 1. Engine SPI (E0a)
 
 - [x] 1.1 Add `ScriptHost` interface in `:engine` under `com.neoutils.engine.scripting` (or analogous package) with `compile(path: String): KClass<out Node>`, `factoryFor(path: String): () -> Node`, and `pathFor(klass: KClass<out Node>): String?`.
-- [ ] 1.2 Add `ScriptHosts` object in `:engine` with `register(host: ScriptHost)`, `current(): ScriptHost?`, and internal `clear()` for tests.
+- [x] 1.2 Add `ScriptHosts` object in `:engine` with `register(host: ScriptHost)`, `current(): ScriptHost?`, and internal `clear()` for tests.
 - [ ] 1.3 Verify by inspection that the file declaring `ScriptHost` imports only `com.neoutils.engine.*`, `kotlin.*`, and `kotlin.reflect.*`.
 - [ ] 1.4 Add unit tests covering `ScriptHosts.register`/`current`/`clear` lifecycle.
 

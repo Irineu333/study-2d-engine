@@ -8,3 +8,18 @@ interface ScriptHost {
     fun factoryFor(path: String): () -> Node
     fun pathFor(klass: KClass<out Node>): String?
 }
+
+object ScriptHosts {
+    private var currentHost: ScriptHost? = null
+
+    fun register(host: ScriptHost) {
+        currentHost = host
+    }
+
+    fun current(): ScriptHost? = currentHost
+
+    internal fun clear() {
+        currentHost = null
+    }
+}
+
