@@ -14,12 +14,10 @@ fun main() {
     registerPongTypes()
     val scriptingHost = KotlinScriptingHost(
         manifest = listOf(
-            "scripts/walls.nengine.kts",
             "scripts/goal.nengine.kts",
-            "scripts/center-line.nengine.kts",
             "scripts/score.nengine.kts",
+            "scripts/center-line.nengine.kts",
             "scripts/ball.nengine.kts",
-            "scripts/paddle-collider.nengine.kts",
             "scripts/paddle.nengine.kts",
             "scripts/pong-scene.nengine.kts"
         ),

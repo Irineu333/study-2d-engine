@@ -21,9 +21,9 @@
 
 ## 5. Atualizar o Main.kt do Pong
 
-- [ ] 5.1 Em `games/pong/src/main/kotlin/.../Main.kt`, remover `scripts/paddle-collider.nengine.kts` da lista da manifest passada ao `KotlinScriptingHost`.
-- [ ] 5.2 Remover `scripts/walls.nengine.kts` da mesma manifest.
-- [ ] 5.3 Confirmar que a manifest restante segue a ordem `goal, score, center-line, ball, paddle, pong-scene` (leaves → mid → root).
+- [x] 5.1 Em `games/pong/src/main/kotlin/.../Main.kt`, remover `scripts/paddle-collider.nengine.kts` da lista da manifest passada ao `KotlinScriptingHost`.
+- [x] 5.2 Remover `scripts/walls.nengine.kts` da mesma manifest.
+- [x] 5.3 Confirmar que a manifest restante segue a ordem `goal, score, center-line, ball, paddle, pong-scene` (leaves → mid → root).
 
 ## 6. Validar comportamento
 
