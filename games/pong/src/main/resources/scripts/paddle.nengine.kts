@@ -31,11 +31,11 @@ class Paddle : Node2D() {
     var target: NodeRef<Node2D> = NodeRef("")
 
     @Transient
-    private var collider: PaddleCollider? = null
+    private var collider: BoxCollider? = null
 
     override fun onEnter() {
         if (collider == null) {
-            val c = PaddleCollider().apply { size = this@Paddle.size }
+            val c = BoxCollider().apply { size = this@Paddle.size }
             collider = c
             addChild(c)
         }

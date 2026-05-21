@@ -5,9 +5,9 @@
 
 ## 2. Trocar PaddleCollider por BoxCollider no Paddle
 
-- [ ] 2.1 Em `paddle.nengine.kts`, mudar `@Transient private var collider: PaddleCollider?` para `BoxCollider?`.
-- [ ] 2.2 No `onEnter` do `Paddle`, mudar `PaddleCollider()` para `BoxCollider()`. Manter o `apply { size = this@Paddle.size }`.
-- [ ] 2.3 Verificar que `com.neoutils.engine.physics.BoxCollider` resolve via import implícito do `KotlinScriptingHost` (pacote `physics.*` já está nos imports padrão).
+- [x] 2.1 Em `paddle.nengine.kts`, mudar `@Transient private var collider: PaddleCollider?` para `BoxCollider?`.
+- [x] 2.2 No `onEnter` do `Paddle`, mudar `PaddleCollider()` para `BoxCollider()`. Manter o `apply { size = this@Paddle.size }`.
+- [x] 2.3 Verificar que `com.neoutils.engine.physics.BoxCollider` resolve via import implícito do `KotlinScriptingHost` (pacote `physics.*` já está nos imports padrão).
 
 ## 3. Remover scripts redundantes
 
