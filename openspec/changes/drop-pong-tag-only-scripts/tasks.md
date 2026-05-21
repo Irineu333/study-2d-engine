@@ -27,9 +27,9 @@
 
 ## 6. Validar comportamento
 
-- [ ] 6.1 Limpar caches de script (`rm -rf games/pong/build/scripting-cache` e `games/pong/build/resources/main/scripts/paddle-collider.nengine.kts games/pong/build/resources/main/scripts/walls.nengine.kts`) para evitar resíduos.
-- [ ] 6.2 Rodar `./gradlew :games:pong:run` e jogar uma partida: paddles se movem, bola ricocheteia em paredes e paddles, gol incrementa o placar do lado oposto e reposiciona a bola.
-- [ ] 6.3 Rodar `./gradlew :games:pong:test` (e `:engine:test`, `:engine-scripting:test`) e confirmar verde.
+- [x] 6.1 Limpar caches de script (`rm -rf games/pong/build/scripting-cache` e `games/pong/build/resources/main/scripts/paddle-collider.nengine.kts games/pong/build/resources/main/scripts/walls.nengine.kts`) para evitar resíduos.
+- [x] 6.2 Rodar `./gradlew :games:pong:run` e jogar uma partida: paddles se movem, bola ricocheteia em paredes e paddles, gol incrementa o placar do lado oposto e reposiciona a bola.
+- [x] 6.3 Rodar `./gradlew :games:pong:test` (e `:engine:test`, `:engine-scripting:test`) e confirmar verde.
 
 ## 7. Sincronizar specs e change
 

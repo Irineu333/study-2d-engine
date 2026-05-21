@@ -12,8 +12,8 @@ class PongScene : Scene() {
         val rightScore = findChild("rightScore") as? Score
         ball.onScore += { scorer ->
             when (scorer) {
-                GoalSide.Left -> incrementScore(leftScore)
-                GoalSide.Right -> incrementScore(rightScore)
+                Goal.Side.Left -> incrementScore(leftScore)
+                Goal.Side.Right -> incrementScore(rightScore)
             }
         }
     }
