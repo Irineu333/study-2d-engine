@@ -29,6 +29,8 @@ class KotlinScriptingHost(
     private val reverseMapping = mutableMapOf<KClass<out Node>, String>()
     private val compiledWrapperClasses = mutableListOf<String>()
     private val classLoader: URLClassLoader
+    var compilationCount = 0
+        private set
 
     init {
         classLoader = URLClassLoader(arrayOf(classesDir.toURI().toURL()), this::class.java.classLoader)
@@ -112,6 +114,7 @@ class KotlinScriptingHost(
     }
 
     private fun performCompilation(path: String, scriptContent: String, wrapperClasses: List<String>): Map<String, ByteArray> {
+        compilationCount++
         val host = BasicJvmScriptingHost()
         val prependedContent = "package scripts\n\n$scriptContent"
         val source = prependedContent.toScriptSource(path)
