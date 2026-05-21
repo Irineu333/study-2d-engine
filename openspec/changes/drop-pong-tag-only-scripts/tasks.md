@@ -33,5 +33,5 @@
 
 ## 7. Sincronizar specs e change
 
-- [ ] 7.1 Rodar `openspec validate drop-pong-tag-only-scripts --strict` e corrigir o que aparecer.
-- [ ] 7.2 Rodar `openspec status --change drop-pong-tag-only-scripts` e conferir que tudo está `done` antes de chamar `/opsx:verify`.
+- [x] 7.1 Rodar `openspec validate drop-pong-tag-only-scripts --strict` e corrigir o que aparecer.
+- [x] 7.2 Rodar `openspec status --change drop-pong-tag-only-scripts` e conferir que tudo está `done` antes de chamar `/opsx:verify`.
