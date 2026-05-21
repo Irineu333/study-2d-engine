@@ -96,21 +96,21 @@
 
 ## 12. Documentation and bookkeeping (E7)
 
-- [ ] 12.1 Update `CLAUDE.md` "Module Structure" section to add `:engine-scripting` and a one-line description.
-- [ ] 12.2 Add a "Scripting" subsection to `CLAUDE.md` describing the `.nengine.kts` contract (one top-level Node subclass, default imports, manifest, no hot reload, fail-fast).
-- [ ] 12.3 Add `:engine-scripting` to the module table where appropriate.
-- [ ] 12.4 Update the Roadmap table in `CLAUDE.md` adding the `add-scripting` change as Archived (filled at archival time).
-- [ ] 12.5 Run `./gradlew build` from project root and confirm clean build of all modules.
-- [ ] 12.6 Run `./gradlew :games:tictactoe:run` briefly to confirm tictactoe still works without scripting dependencies pulled in.
-- [ ] 12.7 Run `./gradlew :games:demos:run` briefly to confirm demos still works.
-- [ ] 12.8 Run `./gradlew :games:pong:run` for a final manual playtest.
+- [x] 12.1 Update `CLAUDE.md` "Module Structure" section to add `:engine-scripting` and a one-line description.
+- [x] 12.2 Add a "Scripting" subsection to `CLAUDE.md` describing the `.nengine.kts` contract (one top-level Node subclass, default imports, manifest, no hot reload, fail-fast).
+- [x] 12.3 Add `:engine-scripting` to the module table where appropriate.
+- [x] 12.4 Update the Roadmap table in `CLAUDE.md` adding the `add-scripting` change as Archived (filled at archival time).
+- [x] 12.5 Run `./gradlew build` from project root and confirm clean build of all modules.
+- [x] 12.6 Run `./gradlew :games:tictactoe:run` briefly to confirm tictactoe still works without scripting dependencies pulled in.
+- [x] 12.7 Run `./gradlew :games:demos:run` briefly to confirm demos still works.
+- [x] 12.8 Run `./gradlew :games:pong:run` for a final manual playtest.
 
 ## 13. Cache and resilience checks
 
-- [ ] 13.1 Delete `:games:pong/build/scripting-cache/`, run Pong, verify the cache is rebuilt and the game runs normally.
-- [ ] 13.2 Modify a single script (e.g. tweak `Paddle.speed` default), run Pong, verify only the changed script recompiles and the new default takes effect.
-- [ ] 13.3 Verify that `./gradlew clean` removes the cache (or alternatively that the cache is robust to staleness — document the chosen behavior).
-- [ ] 13.4 Add a unit test or integration test asserting that the cache hit path does not invoke the kotlin compiler (e.g. by counting calls to a wrapped `BasicJvmScriptingHost`).
+- [x] 13.1 Delete `:games:pong/build/scripting-cache/`, run Pong, verify the cache is rebuilt and the game runs normally.
+- [x] 13.2 Modify a single script (e.g. tweak `Paddle.speed` default), run Pong, verify only the changed script recompiles and the new default takes effect.
+- [x] 13.3 Verify that `./gradlew clean` removes the cache (or alternatively that the cache is robust to staleness — document the chosen behavior).
+- [x] 13.4 Add a unit test or integration test asserting that the cache hit path does not invoke the kotlin compiler (e.g. by counting calls to a wrapped `BasicJvmScriptingHost`).
 
 ## 14. Verify and archive
 
