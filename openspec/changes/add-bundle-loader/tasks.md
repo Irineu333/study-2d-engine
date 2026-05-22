@@ -90,4 +90,4 @@
 - [ ] 10.2 Run `./gradlew :engine-bundle:test :engine:test` and confirm all unit tests pass.
 - [ ] 10.3 Run `./gradlew :games:pong:run`, play a brief match (or simulate one), and confirm gameplay matches the pre-change behavior.
 - [ ] 10.4 Confirm `:games:tictactoe` and `:games:demos` still build and run (no regression from the registry refactor).
-- [ ] 10.5 Run `openspec validate add-bundle-loader --strict` and address any reported issues.
+- [x] 10.5 Run `openspec validate add-bundle-loader --strict` and address any reported issues.
