@@ -1,4 +1,3 @@
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 class Paddle : Node2D() {

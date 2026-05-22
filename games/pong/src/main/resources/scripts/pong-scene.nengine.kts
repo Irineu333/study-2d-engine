@@ -1,5 +1,3 @@
-import kotlinx.serialization.Serializable
-
 class PongScene : Scene() {
 
     override fun onEnter() {

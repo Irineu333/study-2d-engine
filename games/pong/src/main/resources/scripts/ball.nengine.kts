@@ -2,7 +2,6 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 class Ball : BoxCollider() {

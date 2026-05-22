@@ -134,6 +134,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `add-skiko-runtime`   | Archived | Runtime Skiko puro (sem Compose) como backend padrão; `ComposeHost`/`SkikoHost` implementando o novo `GameHost` SPI; overlay de debug unificado. |
 | `prepare-for-serialization` | Archived | Primitivas `NodeRef`/`Signal`/`@Inspect`, `NodeRegistry`, `SceneLoader` (`save`/`load` JSON via `kotlinx.serialization`); refactor de Pong/Demos/Velha para construtores no-args + `@Inspect` var; `pong.scene.json` como entry point principal de Pong. |
 | `add-scripting`       | Archived | Compilador e cache de scripts Kotlin `.nengine.kts` via Kotlin Scripting, e migração completa de Pong para scripts. |
+| `drop-pong-tag-only-scripts` | Archived | Remove scripts vazios (`paddle-collider`, `walls`) que serviam só como tag; usa `BoxCollider` da engine por FQN no `pong.scene.json`; `Ball.onCollide` despacha por estrutura da cena; rename `Goal.GoalSide` → `Goal.Side`. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.
