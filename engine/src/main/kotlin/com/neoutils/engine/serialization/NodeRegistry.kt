@@ -42,6 +42,9 @@ object NodeRegistry {
 
     fun isRegistered(identifier: String): Boolean = identifier in byIdentifier
 
+    fun findBySimpleName(simpleName: String): KClass<out Node>? =
+        identifierByClass.keys.firstOrNull { it.simpleName == simpleName }
+
     /** Drops every registration. Intended for tests; production code typically
      *  registers once at startup and never clears. */
     fun clear() {

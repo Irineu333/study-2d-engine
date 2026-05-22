@@ -20,10 +20,10 @@
 
 ## 3. E2 — Implement PythonScriptHost
 
-- [ ] 3.1 Create `PythonScriptHost` class in `:engine-bundle-python` implementing `ScriptHost` with `extension = ".py"`.
-- [ ] 3.2 Build the `Context` Polyglot eagerly in the host constructor: `Context.newBuilder("python").allowAllAccess(true).option("python.PosixModuleBackend", "java").build()`.
-- [ ] 3.3 Inject pre-bindings into the Context: `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`.
-- [ ] 3.4 Implement `load(path, bundle)`:
+- [x] 3.1 Create `PythonScriptHost` class in `:engine-bundle-python` implementing `ScriptHost` with `extension = ".py"`.
+- [x] 3.2 Build the `Context` Polyglot eagerly in the host constructor: `Context.newBuilder("python").allowAllAccess(true).option("python.PosixModuleBackend", "java").build()`.
+- [x] 3.3 Inject pre-bindings into the Context: `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`.
+- [x] 3.4 Implement `load(path, bundle)`:
   - Read source via `bundle.read(path)`.
   - Parse the first non-empty line to extract `extends <NodeType>` (docstring or `# extends ...` form).
   - Resolve `<NodeType>` against `NodeRegistry`; fail-fast with named exception if unknown.
@@ -31,15 +31,15 @@
   - Evaluate the module source itself in the Context (with `Source.named(path).build()`) so its top-level executes once.
   - Cache the resulting `Value` (module object) keyed by path.
   - Return a `Script` containing `path`, `extendsType`, and `exports`.
-- [ ] 3.5 Implement `attach(node, script)`:
+- [x] 3.5 Implement `attach(node, script)`:
   - Look up the cached module `Value` by `script.path`.
   - Build a Python-side instance object that proxies `self` to the Kotlin `Node` (using GraalPy host interop).
   - Return a `ScriptInstance` whose hook methods call into Python (`module.on_update(self, dt)`).
   - Missing hook methods become no-ops (check `Value.hasMember("on_update")` etc.).
-- [ ] 3.6 Implement `ScriptInstance.setExport(name, value)` that assigns the converted value onto the Python instance object.
-- [ ] 3.7 Add JSON → Kotlin coercion table for prop values (`JsonPrimitive(360.0)` → `Float`, `JsonObject({x, y})` → `Vec2`, etc.). Helper lives in `:engine-bundle` since it depends only on engine types.
-- [ ] 3.8 Add a static call `PythonScriptHost.install()` that constructs the host and registers it in `ScriptHostRegistry`. Document that callers (or `BundleLoader`) trigger this.
-- [ ] 3.9 Write unit tests:
+- [x] 3.6 Implement `ScriptInstance.setExport(name, value)` that assigns the converted value onto the Python instance object.
+- [x] 3.7 Add JSON → Kotlin coercion table for prop values (`JsonPrimitive(360.0)` → `Float`, `JsonObject({x, y})` → `Vec2`, etc.). Helper lives in `:engine-bundle` since it depends only on engine types.
+- [x] 3.8 Add a static call `PythonScriptHost.install()` that constructs the host and registers it in `ScriptHostRegistry`. Document that callers (or `BundleLoader`) trigger this.
+- [x] 3.9 Write unit tests:
   - Loading a trivial `.py` with `# extends Node2D` and `speed: float = 360.0` produces a `Script` whose `extendsType` is `Node2D::class` and `exports` contains the speed entry.
   - Missing `extends` declaration fails fast with a named exception.
   - Unknown `extends` type fails fast.
@@ -47,7 +47,7 @@
   - `Optional[Key]` is detected as nullable.
   - Attaching a script to a `Node2D` and calling `onUpdate` invokes `on_update` in Python.
   - Missing `on_collide` does not throw when the node receives a collision.
-- [ ] 3.10 Confirm test suite passes.
+- [x] 3.10 Confirm test suite passes.
 
 ## 4. E3 — Wire ScriptHost into BundleLoader and SceneLoader
 
