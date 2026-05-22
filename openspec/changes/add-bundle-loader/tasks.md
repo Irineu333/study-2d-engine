@@ -1,9 +1,9 @@
 ## 1. Create :engine-bundle module skeleton
 
-- [ ] 1.1 Add `engine-bundle/` directory with `build.gradle.kts` mirroring `:engine-scripting` (Kotlin JVM, depends on `:engine` and `kotlin-scripting-jvm-host`).
-- [ ] 1.2 Register `:engine-bundle` in `settings.gradle.kts` and remove `include(":engine-scripting")`.
-- [ ] 1.3 Create base package `com.neoutils.engine.bundle` and an internal sub-package `com.neoutils.engine.bundle.scripting` for migrated scripting code.
-- [ ] 1.4 Verify `:engine-bundle` is not on the resolved classpath of `:engine`, `:engine-skiko`, or `:engine-compose` (no reverse dependency).
+- [x] 1.1 Add `engine-bundle/` directory with `build.gradle.kts` mirroring `:engine-scripting` (Kotlin JVM, depends on `:engine` and `kotlin-scripting-jvm-host`).
+- [x] 1.2 Register `:engine-bundle` in `settings.gradle.kts` and remove `include(":engine-scripting")`.
+- [x] 1.3 Create base package `com.neoutils.engine.bundle` and an internal sub-package `com.neoutils.engine.bundle.scripting` for migrated scripting code.
+- [x] 1.4 Verify `:engine-bundle` is not on the resolved classpath of `:engine`, `:engine-skiko`, or `:engine-compose` (no reverse dependency).
 
 ## 2. Move scripting backend into :engine-bundle
 
