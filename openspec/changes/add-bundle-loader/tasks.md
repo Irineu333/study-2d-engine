@@ -79,10 +79,10 @@
 
 ## 9. Update conventions and documentation
 
-- [ ] 9.1 Update `CLAUDE.md` module structure table: replace `:engine-scripting` line with `:engine-bundle`, describing its responsibility as "bundle loading + internal Kotlin script compilation".
-- [ ] 9.2 Update `CLAUDE.md` "How to Run" section if it references the old `pong.scene.json` path — point to `pong/scene.json`.
-- [ ] 9.3 Add a new row to the `CLAUDE.md` roadmap table for `add-bundle-loader` with status `Active` (transitions to `Archived` at archive time).
-- [ ] 9.4 Update the `Scripting contract (.nengine.kts)` subsection in `CLAUDE.md`: drop the mention of "manifest configurado no KotlinScriptingHost"; replace with "compiled on demand by `BundleLoader` via tree-walk discovery + round-robin fixed-point".
+- [x] 9.1 Update `CLAUDE.md` module structure table: replace `:engine-scripting` line with `:engine-bundle`, describing its responsibility as "bundle loading + internal Kotlin script compilation".
+- [x] 9.2 Update `CLAUDE.md` "How to Run" section if it references the old `pong.scene.json` path — point to `pong/scene.json`.
+- [x] 9.3 Add a new row to the `CLAUDE.md` roadmap table for `add-bundle-loader` with status `Active` (transitions to `Archived` at archive time).
+- [x] 9.4 Update the `Scripting contract (.nengine.kts)` subsection in `CLAUDE.md`: drop the mention of "manifest configurado no KotlinScriptingHost"; replace with "compiled on demand by `BundleLoader` via tree-walk discovery + round-robin fixed-point".
 
 ## 10. Final validation
 

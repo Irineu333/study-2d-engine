@@ -21,7 +21,7 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 
 ```
 :engine            ← núcleo Kotlin puro (scene graph, math, SPIs, física, loop, DX, GameHost SPI)
-:engine-scripting  ← compilador e cache de scripts Kotlin (.nengine.kts) baseado em kotlin-scripting
+:engine-bundle     ← carregamento de cena via bundle (scene.json + scripts/) e compilação interna de scripts `.nengine.kts`
 :engine-compose    ← backend Compose Multiplatform Desktop (Renderer, Input, GameSurface, ComposeHost) — segundo backend
 :engine-skiko      ← backend Skiko puro sobre SkiaLayer + JFrame (SkikoRenderer, SkikoInput, SkikoHost) — backend padrão
 :games:pong        ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
@@ -37,7 +37,7 @@ Para rodar Pong:
 ./gradlew :games:pong:run
 ```
 
-`Main.kt` carrega `pong.scene.json` (em `:games:pong/src/main/resources/`) via `SceneLoader.load` e entrega a `Scene` ao `SkikoHost`. O arquivo é a fonte da verdade da árvore — editar o JSON altera a cena sem recompilar Kotlin.
+`Main.kt` carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.nengine.kts`) via `BundleLoader.fromResources("pong")` e entrega a `Scene` ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON altera a cena sem recompilar Kotlin.
 
 Durante o jogo:
 
@@ -108,9 +108,9 @@ class Paddle : Node2D() {
 A engine suporta scripts Kotlin para definir comportamento de gameplay sob demanda, sem necessidade de recompilar a engine ou o launcher do jogo:
 
 - Todo script deve ter a extensão `.nengine.kts` e declarar **exatamente uma** classe pública que herda de `Node` (ou subclasses como `Node2D`, `BoxCollider`).
-- Os scripts são compilados sequencialmente na inicialização de acordo com o `manifest` configurado no `KotlinScriptingHost`. Cada script na lista tem visibilidade das classes declaradas nos scripts anteriores (referenciadas por seus nomes simples, importados automaticamente pelo host).
+- Os scripts são compilados sob demanda pelo `BundleLoader` (em `:engine-bundle`): ele faz tree-walk no `scene.json` para descobrir quais paths `.nengine.kts` precisam ser compilados e resolve cross-references via algoritmo round-robin / fixed-point. Não existe manifesto manual — qualquer ordem de declaração na cena resolve, e ciclos são detectados com `CyclicScriptDependencyError`.
 - Pacotes padrão importados implicitamente em todo script: `com.neoutils.engine.scene.*`, `math.*`, `render.*`, `input.*`, `serialization.*`, `physics.*`.
-- O cache de compilação fica em disco na pasta especificada (e.g. `build/scripting-cache/`), usando SHA-256 do código-fonte para evitar re-compilações se o conteúdo não mudou.
+- O cache de bytecode fica em disco (`build/scripting-cache/<bundle>/` quando carregado via `fromResources`; `<bundle>/.nengine-cache/` quando carregado via `fromPath`). A chave inclui `SHA-256(source ⊕ importSet ⊕ engineVersion)` para evitar bytecode stale quando os cross-refs ou a versão da engine mudam, e bytecode de scripts não referenciados é varrido a cada bootstrap.
 
 ## OpenSpec Workflow
 
@@ -135,6 +135,7 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `prepare-for-serialization` | Archived | Primitivas `NodeRef`/`Signal`/`@Inspect`, `NodeRegistry`, `SceneLoader` (`save`/`load` JSON via `kotlinx.serialization`); refactor de Pong/Demos/Velha para construtores no-args + `@Inspect` var; `pong.scene.json` como entry point principal de Pong. |
 | `add-scripting`       | Archived | Compilador e cache de scripts Kotlin `.nengine.kts` via Kotlin Scripting, e migração completa de Pong para scripts. |
 | `drop-pong-tag-only-scripts` | Archived | Remove scripts vazios (`paddle-collider`, `walls`) que serviam só como tag; usa `BoxCollider` da engine por FQN no `pong.scene.json`; `Ball.onCollide` despacha por estrutura da cena; rename `Goal.GoalSide` → `Goal.Side`. |
+| `add-bundle-loader`   | Active   | Substitui `:engine-scripting` por `:engine-bundle`; introduz `BundleLoader.fromResources`/`fromPath`; `NodeRegistry` bidirecional; descoberta de scripts via tree-walk + round-robin no host. Pong passa a viver em `resources/pong/`. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.
