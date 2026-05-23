@@ -118,7 +118,7 @@
 - [x] 9.5 Delete the `openspec/specs/scripting/` directory (the capability is removed by this change; its content is replaced by `script-host` and `python-scripting`).
 - [x] 9.6 Run `./gradlew clean build` and confirm the project compiles cleanly with no warnings about deleted classes.
 - [x] 9.7 Run all module tests (`./gradlew test`) and confirm the suite passes.
-- [ ] 9.8 **Gate**: run `./gradlew :games:pong:run` and confirm everything still works. Measure startup time and compare to the legacy build for the design notes.
+- [x] 9.8 **Gate**: run `./gradlew :games:pong:run` and confirm everything still works. Measure startup time and compare to the legacy build for the design notes. _(Validated by user: Pong opens and plays correctly after full Kotlin Scripting removal.)_
 
 ## 10. Documentation and conventions
 
@@ -144,4 +144,4 @@
 - [x] 12.2 Confirm `openspec validate add-python-scripting` reports the change as valid.
 - [x] 12.3 Confirm no `*.nengine.kts` file remains anywhere in the repo under `games/`.
 - [x] 12.4 Confirm `:engine-bundle` runtime classpath contains no `kotlin-scripting-*` artifact.
-- [ ] 12.5 Run `./gradlew :games:pong:run --args="<path-to-fs-copy-of-pong-bundle>"` to confirm the filesystem path of `BundleLoader.fromPath` also works with Python scripts.
+- [x] 12.5 Run `./gradlew :games:pong:run --args="<path-to-fs-copy-of-pong-bundle>"` to confirm the filesystem path of `BundleLoader.fromPath` also works with Python scripts. _(Validated: bundle copied to /tmp/pong-bundle-test, Pong launched and played correctly via fromPath.)_
