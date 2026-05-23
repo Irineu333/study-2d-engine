@@ -80,7 +80,7 @@ Durante a execução:
 - `1` Transform orbit — pai rotacionando faz os filhos orbitarem (composição de rotação sobre posição, A1)
 - `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
 - `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2)
-- `4` Collision stress — 260 `BoxCollider`s (200 livres + 60 sob um wrapper rotacionante) colidindo em broad phase O(N²); valida o cache de `worldTransform()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
+- `4` Collision stress — 30 `BoxCollider`s colidindo em broad phase O(N²); valida o cache de `worldTransform()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 

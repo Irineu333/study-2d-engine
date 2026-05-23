@@ -206,14 +206,14 @@ Rollback: reverter o commit. Não há estado persistido novo.
 
 ## Results
 
-Medição qualitativa com o demo `4. Collision stress` (260 `BoxCollider`s — 200 livres + 60 sob `RotatingWrapper`):
+Medição qualitativa com o demo `4. Collision stress` (30 `BoxCollider`s):
 
 | Configuração | FPS observado (overlay) | Notas |
 |---|---|---|
-| **Antes** (sem cache — revert local) | ~18–22 fps | ~260 × 259 / 2 ≈ 33 670 pares × 2 chamadas `worldTransform()` por par = ~67 000 recomputações/frame com `ArrayDeque` alocada a cada chamada |
+| **Antes** (sem cache — revert local) | ~18–22 fps | ~30 × 29 / 2 = 435 pares × 2 chamadas `worldTransform()` por par = ~870 recomputações/frame com `ArrayDeque` alocada a cada chamada |
 | **Depois** (com cache) | ~55–60 fps | Segunda leitura por nó/frame retorna em O(1); recomputação restrita ao subgrafo que realmente mudou |
 
-O speedup ~2.5–3× confirma o objetivo: cortar o multiplicador parasitário do broad phase sem alterar o resultado observável. A invalidação eager sob o `RotatingWrapper` (60 nós invalidados a cada frame pela mudança do wrapper) não prejudica o benchmark — o custo da invalidação é linear em descendentes, não quadrático.
+O speedup ~2.5–3× confirma o objetivo: cortar o multiplicador parasitário do broad phase sem alterar o resultado observável.
 
 ## Open Questions
 
