@@ -11,9 +11,9 @@ import kotlin.reflect.KClass
 /**
  * Maps node identifiers (strings used in scene files) to a `(KClass, factory)`
  * pair, with a reverse map from class back to identifier. The identifier is the
- * value that appears in the `type` field of a serialized scene entry: for
- * compiled Kotlin types it is typically the FQN; for scripts it is the script
- * path relative to its bundle (e.g. `scripts/paddle.nengine.kts`).
+ * value that appears in the `type` field of a serialized scene entry — always
+ * the FQN of a native Node type (e.g. `com.neoutils.engine.scene.Node2D`).
+ * Scripts attach to a Node via `NodeEntry.script`, not via `type`.
  */
 object NodeRegistry {
 

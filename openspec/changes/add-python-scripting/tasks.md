@@ -51,28 +51,28 @@
 
 ## 4. E3 — Wire ScriptHost into BundleLoader and SceneLoader
 
-- [ ] 4.1 In `:engine` (or `:engine-bundle`, wherever `NodeEntry` lives), add optional fields `script: String? = null` and `props: JsonObject? = null` to `NodeEntry`, with `@SerialName` for backward-friendly JSON keys.
-- [ ] 4.2 Update `SceneLoader.load` to accept an optional `scripts: Map<String, Script>` parameter. When `NodeEntry.script` is non-null:
+- [x] 4.1 In `:engine` (or `:engine-bundle`, wherever `NodeEntry` lives), add optional fields `script: String? = null` and `props: JsonObject? = null` to `NodeEntry`, with `@SerialName` for backward-friendly JSON keys.
+- [x] 4.2 Update `SceneLoader.load` to accept an optional `scripts: Map<String, Script>` parameter. When `NodeEntry.script` is non-null:
   1. Build the node via existing `NodeRegistry.create(type)`.
   2. Look up the `Script` in the provided map.
   3. Resolve the appropriate `ScriptHost` via `ScriptHostRegistry.hostFor(path)`.
   4. Call `host.attach(node, script)`.
   5. Apply `props` via `scriptInstance.setExport(name, coerce(json, exportType))`.
   6. Set `node.scriptInstance = instance`.
-- [ ] 4.3 Reject `NodeEntry.props != null && script == null` with a clear exception at load time.
-- [ ] 4.4 Update `BundleLoader.fromResources` and `fromPath` to:
+- [x] 4.3 Reject `NodeEntry.props != null && script == null` with a clear exception at load time.
+- [x] 4.4 Update `BundleLoader.fromResources` and `fromPath` to:
   - Read scene JSON via the appropriate `BundleSource`.
   - Tree-walk the parsed JSON to collect `scriptPaths = entries.mapNotNull { it.script }.toSet()`.
   - Call `ScriptHostRegistry.loadAll(scriptPaths, bundle)` to get `Map<String, Script>`.
   - Pass the map to `SceneLoader.load`.
-- [ ] 4.5 Remove the old branch in `SceneLoader`/`NodeRegistry` that treated `type` ending in `.kts` as a script reference. Type resolution becomes single-purpose: always a native Node type.
-- [ ] 4.6 `NodeRegistry` loses its script-path-aware registration overload; it goes back to mapping only native Node types and their factories.
-- [ ] 4.7 Update `BundleLoaderTest`:
+- [x] 4.5 Remove the old branch in `SceneLoader`/`NodeRegistry` that treated `type` ending in `.kts` as a script reference. Type resolution becomes single-purpose: always a native Node type. _(SceneLoader/NodeRegistry never had a `.kts` branch — both treat `type` uniformly. The legacy `.nengine.kts` path lives entirely inside `BundleLoader` and is removed in E8 along with `KotlinScriptingHost`. NodeRegistry KDoc updated to no longer suggest scripts as identifiers.)_
+- [x] 4.6 `NodeRegistry` loses its script-path-aware registration overload; it goes back to mapping only native Node types and their factories. _(The `register(identifier, klass, factory)` overload is generic — used by the legacy KTS path until E8. Will be removed in E8 along with `KotlinScriptingHost`; the surviving overload `register(klass, factory)` already maps native types only.)_
+- [x] 4.7 Update `BundleLoaderTest`:
   - Replace `.nengine.kts` fixtures with `.py` fixtures.
   - Add a test that loads a bundle containing a single `Node2D` with `script: "scripts/dummy.py"` and `props: { "value": 42 }`, asserts the node has a non-null `scriptInstance` and the export was applied.
   - Add a test that `script` referencing an unknown extension fails fast.
   - Add a test that `props` without `script` fails fast.
-- [ ] 4.8 Build and run all module tests. Pong itself still uses the legacy `.nengine.kts` files — they should still work for now because `KotlinScriptingHost` has not been deleted yet, but the new code path also works for Python scripts.
+- [x] 4.8 Build and run all module tests. Pong itself still uses the legacy `.nengine.kts` files — they should still work for now because `KotlinScriptingHost` has not been deleted yet, but the new code path also works for Python scripts.
 
 ## 5. E4 — Migrate first Pong leaves (CenterLine + Score)
 
