@@ -70,7 +70,15 @@ class PythonScriptHost private constructor(private val context: Context) : Scrip
                 else -> error("Transform takes 0..3 args (position, scale, rotation)")
             }
         })
-        bindings.putMember("NodeRef", NodeRef::class.java)
+        // NodeRef factory: the Kotlin class has an internal 2-arg ctor with a
+        // KClass default that Polyglot can't dispatch from a 1-arg Python
+        // call. We expose the reified entry point through a single-arg path
+        // (NodeRef<Node>(path)), which mirrors what scene.json coercion does
+        // and matches script ergonomics.
+        bindings.putMember("NodeRef", ProxyExecutable { args ->
+            val path = if (args.isNotEmpty()) args[0].asString() else ""
+            NodeRef<Node>(path)
+        })
         bindings.putMember("Key", Key::class.java)
         bindings.putMember("BoxCollider", BoxCollider::class.java)
         bindings.putMember("Node2D", Node2D::class.java)

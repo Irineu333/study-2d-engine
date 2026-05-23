@@ -104,18 +104,29 @@ def _nengine_parse_extends(source):
 
 
 class _ScriptNode:
+    """
+    Wraps the host Kotlin `Node` so that scripts can read engine-side
+    accessors (`self.transform`, `self.worldPosition()`) and also keep
+    per-instance Python state (anything starting with `_`).
+
+    `self._node` is the explicit handle to the underlying Kotlin `Node`
+    — scripts pass it to APIs that take a `Node` (e.g.
+    `self.target.resolve(self._node)`) since Polyglot doesn't unwrap the
+    Python wrapper automatically.
+    """
+
     def __init__(self, node):
-        object.__setattr__(self, '_ScriptNode__node', node)
+        object.__setattr__(self, '_node', node)
 
     def __getattr__(self, name):
-        node = object.__getattribute__(self, '_ScriptNode__node')
+        node = object.__getattribute__(self, '_node')
         return getattr(node, name)
 
     def __setattr__(self, name, value):
         if name.startswith('_'):
             object.__setattr__(self, name, value)
             return
-        node = object.__getattribute__(self, '_ScriptNode__node')
+        node = object.__getattribute__(self, '_node')
         try:
             setattr(node, name, value)
         except Exception:

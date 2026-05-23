@@ -17,14 +17,17 @@
         "children": []
       },
       {
-        "type": "scripts/paddle.nengine.kts",
+        "type": "com.neoutils.engine.scene.Node2D",
         "name": "left",
         "properties": {
           "transform": {
             "position": { "x": 0.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          },
+          }
+        },
+        "script": "scripts/paddle.py",
+        "props": {
           "size": { "x": 16.0, "y": 96.0 },
           "playFieldHeight": 600.0,
           "upKey": "W",
@@ -38,14 +41,17 @@
         "children": []
       },
       {
-        "type": "scripts/paddle.nengine.kts",
+        "type": "com.neoutils.engine.scene.Node2D",
         "name": "right",
         "properties": {
           "transform": {
             "position": { "x": 0.0, "y": 0.0 },
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
-          },
+          }
+        },
+        "script": "scripts/paddle.py",
+        "props": {
           "size": { "x": 16.0, "y": 96.0 },
           "playFieldHeight": 600.0,
           "upKey": null,

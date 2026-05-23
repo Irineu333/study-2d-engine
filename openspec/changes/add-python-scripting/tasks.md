@@ -96,11 +96,11 @@
 
 ## 7. E6 — Migrate Paddle
 
-- [ ] 7.1 Translate `paddle.nengine.kts` to `paddle.py`. Confirm the `target: NodeRef = NodeRef("")` export survives the round trip and AI tracking works.
-- [ ] 7.2 Confirm that the BoxCollider child the paddle creates in `on_enter` still works (use `self._collider = BoxCollider(size=Vec2(...))` and `self.add_child(self._collider)`).
-- [ ] 7.3 Update `pong/scene.json` for both paddles (`paddleLeft`, `paddleRight`): switch to `engine.Node2D` + `script: "scripts/paddle.py"` and migrate all `@Inspect` properties (`size`, `playFieldHeight`, `upKey`, `downKey`, `ai`, `speed`, `aiMaxSpeed`, `aiTolerance`, `target`) into the `props` object.
-- [ ] 7.4 Delete `paddle.nengine.kts`.
-- [ ] 7.5 **Gate**: run `./gradlew :games:pong:run` and play 30 seconds. Confirm W/S move the left paddle, AI tracks the ball on the right, and collisions look correct.
+- [x] 7.1 Translate `paddle.nengine.kts` to `paddle.py`. Confirm the `target: NodeRef = NodeRef("")` export survives the round trip and AI tracking works.
+- [x] 7.2 Confirm that the BoxCollider child the paddle creates in `on_enter` still works (use `self._collider = BoxCollider(size=Vec2(...))` and `self.add_child(self._collider)`).
+- [x] 7.3 Update `pong/scene.json` for both paddles (`paddleLeft`, `paddleRight`): switch to `engine.Node2D` + `script: "scripts/paddle.py"` and migrate all `@Inspect` properties (`size`, `playFieldHeight`, `upKey`, `downKey`, `ai`, `speed`, `aiMaxSpeed`, `aiTolerance`, `target`) into the `props` object.
+- [x] 7.4 Delete `paddle.nengine.kts`.
+- [x] 7.5 **Gate**: run `./gradlew :games:pong:run` and play 30 seconds. Confirm W/S move the left paddle, AI tracks the ball on the right, and collisions look correct. _(Validated by user: W/S move the left paddle and AI tracks the ball on the right; reflection angle matches the original.)_
 
 ## 8. E7 — Migrate PongScene
 

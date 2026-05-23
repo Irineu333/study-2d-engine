@@ -16,8 +16,12 @@ class PongScene : Scene() {
         val bottomWall = findChild("bottomWall") as? BoxCollider ?: return
         val leftGoal = findChild("leftGoal") as? BoxCollider ?: return
         val rightGoal = findChild("rightGoal") as? BoxCollider ?: return
-        val leftPaddle = findChild("left") as? Paddle ?: return
-        val rightPaddle = findChild("right") as? Paddle ?: return
+        val leftPaddle = findChild("left") as? Node2D ?: return
+        val rightPaddle = findChild("right") as? Node2D ?: return
+        // Paddle moved to a Python script in E6 — `playFieldHeight` lives on
+        // the script export, not the Node. The default (600) already matches
+        // the 800x600 window; PongScene's migration in E7 will own the
+        // height handoff via setExport.
         // Ball moved to a Python script in E5 — it's now a BoxCollider whose
         // behavior (movement, collisions, reset) lives in ball.py. Layout no
         // longer pokes fieldCenter / reset() from here; both are owned by
@@ -38,8 +42,6 @@ class PongScene : Scene() {
 
         val paddleWidth = 16f
         val paddleHeight = 96f
-        leftPaddle.playFieldHeight = height
-        rightPaddle.playFieldHeight = height
         leftPaddle.transform = leftPaddle.transform.copy(
             position = Vec2(PADDLE_MARGIN, height / 2f - paddleHeight / 2f)
         )
