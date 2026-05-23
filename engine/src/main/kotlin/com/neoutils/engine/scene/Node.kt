@@ -85,6 +85,7 @@ abstract class Node {
         child.name = uniqueChildName(child.name)
         child.parent = this
         _children.add(child)
+        (child as? Node2D)?.invalidateWorldTransformRecursive()
         if (isLive) {
             val owning = if (this is Scene) this else scene
             if (owning != null) child.attachToLiveTree(owning)
@@ -102,6 +103,7 @@ abstract class Node {
         if (isLive) child.detachFromLiveTree()
         _children.remove(child)
         child.parent = null
+        (child as? Node2D)?.invalidateWorldTransformRecursive()
     }
 
     internal fun attachToLiveTree(owningScene: Scene) {
