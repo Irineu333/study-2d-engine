@@ -132,19 +132,47 @@ class Ball(
 
     override fun onCollide(other: Collider) {
         if (other !is Ball) return
-        // Process each pair only once: the ball with the higher id handles the swap.
-        if (other.id <= id) return
+        if (other.id <= id) return  // each pair handled once
+
+        // Position correction: push balls apart before any velocity logic.
+        separate(other)
+
         if (flashTimer > 0f || other.flashTimer > 0f) return
 
-        // Elastic collision between equal-mass balls: swap velocities.
-        val tvx = vx; val tvy = vy
-        vx = other.vx; vy = other.vy
-        other.vx = tvx; other.vy = tvy
+        // Elastic collision: swap only the velocity component on the collision axis.
+        val posA = transform.position
+        val posB = other.transform.position
+        val overlapX = BALL_SIZE - kotlin.math.abs(posA.x - posB.x)
+        val overlapY = BALL_SIZE - kotlin.math.abs(posA.y - posB.y)
+        if (overlapX < overlapY) {
+            val tmp = vx; vx = other.vx; other.vx = tmp
+        } else {
+            val tmp = vy; vy = other.vy; other.vy = tmp
+        }
 
         setArtColor(Color.WHITE)
         other.setArtColor(Color.WHITE)
         flashTimer = 0.15f
         other.flashTimer = 0.15f
+    }
+
+    private fun separate(other: Ball) {
+        val posA = transform.position
+        val posB = other.transform.position
+        val dx = posA.x - posB.x
+        val dy = posA.y - posB.y
+        val overlapX = BALL_SIZE - kotlin.math.abs(dx)
+        val overlapY = BALL_SIZE - kotlin.math.abs(dy)
+        if (overlapX <= 0f || overlapY <= 0f) return
+        if (overlapX < overlapY) {
+            val push = overlapX * 0.5f * if (dx >= 0f) 1f else -1f
+            transform = transform.copy(position = Vec2(posA.x + push, posA.y))
+            other.transform = other.transform.copy(position = Vec2(posB.x - push, posB.y))
+        } else {
+            val push = overlapY * 0.5f * if (dy >= 0f) 1f else -1f
+            transform = transform.copy(position = Vec2(posA.x, posA.y + push))
+            other.transform = other.transform.copy(position = Vec2(posB.x, posB.y - push))
+        }
     }
 
     internal fun setArtColor(c: Color) {
