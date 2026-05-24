@@ -1,6 +1,8 @@
 package com.neoutils.engine.scene
 
 import com.neoutils.engine.input.Input
+import com.neoutils.engine.math.Rect
+import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Renderer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -13,13 +15,24 @@ open class Scene : Node() {
     @Volatile var input: Input? = null
         internal set
 
+    /**
+     * Surface size in pixels, kept current by the host via [resize]. The
+     * canonical world extent when no `Camera2D` is active; see [viewport].
+     */
     @Transient
-    var width: Float = 0f
+    var size: Vec2 = Vec2.ZERO
         private set
 
-    @Transient
-    var height: Float = 0f
-        private set
+    val width: Float get() = size.x
+    val height: Float get() = size.y
+
+    /**
+     * Visible world rect. Resolves to the active `Camera2D.bounds` when a
+     * camera is current, or to `Rect(Vec2.ZERO, size)` otherwise. Computed
+     * on demand: there is no cached "active camera" state in this change.
+     */
+    val viewport: Rect
+        get() = currentCamera()?.bounds ?: Rect(Vec2.ZERO, size)
 
     /**
      * `true` while the scene is inside an `onProcess`, `onPhysicsProcess`,
@@ -43,9 +56,8 @@ open class Scene : Node() {
 
     /** Called by the runtime when the rendering surface size changes. */
     fun resize(width: Float, height: Float) {
-        if (width == this.width && height == this.height) return
-        this.width = width
-        this.height = height
+        if (width == size.x && height == size.y) return
+        size = Vec2(width, height)
         onResize(width, height)
     }
 
@@ -84,12 +96,42 @@ open class Scene : Node() {
         drainPending()
     }
 
+    /**
+     * Returns every live `Node` reachable from this scene whose [Node.groups]
+     * contains [name]. Pre-order walk; O(N) in the scene size. Mutable groups
+     * are tracked per-node, so the result reflects the state at the moment
+     * of the call.
+     */
+    fun getNodesInGroup(name: String): List<Node> {
+        val out = mutableListOf<Node>()
+        collectInGroup(this, name, out)
+        return out
+    }
+
+    private fun collectInGroup(node: Node, name: String, out: MutableList<Node>) {
+        if (node.isInGroup(name)) out += node
+        for (child in node.children) collectInGroup(child, name, out)
+    }
+
     internal fun beginPhysicsPhase() {
         isMutationDeferred = true
     }
 
     internal fun endPhysicsPhase() {
         isMutationDeferred = false
+    }
+
+    private fun currentCamera(): Camera2D? {
+        return findCurrentCamera(this)
+    }
+
+    private fun findCurrentCamera(node: Node): Camera2D? {
+        if (node is Camera2D && node.current) return node
+        for (child in node.children) {
+            val found = findCurrentCamera(child)
+            if (found != null) return found
+        }
+        return null
     }
 
     private inline fun runTraversal(rendering: Boolean, block: () -> Unit) {

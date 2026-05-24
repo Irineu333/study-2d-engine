@@ -8,10 +8,10 @@
 
 ## 2. Scene lifecycle + groups
 
-- [ ] 2.1 Em `Scene.kt`: renomear `update(dt)` → `process(dt)`, `render(renderer)` interno faz traversal pré-order chamando `onDraw`. Adicionar `physicsProcess(dt)` que faz traversal chamando `onPhysicsProcess`.
-- [ ] 2.2 Em `Scene.kt`: adicionar `var size: Vec2 = Vec2.ZERO` setado por `resize(w, h)` (já existe — só renomear o campo se preciso); adicionar `val viewport: Rect` computado consultando `currentCamera()?.bounds ?: Rect(Vec2.ZERO, size)`.
-- [ ] 2.3 Em `Scene.kt`: adicionar `private fun currentCamera(): Camera2D?` que faz tree-walk pré-order procurando `Camera2D` com `current = true`.
-- [ ] 2.4 Em `Scene.kt`: adicionar `fun getNodesInGroup(name: String): List<Node>` via tree-walk pré-order.
+- [x] 2.1 Em `Scene.kt`: renomear `update(dt)` → `process(dt)`, `render(renderer)` interno faz traversal pré-order chamando `onDraw`. Adicionar `physicsProcess(dt)` que faz traversal chamando `onPhysicsProcess`.
+- [x] 2.2 Em `Scene.kt`: adicionar `var size: Vec2 = Vec2.ZERO` setado por `resize(w, h)` (já existe — só renomear o campo se preciso); adicionar `val viewport: Rect` computado consultando `currentCamera()?.bounds ?: Rect(Vec2.ZERO, size)`.
+- [x] 2.3 Em `Scene.kt`: adicionar `private fun currentCamera(): Camera2D?` que faz tree-walk pré-order procurando `Camera2D` com `current = true`.
+- [x] 2.4 Em `Scene.kt`: adicionar `fun getNodesInGroup(name: String): List<Node>` via tree-walk pré-order.
 
 ## 3. GameLoop fixed-step
 
@@ -38,7 +38,7 @@
 
 ## 6. Camera2D
 
-- [ ] 6.1 Criar `engine/.../scene/Camera2D.kt`: `@Serializable class Camera2D : Node2D()` com `@Inspect var bounds: Rect = Rect(Vec2.ZERO, Vec2.ZERO)`, `@Inspect var current: Boolean = false`.
+- [x] 6.1 Criar `engine/.../scene/Camera2D.kt`: `@Serializable class Camera2D : Node2D()` com `@Inspect var bounds: Rect = Rect(Vec2.ZERO, Vec2.ZERO)`, `@Inspect var current: Boolean = false`.
 
 ## 7. Signal redesign
 
