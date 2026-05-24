@@ -2,13 +2,13 @@
 
 ## Purpose
 
-SPI agnóstica de linguagem para scripting de Nodes, vivendo em `:engine-bundle`. Define os contratos `ScriptHost`, `Script`, `ScriptInstance`, `ExportedProperty`, `ScriptHostRegistry` e `BundleSource` que permitem que diferentes linguagens (Python via `:engine-bundle-python`, futuramente Lua, etc.) sejam plugadas no `BundleLoader` sem vazar tipos específicos de runtime para a engine ou para os jogos. Substitui o capability `scripting` (que era específico a Kotlin Scripting) por uma abstração reutilizável.
+SPI agnóstica de linguagem para scripting de Nodes, vivendo em `:engine-bundle`. Define os contratos `ScriptHost`, `Script`, `ScriptInstance`, `ExportedProperty` e `BundleSource` que permitem que diferentes linguagens (Python via `:engine-bundle-python`, futuramente Lua, etc.) sejam plugadas no `BundleLoader` sem vazar tipos específicos de runtime para a engine ou para os jogos. Instâncias de `ScriptHost` são injetadas explicitamente no `BundleLoader` pelo caller (via parâmetro `scripting`) — não há registro global. Substitui o capability `scripting` (que era específico a Kotlin Scripting) por uma abstração reutilizável.
 
 ## Requirements
 
 ### Requirement: ScriptHost SPI in :engine-bundle
 
-O módulo `:engine-bundle` SHALL expor uma SPI agnóstica de linguagem para scripting composta de quatro tipos públicos no pacote `com.neoutils.engine.bundle.script`:
+O módulo `:engine-bundle` SHALL expor uma SPI agnóstica de linguagem para scripting composta dos seguintes tipos públicos no pacote `com.neoutils.engine.bundle.script`:
 
 ```kotlin
 interface ScriptHost {
@@ -39,19 +39,20 @@ data class ExportedProperty(
 )
 ```
 
-`Script` MUST representar um script carregado e analisado (com `exports` já descobertos estaticamente). `ScriptInstance` MUST representar um script anexado a uma instância de `Node`. `ScriptHost` MUST NOT vazar tipos específicos de runtime (ex.: `org.graalvm.polyglot.Value`, `org.graalvm.polyglot.Context`) através dessas interfaces.
+`Script` MUST representar um script carregado e analisado (com `exports` já descobertos estaticamente). `ScriptInstance` MUST representar um script anexado a uma instância de `Node`. `ScriptHost` MUST NOT vazar tipos específicos de runtime (ex.: `org.graalvm.polyglot.Value`, `org.graalvm.polyglot.Context`) através dessas interfaces. A SPI MUST NOT prover nenhum mecanismo de registro global de hosts — instâncias de `ScriptHost` são repassadas explicitamente ao `BundleLoader` pelo caller.
 
 `ScriptInstance.currentValue(name)` MUST devolver o valor atual do export nomeado, conforme presente na instância do script (após qualquer `setExport`, `_ready`, ou mutação durante hooks). Se `name` não corresponde a um `ExportedProperty` declarado em `Script.exports`, a chamada MUST lançar `IllegalArgumentException` nomeando o `name` e o path do script. O valor devolvido MUST estar no tipo Kotlin correspondente a `ExportedProperty.type` (para que `SceneLoader.save` possa serializá-lo via `kotlinx.serialization`). Esse método existe especificamente para suportar round-trip em `SceneLoader.save`.
 
 #### Scenario: ScriptHost is the only entry point of the SPI
 
 - **WHEN** o pacote `com.neoutils.engine.bundle.script` é inspecionado
-- **THEN** os tipos públicos exportados são exatamente `ScriptHost`, `Script`, `ScriptInstance`, `ExportedProperty`, `ScriptHostRegistry` e `BundleSource`
+- **THEN** os tipos públicos exportados são exatamente `ScriptHost`, `Script`, `ScriptInstance`, `ExportedProperty` e `BundleSource`
 - **AND** nenhum tipo específico de implementação (Python, Lua, etc.) aparece nesse pacote
+- **AND** nenhum tipo de registro global (ex.: `ScriptHostRegistry`) é exportado
 
 #### Scenario: SPI types do not leak runtime-specific types
 
-- **WHEN** as assinaturas públicas dos quatro tipos SPI são lidas
+- **WHEN** as assinaturas públicas dos tipos SPI são lidas
 - **THEN** nenhuma menciona `org.graalvm.polyglot.*`
 - **AND** nenhuma menciona `org.luaj.*` ou qualquer outro runtime de scripting
 
@@ -73,41 +74,6 @@ data class ExportedProperty(
 - **WHEN** código chama `instance.currentValue("mystery")`
 - **THEN** uma `IllegalArgumentException` é lançada
 - **AND** a mensagem nomeia `mystery` e o path do script
-
-### Requirement: ScriptHostRegistry dispatches by file extension
-
-O módulo `:engine-bundle` SHALL prover um objeto `ScriptHostRegistry` que mantém um mapa de extensão de arquivo (`.py`, `.lua`, ...) para `ScriptHost` registrado. A API SHALL ser:
-
-```kotlin
-object ScriptHostRegistry {
-    fun register(host: ScriptHost)
-    fun clear()
-    fun hostFor(path: String): ScriptHost?
-    fun loadAll(paths: Set<String>, bundle: BundleSource): Map<String, Script>
-}
-```
-
-`hostFor(path)` MUST escolher o host cuja `extension` casa com o sufixo do `path`. `loadAll` MUST chamar `load` no host correspondente para cada path do conjunto, retornando um mapa path → `Script`. Se algum path não tem host correspondente, `loadAll` MUST lançar exceção cuja mensagem nomeia o path e a extensão não suportada.
-
-#### Scenario: Host is dispatched by file extension
-
-- **GIVEN** um `ScriptHost` para `.py` registrado em `ScriptHostRegistry`
-- **WHEN** código chama `ScriptHostRegistry.hostFor("scripts/paddle.py")`
-- **THEN** retorna o host registrado para `.py`
-
-#### Scenario: Unknown extension fails fast
-
-- **GIVEN** apenas `.py` registrado no `ScriptHostRegistry`
-- **WHEN** código chama `ScriptHostRegistry.loadAll(setOf("scripts/paddle.lua"), bundle)`
-- **THEN** uma exceção é lançada
-- **AND** a mensagem nomeia `scripts/paddle.lua` e indica que a extensão `.lua` não tem host registrado
-
-#### Scenario: Multiple hosts coexist
-
-- **GIVEN** dois `ScriptHost` registrados (`.py` e `.lua` hipotético)
-- **WHEN** código chama `ScriptHostRegistry.loadAll(setOf("a.py", "b.lua"), bundle)`
-- **THEN** cada path é roteado para o host correto
-- **AND** o mapa de retorno contém ambas as entradas
 
 ### Requirement: Node carries an optional script instance slot
 

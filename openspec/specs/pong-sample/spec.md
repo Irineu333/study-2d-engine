@@ -6,7 +6,7 @@ Jogo de Pong jogável (humano vs IA) como módulo executável `:games:pong`, ser
 ## Requirements
 ### Requirement: Pong is an executable standalone module
 
-O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engine-skiko`, `:engine-bundle` e `:engine-bundle-python`, e contém um entry point `main()` que abre uma janela hospedando Pong via `SkikoHost`. O módulo MUST ser executável via `./gradlew :games:pong:run`. O módulo MUST NOT depender de nenhum outro módulo de jogo. O `Main.kt` SHALL carregar a cena via `BundleLoader.fromResources("pong")` por padrão e MAY aceitar um path opcional via argumento de programa para carregar via `BundleLoader.fromPath(File(args[0]))` (cenário de editor / verificação de disco). O `Main.kt` NÃO SHALL instanciar manualmente nenhum host de scripting, nem registrar tipos da engine no `NodeRegistry`, nem declarar manifesto de scripts. A instalação do `PythonScriptHost` MUST ocorrer automaticamente pelo simples fato de `:engine-bundle-python` estar no classpath (via inicialização ansiosa do módulo ou call estática trivial no `main`).
+O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engine-skiko`, `:engine-bundle` e `:engine-bundle-python`, e contém um entry point `main()` que abre uma janela hospedando Pong via `SkikoHost`. O módulo MUST ser executável via `./gradlew :games:pong:run`. O módulo MUST NOT depender de nenhum outro módulo de jogo. O `Main.kt` SHALL construir uma única instância de `PythonScriptHost` via `PythonScriptHost.create()` e injetá-la no `BundleLoader` via o parâmetro `scripting`. O `Main.kt` SHALL carregar a cena via `BundleLoader.fromResources("pong", scripting = python)` por padrão e MAY aceitar um path opcional via argumento de programa para carregar via `BundleLoader.fromPath(File(args[0]), scripting = python)` (cenário de editor / verificação de disco). O `Main.kt` MUST NOT registrar tipos da engine no `NodeRegistry` manualmente nem declarar manifesto de scripts; a única dependência explícita relativa a scripting é a construção do `PythonScriptHost`.
 
 #### Scenario: Pong runs from Gradle
 
@@ -18,8 +18,8 @@ O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engi
 
 - **GIVEN** uma pasta `<dir>` que é um bundle Pong válido (`scene.json` + `scripts/`)
 - **WHEN** um desenvolvedor executa `./gradlew :games:pong:run --args="<dir>"`
-- **THEN** o `Main.kt` resolve o bundle via `BundleLoader.fromPath(File(<dir>))`
-- **AND** o jogo abre com a mesma cena que `fromResources("pong")` produziria sobre o mesmo conteúdo
+- **THEN** o `Main.kt` resolve o bundle via `BundleLoader.fromPath(File(<dir>), scripting = python)`
+- **AND** o jogo abre com a mesma cena que `fromResources("pong", scripting = python)` produziria sobre o mesmo conteúdo
 
 #### Scenario: Pong uses only public engine API
 
@@ -38,8 +38,8 @@ O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engi
 #### Scenario: Main.kt is concise
 
 - **WHEN** o source de `:games:pong/src/main/kotlin/.../Main.kt` é inspecionado
-- **THEN** o corpo de `main()` se resume a escolher entre `BundleLoader.fromResources("pong")` e `BundleLoader.fromPath(File(args[0]))` (a escolha é o único condicional admissível) seguido de uma única chamada a `SkikoHost().run(...)`
-- **AND** NÃO contém referência a `KotlinScriptingHost`, `ScriptHosts` (formato antigo), `NodeRegistry.registerEngineTypes()`, `classLoader.getResource`, nem manifesto de scripts
+- **THEN** o corpo de `main()` se resume a (1) construir `val python = PythonScriptHost.create()`, (2) escolher entre `BundleLoader.fromResources("pong", scripting = python)` e `BundleLoader.fromPath(File(args[0]), scripting = python)` (essa escolha é o único condicional admissível), e (3) uma única chamada a `SkikoHost().run(...)`
+- **AND** NÃO contém referência a `PythonScriptHost.install`, `ScriptHostRegistry`, `KotlinScriptingHost`, `ScriptHosts` (formato antigo), `NodeRegistry.registerEngineTypes()`, `classLoader.getResource`, nem manifesto de scripts
 
 ### Requirement: Pong scene composition
 
