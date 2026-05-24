@@ -6,8 +6,8 @@ import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Shape
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlin.math.roundToInt
@@ -105,10 +105,9 @@ class Ball(
         size = Vec2(BALL_SIZE, BALL_SIZE)
         transform = Transform(position = initPos)
         addChild(
-            Shape().apply {
+            Circle2D().apply {
                 name = "art"
-                kind = Shape.Kind.Circle
-                size = Vec2(BALL_SIZE, BALL_SIZE)
+                radius = BALL_SIZE / 2f
                 this.color = color
             }
         )
@@ -176,6 +175,6 @@ class Ball(
     }
 
     internal fun setArtColor(c: Color) {
-        (findChild("art") as? Shape)?.color = c
+        (findChild("art") as? Circle2D)?.color = c
     }
 }

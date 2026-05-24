@@ -3,8 +3,8 @@ package com.neoutils.engine.games.demos
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
+import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Shape
 import kotlinx.serialization.Serializable
 
 /**
@@ -27,23 +27,20 @@ class TransformOrbitDemo : Node2D() {
             transform = Transform(position = Vec2(400f, 300f))
         }
         val rotator = Rotator().apply { name = "Rotator" }
-        val center = Shape().apply {
-            kind = Shape.Kind.Circle
-            size = Vec2(12f, 12f)
+        val center = Circle2D().apply {
+            radius = 6f
             color = Color.WHITE
             transform = Transform(position = Vec2(-6f, -6f))
             name = "Center"
         }
-        val orbiterA = Shape().apply {
-            kind = Shape.Kind.Circle
-            size = Vec2(20f, 20f)
+        val orbiterA = Circle2D().apply {
+            radius = 10f
             color = Color(0.95f, 0.4f, 0.2f)
             transform = Transform(position = Vec2(RADIUS - 10f, -10f))
             name = "OrbiterA"
         }
-        val orbiterB = Shape().apply {
-            kind = Shape.Kind.Circle
-            size = Vec2(20f, 20f)
+        val orbiterB = Circle2D().apply {
+            radius = 10f
             color = Color(0.2f, 0.6f, 0.95f)
             transform = Transform(position = Vec2(-RADIUS - 10f, -10f))
             name = "OrbiterB"

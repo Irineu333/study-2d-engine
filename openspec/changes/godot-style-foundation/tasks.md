@@ -78,11 +78,11 @@
 
 ## 11. Migrar `:games:demos`
 
-- [ ] 11.1 `TransformOrbitDemo.kt`: renomear overrides `onUpdate → onProcess`, `onRender → onDraw`. Substituir `Shape` por `ColorRect` ou `Circle2D` conforme uso (verificar cada filho gerado).
-- [ ] 11.2 `ScaleHierarchyDemo.kt`: idem.
-- [ ] 11.3 `SpawnerDemo.kt`: idem; o "trap central" continua usando `BoxCollider` (collision sem mudança).
-- [ ] 11.4 `DemoSwitcherScene.kt`: idem hooks.
-- [ ] 11.5 `Main.kt`: nenhum override (apenas wiring) — não precisa mudar.
+- [x] 11.1 `TransformOrbitDemo.kt`: renomear overrides `onUpdate → onProcess`, `onRender → onDraw`. Substituir `Shape` por `ColorRect` ou `Circle2D` conforme uso (verificar cada filho gerado).
+- [x] 11.2 `ScaleHierarchyDemo.kt`: idem.
+- [x] 11.3 `SpawnerDemo.kt`: idem; o "trap central" continua usando `BoxCollider` (collision sem mudança).
+- [x] 11.4 `DemoSwitcherScene.kt`: idem hooks.
+- [x] 11.5 `Main.kt`: nenhum override (apenas wiring) — não precisa mudar.
 
 ## 12. Migrar `:games:tictactoe`
 

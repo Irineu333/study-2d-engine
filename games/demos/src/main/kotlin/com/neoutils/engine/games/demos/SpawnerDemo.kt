@@ -6,8 +6,9 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
+import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Shape
 import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -19,7 +20,7 @@ import kotlin.random.Random
  * Pre-change this demo would crash with `ConcurrentModificationException`
  * (or silently corrupt the children list) because:
  *
- *  - `Spawner.onUpdate` calls `addChild` while the update traversal is
+ *  - `Spawner.onProcess` calls `addChild` while the process traversal is
  *    iterating the scene's children;
  *  - `Trap.onCollide` calls `removeChild` while `PhysicsSystem.step` is
  *    iterating the collider list.
@@ -101,13 +102,14 @@ class Trap : BoxCollider() {
     init {
         size = Vec2(SIZE, SIZE)
         if (children.isEmpty()) {
+            // Translucent fill stands in for the legacy stroke-only outline:
+            // ColorRect always fills, so a low-alpha colour reads as a hint
+            // rather than a solid hit-marker.
             addChild(
-                Shape().apply {
+                ColorRect().apply {
                     name = "art"
-                    kind = Shape.Kind.Rect
                     size = Vec2(SIZE, SIZE)
                     color = Color(1f, 0.2f, 0.2f, 0.6f)
-                    filled = false
                 }
             )
         }
@@ -134,10 +136,9 @@ class SpawnerBall : BoxCollider() {
         size = Vec2(SIZE, SIZE)
         if (children.isEmpty()) {
             addChild(
-                Shape().apply {
+                Circle2D().apply {
                     name = "art"
-                    kind = Shape.Kind.Circle
-                    size = Vec2(SIZE, SIZE)
+                    radius = SIZE / 2f
                     color = Color(0.3f, 0.85f, 0.95f)
                 }
             )

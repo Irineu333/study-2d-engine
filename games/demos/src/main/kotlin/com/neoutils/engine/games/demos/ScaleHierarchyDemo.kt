@@ -3,16 +3,16 @@ package com.neoutils.engine.games.demos
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
+import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Shape
 import kotlinx.serialization.Serializable
 import kotlin.math.sin
 
 /**
  * A parent `Node2D` with a scale that oscillates between MIN_SCALE and
- * MAX_SCALE. The child `Shape` keeps a fixed local size — the rendered size
- * grows and shrinks because `Shape.onRender` reads `worldTransform().scale`,
- * the post-change behavior. This would have stayed visually static before
+ * MAX_SCALE. The child `ColorRect` keeps a fixed local size — the rendered
+ * size grows and shrinks because `ColorRect.onDraw` reads
+ * `worldTransform().scale`. This would have stayed visually static before
  * the change since the old code only honored the child's own scale.
  */
 @Serializable
@@ -28,18 +28,18 @@ class ScaleHierarchyDemo : Node2D() {
             name = "ScaleParent"
             transform = Transform(position = Vec2(400f, 300f))
         }
-        val child = Shape().apply {
-            kind = Shape.Kind.Rect
+        val child = ColorRect().apply {
             size = Vec2(80f, 80f)
             color = Color(0.6f, 0.85f, 0.3f)
             transform = Transform(position = Vec2(-40f, -40f))
             name = "ScaleChild"
         }
-        val reference = Shape().apply {
-            kind = Shape.Kind.Rect
+        // Reference rect: filled translucent overlay marking the unscaled
+        // bounds (the legacy `filled=false` outline used a Shape stroke;
+        // ColorRect always fills, so we lean on a low-alpha tint instead).
+        val reference = ColorRect().apply {
             size = Vec2(80f, 80f)
             color = Color(1f, 1f, 1f, 0.15f)
-            filled = false
             transform = Transform(position = Vec2(360f, 260f))
             name = "ScaleReference"
         }
