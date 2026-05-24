@@ -13,10 +13,11 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 
 ## Planned
 
-| Change       | Resumo                                                                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `game-snake` | Validador da fundação Godot-style: fixed-step, signals, `Camera2D.bounds`, primitivas visuais, sem dependência de colisão nova.         |
-| editor       | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição.      |
+| Change           | Resumo                                                                                                                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `game-snake`     | Validador da fundação Godot-style: fixed-step, signals, `Camera2D.bounds`, primitivas visuais, sem dependência de colisão nova.                                                                       |
+| `lua-scripting`  | Segunda implementação do `ScriptHost` SPI usando Lua. Prova que a SPI é genuinamente agnóstica de linguagem (não acomodada ao GraalPy); bundle de exemplo com `.lua` carregado lado-a-lado com `.py`. |
+| editor           | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição.                                                                    |
 
 ## Como manter
 
