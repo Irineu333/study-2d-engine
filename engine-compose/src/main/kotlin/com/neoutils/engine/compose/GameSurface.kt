@@ -41,7 +41,13 @@ fun GameSurface(
     val physics = remember { PhysicsSystem() }
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember(textMeasurer) { ComposeRenderer(textMeasurer) }
-    val loop = remember(scene) { GameLoop(scene, renderer, input, physics, physicsHz = config.physicsHz) }
+    // `loop` MUST share `renderer`'s remember key. Without this, a density
+    // change (e.g. dragging the window across monitors with different DPI)
+    // re-creates the renderer while `loop` keeps capturing the previous
+    // instance. The Canvas lambda then binds the new renderer's DrawScope
+    // but `loop.tick` draws into the old (unbound) one and crashes with
+    // "ComposeRenderer used outside a DrawScope".
+    val loop = remember(scene, renderer) { GameLoop(scene, renderer, input, physics, physicsHz = config.physicsHz) }
     val fps = remember { FpsCounter() }
     val focusRequester = remember { FocusRequester() }
 

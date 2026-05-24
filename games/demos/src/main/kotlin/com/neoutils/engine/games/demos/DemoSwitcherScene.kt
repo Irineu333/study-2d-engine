@@ -1,12 +1,9 @@
 package com.neoutils.engine.games.demos
 
 import com.neoutils.engine.input.Key
-import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.AspectMode
-import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Scene
 
@@ -33,17 +30,10 @@ class DemoSwitcherScene : Scene() {
 
     init {
         name = "DemoSwitcher"
-        // Camera added before any demo so pre-order pick-up finds it first; FIT
-        // gives a fixed 800×600 virtual stage centered on whatever surface size
-        // the host hands us.
-        addChild(
-            Camera2D().apply {
-                name = "DemoCamera"
-                bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
-                current = true
-                aspectMode = AspectMode.FIT
-            },
-        )
+        // Demos run in raw surface pixels (no Camera2D) by design: they're
+        // physics/collision exercises whose visuals follow the window, not a
+        // fixed virtual world. Adding a camera would double-scale ball
+        // bouncing bounds and HUD positions that read scene.size directly.
         addChild(activeNode)
         addChild(hud)
     }

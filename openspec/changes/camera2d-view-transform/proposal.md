@@ -52,10 +52,9 @@ Esta change completa a semântica que a foundation começou: `Camera2D` vira **v
 - **MODIFIED** `pong/scripts/pong_scene.py`: o `_layout(width, height)` é removido (mundo é fixo). Restam apenas `_ready` (wiring de signal `scored`) e possivelmente nada mais. Se o script ficar reduzido a wiring, ele permanece para manter o ponto de orquestração explícito.
 - **NO CHANGE** `paddle.py` continua usando `scene.viewport.size.y` — agora retorna `600` *intencionalmente* (mundo lógico fixo), e a câmera é quem escala pra surface. Bug some sem trocar uma linha do paddle.
 
-### Migração Demos
+### Migração Demos — RETIRADA do escopo
 
-- **MODIFIED** `DemoSwitcherScene` ganha um nó filho `Camera2D` com `bounds = Rect((0,0), (800,600))`, `current = true`, `aspectMode = FIT`.
-- **NO CHANGE** `TransformOrbitDemo`, `ScaleHierarchyDemo` mantêm `Vec2(400f, 300f)` — agora é honestamente o centro do mundo virtual.
+`DemoSwitcherScene` NÃO recebe `Camera2D`. Validação manual mostrou que os demos são exercícios de física/colisão que lêem `scene.size` como mundo lógico (limites de bouncing, anchors de HUD, spawn aleatório); aplicar uma view transform por cima duplica o escalonamento (balls bouncing em metade da surface em janelas pequenas, balls saindo do retângulo letterboxed em janelas grandes). Decisão: demos ficam em surface-px (fallback identity), por design. `Scene.render` sem `Camera2D` preserva o comportamento pré-change, então isso é zero cirurgia.
 
 ### Sem mudança em tictactoe
 
@@ -82,7 +81,7 @@ Esta change completa a semântica que a foundation começou: `Camera2D` vira **v
   - `:engine-skiko` — `SkikoRenderer.kt` implementa o stack via Skia `Canvas.save/translate/scale/restore`. `SkikoHost` não muda (debug overlay continua sendo chamado no mesmo ponto).
   - `:engine-compose` — `ComposeRenderer.kt` implementa o stack via `DrawScope` save/restore equivalente. `ComposeHost` não muda.
   - `:games:pong` — `pong/scene.json` recebe posições absolutas fixas; `pong/scripts/pong_scene.py` reduz `_layout` a no-op ou remove o método.
-  - `:games:demos` — `DemoSwitcherScene` adiciona `Camera2D` filho.
+  - `:games:demos` — **nenhuma mudança de código** (decisão revisada durante apply; ver seção "Migração Demos — RETIRADA do escopo" e design D8 revisado).
 - **Documentação:** `CLAUDE.md` ganha nota curta na seção Coding Conventions explicando que `Camera2D.bounds` define o mundo virtual e o renderer projeta na surface respeitando `aspectMode`. `ROADMAP.md` recebe `camera2d-view-transform` em Active.
 - **Sem impacto em tictactoe:** ausência de `Camera2D` mantém identity transform.
 - **Sem impacto no game loop, physics, scripting Python ou bundle loading.** Mudança é puramente da camada de render + uma migração de cena/scripts.

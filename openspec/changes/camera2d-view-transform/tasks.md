@@ -59,11 +59,13 @@
 - [x] 8.3 Manter `_ready` e `_wire_scoring` (signal wiring é a única responsabilidade do script agora).
 - [ ] 8.4 Validar manualmente em janela 800×600 + janela redimensionada (ex.: 1280×900 + ultrawide) que: paddle alcança topo e base do play field, centerLine sempre vertical e centrada, ball sempre quica nas paredes do mundo virtual, letterbox bars aparecem como esperado.
 
-## 9. Demos sample: Camera2D no switcher
+## 9. Demos sample: SEM `Camera2D` (escopo revisado)
 
-- [x] 9.1 Adicionar nó filho `Camera2D` em `DemoSwitcherScene` com `bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))`, `current = true`, `aspectMode = AspectMode.FIT`. Inserir no `init {}` antes dos slots dos demos para garantir pre-order pick.
-- [x] 9.2 Confirmar (sem alterar) que `TransformOrbitDemo` e `ScaleHierarchyDemo` mantêm `Vec2(400f, 300f)` como pivot — agora honestamente centrado.
-- [ ] 9.3 Validar manualmente em janela 800×600 + janela redimensionada (1280×900 + portrait) que: orbit/scale pivots ficam no centro do mundo virtual; spawner, stress e rotating box continuam funcionando dentro do mesmo mundo virtual.
+Validação manual mostrou regressão clara — demos lêem `scene.size` como mundo (bouncing limits, HUD anchors, spawn) e duplicam o escalonamento quando a câmera projeta. Decisão: demos são exercícios de física/colisão; ficam em pixels de surface por design, sem `Camera2D`. Atualiza design.md D8 e proposal.md (escopo de demos retirado).
+
+- [x] 9.1 ~~Adicionar `Camera2D` em `DemoSwitcherScene`~~ — **revertido**: demos rodam em surface-px (sem câmera). `DemoSwitcherScene.init {}` não adiciona `Camera2D`.
+- [x] 9.2 ~~`Vec2(400f, 300f)` como pivot centrado no mundo virtual~~ — **N/A**: pivot continua sendo metade da surface (comportamento pré-change preservado pelo fallback identity em `Scene.render`).
+- [x] 9.3 ~~Validar Camera2D nos demos~~ — **N/A**: smoke test manual (12.2) só precisa confirmar paridade com comportamento pré-change.
 
 ## 10. Tictactoe sample: zero mudança
 

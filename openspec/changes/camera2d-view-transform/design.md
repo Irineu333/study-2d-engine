@@ -116,12 +116,19 @@ A função `renderDebugOverlay(renderer, scene)` continua sendo chamada UMA vez 
 - `_layout` lê `scene.size` e calcula posições em pixels — toda essa matemática vira lixo quando o renderer já projeta. Reescrever para usar `viewport.size` seria atalhar bug-fix mas manter o anti-pattern "cena é configurada em runtime quando sceniografia é estática".
 - Posições autorais no JSON são mais editáveis no futuro editor visual (a meta da engine), e ainda servem como documentação executável da intenção do designer.
 
-### D8. Migração de Demos: Camera2D no `DemoSwitcherScene`
+### D8. Migração de Demos: SEM `Camera2D` (revisado em apply)
 
-`DemoSwitcherScene` ganha um nó filho `Camera2D` com `bounds = (0,0,800,600)`, `current=true`, `aspectMode=FIT`. Os demos (`TransformOrbitDemo`, `ScaleHierarchyDemo`) mantêm `Vec2(400f, 300f)` como pivot — agora é honestamente o centro do mundo virtual e a câmera escala para a surface.
+Inicialmente o design previa adicionar `Camera2D` no `DemoSwitcherScene` para que `Vec2(400,300)` virasse honestamente o centro do mundo virtual. Validação manual durante o apply mostrou que isso introduzia regressão clara:
 
-**Por quê na DemoSwitcherScene e não em cada demo:**
-- Demos compartilham o mesmo "palco" (800×600). Centralizar a Camera2D evita repetição e garante consistência (mudar a resolução virtual da suite é uma edição num lugar).
+- `CollisionStressDemo`, `SpawnerDemo` e `RotatingBoxDemo` lêem `scene.width`/`scene.height` como mundo lógico (limites de bouncing, anchors de HUD right-aligned, spawn aleatório). Quando a câmera projeta `bounds = (0,0,800,600)` sobre `scene.size = 1600×900`, as posições de ball clampam em `x = 1600` *no mundo*, que renderiza fora do retângulo letterboxed visível. Em janelas pequenas (`scene.size = 400×400`), clampam em `x=400` que vira `x≈200` na surface — a "linha virtual" do feedback do usuário.
+- `SpawnerDemo` também usa `input.pointerPosition` (surface px) como coordenada de mundo para spawnar a ball, o que com câmera ativa exige `screenToWorld` em todo callsite.
+
+Decisão revisada: demos rodam em surface-px (sem `Camera2D`), pelo fallback identity de `Scene.render`. A justificativa é semântica: demos são exercícios de física/colisão que documentam o tree-walk e cache de world transform; o "palco" deles é honestamente a surface, não um mundo lógico. Quem precisa de mundo lógico fixo é jogo (Pong tem 800×600 porque o gameplay assim exige); demos não têm gameplay.
+
+Trade-off aceito: `TransformOrbitDemo` e `ScaleHierarchyDemo` continuam usando `Vec2(400, 300)` literalmente como pivot. Isso fica visualmente "deslocado" do centro em surface ≠ 800×600 — aceitável porque o ponto desses demos é a composição de transforms hierárquicos, não o framing absoluto. Refator futuro pode usar `scene.size / 2` para centralizar honestamente.
+
+**Por quê não Camera2D centralizada no switcher:**
+- Demos não compartilham um mundo lógico — eles compartilham um palco visual. Camera2D forçaria todos a viverem em 800×600, mas a vantagem disso é zero para gameplay-less demos.
 
 ### D9. Tictactoe não muda
 
