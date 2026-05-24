@@ -1,10 +1,10 @@
-"""Stubs for engine scene types: Node and Node2D."""
+"""Stubs for engine scene types: Node, Node2D, Camera2D and the visual primitives."""
 
 from __future__ import annotations
-from typing import Optional, List, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
-from engine.math import Vec2
-from engine.render import Renderer
+from engine.math import Rect, Vec2
+from engine.render import Color, Renderer
 
 if TYPE_CHECKING:
     from engine.scene import Scene
@@ -23,28 +23,24 @@ class Node:
     children: List["Node"]
     is_live: bool
     scene: Optional["Scene"]
+    groups: List[str]
 
-    def add_child(self, child: "Node") -> None:
-        """Kotlin: addChild(child)"""
-        ...
+    def add_child(self, child: "Node") -> None: ...
+    def remove_child(self, child: "Node") -> None: ...
+    def root_scene(self) -> Optional["Scene"]: ...
+    def find_child(self, name: str) -> Optional["Node"]: ...
+    def add_to_group(self, name: str) -> None: ...
+    def remove_from_group(self, name: str) -> None: ...
+    def is_in_group(self, name: str) -> bool: ...
 
-    def remove_child(self, child: "Node") -> None:
-        """Kotlin: removeChild(child)"""
-        ...
-
-    def root_scene(self) -> Optional["Scene"]:
-        """Returns the owning Scene in O(1) when live. Kotlin: rootScene()"""
-        ...
-
-    def find_child(self, name: str) -> Optional["Node"]:
-        """Single-level lookup of a direct child by name. Kotlin: findChild(name)"""
-        ...
-
-    # Lifecycle hooks — override these in your script, not here.
-    def on_enter(self) -> None: ...
-    def on_update(self, dt: float) -> None: ...
-    def on_render(self, renderer: Renderer) -> None: ...
-    def on_exit(self) -> None: ...
+    # Lifecycle hooks — override these in your script with the underscore
+    # Godot-style names. The engine dispatches them via the Kotlin SPI.
+    def _ready(self) -> None: ...
+    def _process(self, dt: float) -> None: ...
+    def _physics_process(self, dt: float) -> None: ...
+    def _draw(self, renderer: Renderer) -> None: ...
+    def _exit_tree(self) -> None: ...
+    def _on_collide(self, other: "Node") -> None: ...
 
 
 class Node2D(Node):
@@ -55,20 +51,61 @@ class Node2D(Node):
         # extends Node2D
     """
 
-    from engine.math import Vec2  # noqa: F811 — re-import inside class for stub clarity
-
-    # transform is a Transform object; we describe its most-used fields inline.
-    # Full Transform stub is omitted since scripts typically access .transform.position etc.
-
-    def world_transform(self) -> object:
-        """Composed world-space Transform. Kotlin: worldTransform()"""
-        ...
-
-    def world_position(self) -> Vec2:
-        """Shortcut for worldTransform().position. Kotlin: worldPosition()"""
-        ...
+    def world_transform(self) -> object: ...
+    def world_position(self) -> Vec2: ...
 
 
 class Scene(Node2D):
     """Root of the scene graph. Obtain via node.root_scene()."""
-    ...
+
+    size: Vec2
+    width: float
+    height: float
+    viewport: Rect
+
+    def get_nodes_in_group(self, name: str) -> List[Node]: ...
+
+
+class Camera2D(Node2D):
+    """2D camera node. Marking ``current = True`` makes its ``bounds`` the
+    scene's viewport."""
+
+    bounds: Rect
+    current: bool
+
+
+class Label(Node2D):
+    """Single-line text drawn at the node's world position."""
+
+    text: str
+    size: float
+    color: Color
+
+
+class ColorRect(Node2D):
+    """Axis-aligned filled rectangle anchored at the node's world position."""
+
+    size: Vec2
+    color: Color
+
+
+class Circle2D(Node2D):
+    """Filled circle whose center is ``world_position + (radius, radius)``."""
+
+    radius: float
+    color: Color
+
+
+class Line2D(Node2D):
+    """Polyline drawn by chaining consecutive ``points`` offset by ``world_position``."""
+
+    points: List[Vec2]
+    thickness: float
+    color: Color
+
+
+class Polygon2D(Node2D):
+    """Filled polygon defined by ``points`` offset by ``world_position``."""
+
+    points: List[Vec2]
+    color: Color

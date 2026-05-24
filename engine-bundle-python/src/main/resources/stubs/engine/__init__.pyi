@@ -13,9 +13,23 @@ Configure your IDE:
 from engine.math import Vec2 as Vec2, Rect as Rect
 from engine.render import Color as Color, Renderer as Renderer
 from engine.input import Key as Key, Input as Input
-from engine.scene import Node as Node, Node2D as Node2D
+from engine.scene import (
+    Node as Node,
+    Node2D as Node2D,
+    Camera2D as Camera2D,
+    Label as Label,
+    ColorRect as ColorRect,
+    Circle2D as Circle2D,
+    Line2D as Line2D,
+    Polygon2D as Polygon2D,
+)
 from engine.physics import BoxCollider as BoxCollider
-from engine.serialization import NodeRef as NodeRef
+from engine.serialization import (
+    NodeRef as NodeRef,
+    Signal as Signal,
+    Disposable as Disposable,
+    signal as signal,
+)
 
 __all__ = [
     "Vec2",
@@ -26,6 +40,15 @@ __all__ = [
     "Input",
     "Node",
     "Node2D",
+    "Camera2D",
+    "Label",
+    "ColorRect",
+    "Circle2D",
+    "Line2D",
+    "Polygon2D",
     "BoxCollider",
     "NodeRef",
+    "Signal",
+    "Disposable",
+    "signal",
 ]

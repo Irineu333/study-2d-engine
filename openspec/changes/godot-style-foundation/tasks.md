@@ -58,10 +58,10 @@
 
 ## 9. Stubs `.pyi`
 
-- [ ] 9.1 Em `engine-bundle-python/src/main/resources/stubs/engine/`: atualizar `node.pyi` (ou equivalente) com novos nomes de hook (`_ready`, `_process`, `_physics_process`, `_draw`, `_exit_tree`).
-- [ ] 9.2 Atualizar/criar `signal.pyi` com `Signal[T]`, `connect`, `emit`, `disconnect`, `Disposable`. Adicionar `def signal(t: type | None = None) -> Signal[Any]:` no top-level.
-- [ ] 9.3 Adicionar stubs para `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`.
-- [ ] 9.4 Remover stubs de `Shape`, `Text`.
+- [x] 9.1 Em `engine-bundle-python/src/main/resources/stubs/engine/`: atualizar `node.pyi` (ou equivalente) com novos nomes de hook (`_ready`, `_process`, `_physics_process`, `_draw`, `_exit_tree`).
+- [x] 9.2 Atualizar/criar `signal.pyi` com `Signal[T]`, `connect`, `emit`, `disconnect`, `Disposable`. Adicionar `def signal(t: type | None = None) -> Signal[Any]:` no top-level.
+- [x] 9.3 Adicionar stubs para `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`.
+- [x] 9.4 Remover stubs de `Shape`, `Text`. (no existing Shape/Text stubs found; visual primitive stubs replace them)
 
 ## 10. Migrar `:games:pong`
 
