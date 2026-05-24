@@ -31,6 +31,7 @@ private class RecordingRenderer : Renderer {
         texts += Quadruple(text, position, size, color)
     }
     override fun measureText(text: String, size: Float): Vec2 = Vec2(0f, 0f)
+    override fun drawPolygon(points: List<Vec2>, color: Color) {}
 }
 
 private data class Quadruple<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

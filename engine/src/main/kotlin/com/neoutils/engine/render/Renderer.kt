@@ -16,4 +16,12 @@ interface Renderer {
     fun drawText(text: String, position: Vec2, size: Float, color: Color)
 
     fun measureText(text: String, size: Float): Vec2
+
+    /**
+     * Fills the polygon defined by [points] (at least 3 vertices, in world
+     * coordinates) with [color]. Edges close from the last point back to the
+     * first. Backends decompose into a path; concavity is allowed but
+     * self-intersection is undefined.
+     */
+    fun drawPolygon(points: List<Vec2>, color: Color)
 }

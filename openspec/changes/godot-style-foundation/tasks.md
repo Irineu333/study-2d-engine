@@ -22,9 +22,9 @@
 
 ## 4. Renderer SPI
 
-- [ ] 4.1 Em `Renderer.kt`: adicionar `fun drawPolygon(points: List<Vec2>, color: Color)`.
-- [ ] 4.2 Em `:engine-skiko/SkikoRenderer.kt`: implementar `drawPolygon` via `org.jetbrains.skia.Path` (`moveTo` → `lineTo`*N → `closePath`), `Paint(color, mode = Fill)`.
-- [ ] 4.3 Em `:engine-compose/ComposeRenderer.kt`: implementar `drawPolygon` via `androidx.compose.ui.graphics.Path` + `DrawScope.drawPath(path, color, style = Fill)`.
+- [x] 4.1 Em `Renderer.kt`: adicionar `fun drawPolygon(points: List<Vec2>, color: Color)`.
+- [x] 4.2 Em `:engine-skiko/SkikoRenderer.kt`: implementar `drawPolygon` via `org.jetbrains.skia.Path` (`moveTo` → `lineTo`*N → `closePath`), `Paint(color, mode = Fill)`.
+- [x] 4.3 Em `:engine-compose/ComposeRenderer.kt`: implementar `drawPolygon` via `androidx.compose.ui.graphics.Path` + `DrawScope.drawPath(path, color, style = Fill)`.
 
 ## 5. Visual primitives
 

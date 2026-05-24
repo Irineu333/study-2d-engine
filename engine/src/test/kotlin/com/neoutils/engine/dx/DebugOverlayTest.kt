@@ -125,4 +125,5 @@ private class RecordingRenderer : Renderer {
     }
 
     override fun measureText(text: String, size: Float): Vec2 = Vec2(text.length * size * 0.5f, size)
+    override fun drawPolygon(points: List<Vec2>, color: Color) {}
 }

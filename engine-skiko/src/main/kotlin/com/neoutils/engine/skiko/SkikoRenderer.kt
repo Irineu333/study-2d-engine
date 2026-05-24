@@ -10,6 +10,7 @@ import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.FontStyle
 import org.jetbrains.skia.Paint
 import org.jetbrains.skia.PaintMode
+import org.jetbrains.skia.PathBuilder
 import org.jetbrains.skia.Rect as SkRect
 import org.jetbrains.skia.TextLine
 import org.jetbrains.skia.Typeface
@@ -92,6 +93,16 @@ class SkikoRenderer : Renderer {
         val font = fontOf(size)
         val line = textLineOf(text, font, size)
         return Vec2(line.width, font.metrics.height)
+    }
+
+    override fun drawPolygon(points: List<Vec2>, color: Color) {
+        if (points.size < 3) return
+        val c = required()
+        val builder = PathBuilder()
+        builder.moveTo(points[0].x, points[0].y)
+        for (i in 1 until points.size) builder.lineTo(points[i].x, points[i].y)
+        builder.closePath()
+        c.drawPath(builder.snapshot(), configurePaint(color, filled = true, thickness = 1f))
     }
 }
 

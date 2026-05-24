@@ -3,6 +3,7 @@ package com.neoutils.engine.compose
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color as UiColor
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -85,6 +86,17 @@ class ComposeRenderer(
     override fun measureText(text: String, size: Float): Vec2 {
         val measured = textMeasurer.measure(text = text, style = textStyle(size, Color.WHITE))
         return Vec2(measured.size.width.toFloat(), measured.size.height.toFloat())
+    }
+
+    override fun drawPolygon(points: List<Vec2>, color: Color) {
+        if (points.size < 3) return
+        val s = required()
+        val path = Path().apply {
+            moveTo(points[0].x, points[0].y)
+            for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+            close()
+        }
+        s.drawPath(path, color = color.toUi(), style = Fill)
     }
 
     private fun textStyle(size: Float, color: Color): TextStyle = TextStyle(
