@@ -76,7 +76,7 @@ Todo script Python carregado por `PythonScriptHost` MUST declarar o tipo Node qu
 
 ### Requirement: AST inspector discovers @export via top-level type annotations
 
-`PythonScriptHost.load` MUST descobrir `Script.exports` parseando o source do script com o módulo `ast` do Python (rodando dentro do Context Polyglot, mas sem executar o módulo do script). Cada nó `ast.AnnAssign` no top-level do módulo cujo target é um `Name`, cuja anotação resolve para um dos tipos suportados, e cujo `value` é uma expressão estaticamente avaliável (literal numérico, string, booleano, `None`, ou chamada simples de um tipo conhecido como `Vec2(0, 0)`) MUST virar um `ExportedProperty`. Quando a anotação top-level é exatamente o identificador `Signal`, o item MUST NÃO ser tratado como `ExportedProperty` (não vai para o serializado `props`); em vez disso, MUST ser registrado como signal-slot descoberto via `Script.signals: Map<String, SignalDeclaration>`. O valor associado MUST ser uma chamada `signal(<typeHint?>)` — outras formas falham com mensagem clara nomeando o script e a linha.
+`PythonScriptHost.load` MUST descobrir `Script.exports` parseando o source do script com o módulo `ast` do Python (rodando dentro do Context Polyglot, mas sem executar o módulo do script). Cada nó `ast.AnnAssign` no top-level do módulo cujo target é um `Name`, cuja anotação resolve para um dos tipos suportados, e cujo `value` é uma expressão estaticamente avaliável (literal numérico, string, booleano, `None`, ou chamada simples de um tipo conhecido como `Vec2(0, 0)`) MUST virar um `ExportedProperty`. Quando a anotação top-level é exatamente o identificador `Signal`, o item MUST NÃO ser tratado como `ExportedProperty` (não vai para o bag `properties` serializado); em vez disso, MUST ser registrado como signal-slot descoberto via `Script.signals: Map<String, SignalDeclaration>`. O valor associado MUST ser uma chamada `signal(<typeHint?>)` — outras formas falham com mensagem clara nomeando o script e a linha.
 
 #### Scenario: Signal annotation discovers a signal slot
 
@@ -116,24 +116,50 @@ Todo script Python carregado por `PythonScriptHost` MUST declarar o tipo Node qu
 - **GIVEN** script com `up_key: Optional[Key] = None`
 - **WHEN** `load` é chamado
 - **THEN** `exports` contém `(name="up_key", type=Key::class, default=null)`
-- **AND** o ExportedProperty é tratado como nullable na injeção de props
+- **AND** o ExportedProperty é tratado como nullable na rotina de roteamento de `properties`
 
 ### Requirement: ScriptInstance attaches self as the host Node
 
-`PythonScriptHost.attach(node, script)` MUST instanciar o módulo Python no Context (executando seu top-level uma única vez se ainda não foi executado), depois injetar `node` como `self` para as chamadas de hook. A injeção MUST garantir que dentro de um hook `on_update(self, dt)` a expressão `self.transform` chama o getter Kotlin `Node2D.transform` (não cria atributo Python). Atributos `@export` MUST ser visíveis em `self` (leitura e escrita), correspondendo aos campos do Node ou a um proxy.
+`PythonScriptHost.attach(node, script)` MUST instanciar o módulo Python no Context (executando seu top-level uma única vez se ainda não foi executado), depois injetar `node` como `self` para as chamadas de hook. A injeção MUST garantir que dentro de um hook `_process(self, dt)` a expressão `self.transform` chama o getter Kotlin `Node2D.transform` (não cria atributo Python). Atributos `@export` MUST ser visíveis em `self` (leitura e escrita), correspondendo aos campos do Node ou a um proxy.
 
 #### Scenario: self references the host Node
 
-- **GIVEN** um script Python que dentro de `on_update` faz `self.transform.position.y += 1.0`
+- **GIVEN** um script Python que dentro de `_process` faz `self.transform.position.y += 1.0`
 - **AND** o script anexado a um `Node2D` com `position = (0, 0)`
-- **WHEN** `on_update(dt=1.0)` é chamado
+- **WHEN** `_process(dt=1.0)` é chamado
 - **THEN** o `Node2D.transform.position.y` agora é `1.0` (mutação refletida no Node Kotlin)
 
 #### Scenario: Exported props readable via self
 
-- **GIVEN** um script com `speed: float = 360.0` e `props: {"speed": 480.0}` no scene.json
-- **WHEN** `on_update` lê `self.speed`
+- **GIVEN** um script com `speed: float = 360.0` e `properties: {"speed": 480.0}` no scene.json (roteado como export pelo loader)
+- **WHEN** `_process` lê `self.speed`
 - **THEN** o valor lido é `480.0` (override do scene.json)
+
+### Requirement: PythonScriptInstance implements currentValue for round-trip
+
+O `ScriptInstance` Python MUST implementar `currentValue(name: String): Any?` lendo o atributo Python da instância pelo mesmo nome e devolvendo o valor convertido para o tipo Kotlin declarado em `ExportedProperty.type`. A conversão MUST ser o inverso de `PropCoercion.coerce`: floats Python viram `Float`, ints viram `Int`/`Long` conforme o tipo declarado, `Vec2` proxy vira `com.neoutils.engine.math.Vec2`, etc. Se o atributo Python não existe (porque o export nunca foi acessado e o Python ainda não materializou o slot), `currentValue` MUST devolver o `ExportedProperty.default`.
+
+Esse método MUST ser usado apenas por `SceneLoader.save`. Não tem efeito colateral no script (não executa hooks, não dispara `_ready`).
+
+#### Scenario: currentValue returns Python attribute converted to Kotlin type
+
+- **GIVEN** script com `speed: float = 360.0`, anexado a um Node, com `setExport("speed", 480.0f)` previamente chamado
+- **WHEN** código chama `instance.currentValue("speed")`
+- **THEN** o valor devolvido é o `Float` Kotlin `480.0f`
+- **AND** NÃO é um `PolyglotValue` ou `Double` cru do GraalPy
+
+#### Scenario: currentValue returns default when attribute is absent
+
+- **GIVEN** script com `speed: float = 360.0`, anexado mas sem qualquer `setExport` nem leitura prévia
+- **WHEN** código chama `instance.currentValue("speed")`
+- **THEN** o valor devolvido é `360.0f` (o default declarado)
+
+#### Scenario: currentValue on unknown name fails
+
+- **GIVEN** script cujo `exports` não inclui `mystery`
+- **WHEN** código chama `instance.currentValue("mystery")`
+- **THEN** uma `IllegalArgumentException` é lançada
+- **AND** a mensagem nomeia `mystery` e o path do script
 
 ### Requirement: Hooks delegate from Node to ScriptInstance
 

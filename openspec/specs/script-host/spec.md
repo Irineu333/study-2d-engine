@@ -25,6 +25,7 @@ interface Script {
 
 interface ScriptInstance {
     fun setExport(name: String, value: Any?)
+    fun currentValue(name: String): Any?
     fun onEnter()
     fun onUpdate(dt: Float)
     fun onRender(renderer: Renderer)
@@ -40,6 +41,8 @@ data class ExportedProperty(
 
 `Script` MUST representar um script carregado e analisado (com `exports` já descobertos estaticamente). `ScriptInstance` MUST representar um script anexado a uma instância de `Node`. `ScriptHost` MUST NOT vazar tipos específicos de runtime (ex.: `org.graalvm.polyglot.Value`, `org.graalvm.polyglot.Context`) através dessas interfaces.
 
+`ScriptInstance.currentValue(name)` MUST devolver o valor atual do export nomeado, conforme presente na instância do script (após qualquer `setExport`, `_ready`, ou mutação durante hooks). Se `name` não corresponde a um `ExportedProperty` declarado em `Script.exports`, a chamada MUST lançar `IllegalArgumentException` nomeando o `name` e o path do script. O valor devolvido MUST estar no tipo Kotlin correspondente a `ExportedProperty.type` (para que `SceneLoader.save` possa serializá-lo via `kotlinx.serialization`). Esse método existe especificamente para suportar round-trip em `SceneLoader.save`.
+
 #### Scenario: ScriptHost is the only entry point of the SPI
 
 - **WHEN** o pacote `com.neoutils.engine.bundle.script` é inspecionado
@@ -51,6 +54,25 @@ data class ExportedProperty(
 - **WHEN** as assinaturas públicas dos quatro tipos SPI são lidas
 - **THEN** nenhuma menciona `org.graalvm.polyglot.*`
 - **AND** nenhuma menciona `org.luaj.*` ou qualquer outro runtime de scripting
+
+#### Scenario: currentValue returns the default for an untouched export
+
+- **GIVEN** um script com export `speed: float = 360.0` é anexado a um Node sem que `setExport("speed", ...)` seja chamado
+- **WHEN** código chama `instance.currentValue("speed")`
+- **THEN** o valor devolvido é `360.0f`
+
+#### Scenario: currentValue reflects setExport
+
+- **GIVEN** após anexar, código chama `instance.setExport("speed", 480.0f)`
+- **WHEN** código chama `instance.currentValue("speed")`
+- **THEN** o valor devolvido é `480.0f`
+
+#### Scenario: currentValue on unknown name fails
+
+- **GIVEN** um script cujo `exports` não inclui `mystery`
+- **WHEN** código chama `instance.currentValue("mystery")`
+- **THEN** uma `IllegalArgumentException` é lançada
+- **AND** a mensagem nomeia `mystery` e o path do script
 
 ### Requirement: ScriptHostRegistry dispatches by file extension
 
@@ -194,9 +216,16 @@ Toda implementação de `ScriptInstance` MUST suportar exatamente os quatro hook
 
 ### Requirement: Script errors propagate fail-fast
 
-Falhas no carregamento ou execução de um script MUST propagar como exceções até o caller, sem captura silenciosa nem nó placeholder. Inclui: script não encontrado, erro de parse estático, `extends` para tipo desconhecido, exceção dentro de um hook, falha ao injetar prop não-aceita pelo tipo do export.
+Erros em qualquer fase de scripting MUST propagar sem captura silenciosa pela engine. As fases são: carregamento (parsing + análise estática), anexação ao Node, roteamento de `properties` (coerção de tipo em `applyExport`), execução de hooks (`_ready`, `_process`, `_physics_process`, `_draw`, `_on_collide`, `_exit_tree`), e `currentValue` em `save`. A engine MUST NOT envolver essas chamadas em `try/catch` que descarte a exceção; o `GameHost` decide o que fazer (tipicamente: log e crash do processo com stack trace).
 
-#### Scenario: Missing script file crashes load
+#### Scenario: Parse error crashes the load
+
+- **GIVEN** `scripts/broken.py` com sintaxe inválida
+- **WHEN** `BundleLoader.fromResources(name)` é chamado
+- **THEN** a chamada lança exceção
+- **AND** o stack trace contém a linha problemática
+
+#### Scenario: Missing script file fails fast
 
 - **GIVEN** `scene.json` referencia `scripts/missing.py` que não existe no bundle
 - **WHEN** `BundleLoader.fromResources(name)` é chamado
@@ -211,10 +240,10 @@ Falhas no carregamento ou execução de um script MUST propagar como exceções 
 - **AND** o processo encerra com o stack trace
 - **AND** a engine NÃO instala handler que engole a exceção
 
-#### Scenario: Invalid prop type crashes during instantiation
+#### Scenario: Invalid prop type crashes during routing
 
-- **GIVEN** `scene.json` define `props: { "speed": "fast" }` para um export `speed: Float`
-- **WHEN** `BundleLoader` instancia o Node e tenta aplicar o prop
+- **GIVEN** `scene.json` define `properties: { "speed": "fast" }` para um export `speed: Float`
+- **WHEN** `BundleLoader` aplica a chave via `applyExport` (que delega para `PropCoercion`)
 - **THEN** uma exceção é lançada
 - **AND** a mensagem nomeia o prop `speed`, o tipo esperado (`Float`) e o valor recebido (`"fast"`)
 

@@ -147,48 +147,48 @@ O `BundleLoader` MUST descobrir quais scripts carregar percorrendo o JSON parsea
 - **THEN** o carregamento falha como tipo desconhecido em `NodeRegistry`
 - **AND** o caminho que tratava `.nengine.kts` em `type` não existe mais
 
-### Requirement: NodeEntry supports script and props fields
+### Requirement: NodeEntry supports script field with unified properties routing
 
-O formato `scene.json` SHALL aceitar dois campos opcionais em cada `NodeEntry` além dos existentes:
-
-- `script: String?` — caminho bundle-relative para o arquivo de script a anexar ao Node.
-- `props: JsonObject?` — mapa de nome de export para valor; os valores aqui sobrescrevem os defaults declarados nas `ExportedProperty` do script.
+O formato `scene.json` SHALL aceitar um campo opcional `script: String?` em cada `NodeEntry`, ao lado dos campos existentes (`type`, `name`, `properties`, `children`). NÃO há campo `props` separado.
 
 Quando `script` é não-nulo, o `BundleLoader` MUST:
 
 1. Instanciar o Node nativo via `NodeRegistry.create(type)`.
 2. Atachar o `ScriptInstance` via `ScriptHostRegistry.hostFor(script).attach(node, script)`.
-3. Aplicar cada par de `props` chamando `scriptInstance.setExport(name, value)` após coerção de tipo (JSON → tipo Kotlin do export).
-4. Armazenar `node.scriptInstance = instance`.
+3. Construir um `ScriptAttachment` cuja `exportNames` é o conjunto `Script.exports.map { it.name }.toSet()`, e cujo `applyExport(name, jsonEl)` chama `PropCoercion.coerce(jsonEl, export.type, export.nullable)` seguido de `instance.setExport(name, value)`.
+4. Devolver esse `ScriptAttachment` para o `SceneLoader` rotear `properties`.
+5. Armazenar `node.scriptInstance = instance`.
 
-Quando `script` é nulo, o Node se comporta como antes — apenas o tipo nativo, sem `ScriptInstance`. `props` sem `script` MUST ser erro de carregamento.
+Quando `script` é nulo, o Node se comporta como antes — apenas o tipo nativo, sem `ScriptInstance`, e o `SceneLoader` roteia `properties` exclusivamente contra `@Inspect`.
 
-#### Scenario: Node with script slot is instantiated and attached
+O roteamento de `properties` (decisão `@Inspect` vs export, colisão fatal, chave desconhecida fatal) MUST ser delegado ao `SceneLoader` conforme requirement em `scene-serialization`. O `BundleLoader` não duplica essa lógica.
 
-- **GIVEN** `scene.json` contém um nó `{ "_type": "engine.Node2D", "script": "scripts/paddle.py", "props": { "speed": 360.0 } }`
+#### Scenario: Node with script slot is instantiated, attached, and routed
+
+- **GIVEN** `scene.json` contém um nó `{ "type": "engine.Node2D", "script": "scripts/paddle.py", "properties": { "speed": 360.0 } }` onde `speed` é export do `paddle.py` e não há `@Inspect var speed` em `Node2D`
 - **AND** o `PythonScriptHost` está registrado
 - **WHEN** `BundleLoader` carrega o bundle
 - **THEN** um `Node2D` é instanciado
 - **AND** `node.scriptInstance` é não-nulo
-- **AND** `scriptInstance.setExport("speed", 360.0f)` foi chamado
+- **AND** `scriptInstance.setExport("speed", 360.0f)` foi chamado (após coerção via `PropCoercion`)
 
 #### Scenario: Node without script slot has no scriptInstance
 
-- **GIVEN** `scene.json` contém um nó `{ "_type": "engine.Node2D" }` (sem `script`)
+- **GIVEN** `scene.json` contém um nó `{ "type": "engine.Node2D", "properties": {} }` (sem `script`)
 - **WHEN** `BundleLoader` carrega o bundle
 - **THEN** um `Node2D` é instanciado
 - **AND** `node.scriptInstance` é nulo
 
-#### Scenario: Props without script is rejected
+#### Scenario: Unknown key in properties is rejected via SceneLoader
 
-- **GIVEN** `scene.json` contém um nó `{ "_type": "engine.Node2D", "props": { "speed": 360.0 } }` (sem `script`)
+- **GIVEN** `scene.json` contém um nó `{ "type": "engine.Node2D", "properties": { "ballSize": 16.0 } }` (sem `script`)
 - **WHEN** `BundleLoader` carrega o bundle
-- **THEN** uma exceção é lançada
-- **AND** a mensagem indica que `props` exige `script` não-nulo
+- **THEN** uma exceção é lançada (vinda do `SceneLoader` route step)
+- **AND** a mensagem indica `ballSize` como chave desconhecida no `Node2D`
 
-#### Scenario: Prop type mismatch fails fast
+#### Scenario: Prop type mismatch fails fast during routing
 
-- **GIVEN** um script declara `speed: float = 360.0` e `scene.json` traz `"props": { "speed": "fast" }`
-- **WHEN** `BundleLoader` tenta aplicar o prop
+- **GIVEN** um script declara `speed: float = 360.0` e `scene.json` traz `"properties": { "speed": "fast" }`
+- **WHEN** `BundleLoader` aplica a chave (via `applyExport` → `PropCoercion`)
 - **THEN** uma exceção é lançada
 - **AND** a mensagem nomeia `speed`, o tipo esperado e o valor recebido
