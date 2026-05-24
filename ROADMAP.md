@@ -6,10 +6,8 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 
 | Change                     | Resumo                                                                                                                                                                                                                                  |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `godot-style-properties`   | Unifica `properties` + `props` num único bag em `scene.json` (estilo Godot); bump `SceneFile.version` para 2 com fail-fast em colisão de chave ou chave desconhecida; SPI ganha `ScriptAttachment` (bridge loader↔host) e `ScriptInstance.currentValue` (round-trip de save).       |
 | `collision-overhaul`       | Reescreve colisão no estilo Godot: `CollisionObject2D` ramificado em `Area2D`/`StaticBody2D`/`CharacterBody2D`, `CollisionShape2D` carregando `Shape2D` polimórfica (`Rectangle`/`Circle`), `PhysicsSystem` com eventos entered/exited pareados. |
 | `bundle-tictactoe`         | Migra `:games:tictactoe` para o pipeline bundle (`scene.json` + Python), apagando os Nodes Kotlin do jogo. Prova viva de que `BundleLoader` + `PythonScriptHost` rodam idênticos no backend Compose.                                    |
-| `inject-script-host`       | Remove `ScriptHostRegistry` singleton e `PythonScriptHost.install()`; `BundleLoader.fromResources/fromPath` passa a receber `ScriptHost` por parâmetro; `PythonScriptHost.create()` vira a entry point explícita.                       |
 
 ## Planned
 
