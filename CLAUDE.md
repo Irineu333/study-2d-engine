@@ -129,25 +129,61 @@ speed: float = 360.0      ← export: anotação top-level, descoberta estaticam
 ai: bool = False
 target: NodeRef = NodeRef("")
 
-def on_enter(self):        ← hooks snake_case, todos opcionais
+def _ready(self):                       ← hooks underscore-prefixed estilo Godot; todos opcionais
     ...
 
-def on_update(self, dt: float):
+def _process(self, dt: float):          ← frame-step (dt variável)
     ...
 
-def on_render(self, renderer):
+def _physics_process(self, dt: float):  ← fixed-step (dt constante, default 60Hz)
     ...
 
-def on_collide(self, other):
+def _draw(self, renderer):
+    ...
+
+def _exit_tree(self):
+    ...
+
+def _on_collide(self, other):           ← apenas relevante para BoxCollider e descendentes
     ...
 ```
 
 - **`# extends <NodeType>`** na primeira linha não vazia. `<NodeType>` é resolvido contra o `NodeRegistry` (ex.: `Node2D`, `BoxCollider`). Falhar nesta linha é erro fatal.
 - **Exports** são atribuições anotadas no top-level. Tipos suportados: `int`, `float`, `bool`, `str`, `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `Optional[T]` (ou `T | None`). Qualquer outro tipo é silenciosamente ignorado.
 - **Estado runtime** fica em `self._private` (convenção: atributos com prefixo `_` não são exports, são instâncias por-nó).
-- **Hooks fixos**: `on_enter`, `on_update(dt)`, `on_render(renderer)`, `on_collide(other)`. Hooks ausentes são no-ops.
-- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`.
+- **Hooks fixos** (todos opcionais; ausência é no-op):
+  - `_ready(self)` — equivale a `Kotlin Node.onEnter()`, roda quando o nó entra na live tree.
+  - `_process(self, dt)` — frame-step, `dt` variável; em geral para animação visual e input.
+  - `_physics_process(self, dt)` — fixed-step (default 60Hz via `GameConfig.physicsHz`), `dt` constante; integração e detecção de colisão moram aqui.
+  - `_draw(self, renderer)` — desenho do próprio nó (Godot-orthodox: o nó é seu próprio visual).
+  - `_exit_tree(self)` — limpeza ao sair da live tree.
+  - `_on_collide(self, other)` — disparado pelo `PhysicsSystem` para `BoxCollider`s em contato.
+- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`.
 - **Fail-fast**: qualquer erro (parse, `extends` desconhecido, exception num hook) propaga até o `Main.kt` e crasha o processo.
+
+#### Signals
+
+Comunicação entre nós (gols, scoreboards, etc.) usa `Signal<T>`. Declare no top-level via a factory `signal(<type>)`:
+
+```python
+# extends BoxCollider
+
+scored: Signal = signal(str)          ← descoberto via AST; instanciado por-nó em attach
+
+def _on_collide(self, other):
+    if other.name == "rightGoal":
+        self.scored.emit("Left")      ← emit dispara handlers em ordem de inscrição
+```
+
+Do outro lado, `connect` retorna um `Disposable` para futuro `dispose()`:
+
+```python
+def _ready(self):
+    ball = script_of(self._node.findChild("Ball"))
+    ball.scored.connect(lambda side: print("goal:", side))
+```
+
+A factory `signal(type)` recebe o tipo apenas como dica de documentação — Python não tem `Signal<T>` runtime. Cada attach instancia um `Signal<Any?>` Kotlin novo e o expõe no wrapper Python, sombreando qualquer placeholder de módulo.
 
 #### Wiring no `scene.json`
 
@@ -205,6 +241,8 @@ Para uma feature nova ou refator significativo: abra uma change OpenSpec, **não
 | `add-bundle-loader`   | Archived | Substitui `:engine-scripting` por `:engine-bundle`; introduz `BundleLoader.fromResources`/`fromPath`; `NodeRegistry` bidirecional; descoberta de scripts via tree-walk + round-robin no host. Pong passa a viver em `resources/pong/`. |
 | `add-python-scripting` | Active  | Substitui Kotlin Scripting por ScriptHost SPI agnóstica + GraalPy como primeira impl (`:engine-bundle-python`). Migra Pong inteiro para `.py`. Remove `kotlin-scripting-*` deps. Publica stubs `.pyi`. |
 | `cache-world-transform` | Archived | Cache lazy + invalidação eager em `Node2D.worldTransform()`: corta o multiplicador O(N²) parasitário do broad phase; setter custom no `transform`; hooks em `applyAdd`/`applyRemove`; demos de stress (`4` com 30 colliders planos, `5` com 12 colliders dentro de caixa rotativa exercitando invalidação por ancestral). |
+| `godot-style-foundation` | Active   | Renomeação dos hooks para `onProcess`/`onPhysicsProcess`/`onDraw` (Python: `_process`/`_physics_process`/`_draw`/`_ready`/`_exit_tree`/`_on_collide`), `GameLoop` fixed-step com accumulator e clamp de spiral-of-death, `Signal<T>` event hub real com bridge Python, `groups`/`getNodesInGroup`, `Camera2D` + `Scene.viewport`, primitivas visuais `ColorRect`/`Circle2D`/`Line2D`/`Polygon2D`/`Label` substituindo `Shape`/`Text`, `Renderer.drawPolygon`. |
+| `game-snake`          | Planned  | Validador da fundação Godot-style: fixed-step, signals, `Camera2D.bounds`, primitivas visuais, sem dependência de colisão nova. |
 | editor (placeholder)  | Planned  | Editor visual estilo Godot. Vai dirigir decisões sobre serialização de cena, inspetor de propriedades e potencialmente composição. |
 
 Atualize a tabela acima quando uma change avançar de Planned → Active → Archived.

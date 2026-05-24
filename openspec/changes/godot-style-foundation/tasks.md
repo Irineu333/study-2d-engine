@@ -93,12 +93,12 @@
 
 ## 13. Docs
 
-- [ ] 13.1 `CLAUDE.md`: na seção "Coding Conventions / Scripting contract": atualizar exemplos para `_ready`, `_process`, `_physics_process`, `_draw`, `_exit_tree`, `_on_collide`. Adicionar sub-seção "Signals" com exemplo `signal: Signal = signal(str)` + `connect/emit`.
-- [ ] 13.2 `CLAUDE.md`: na tabela do roadmap, adicionar linha `godot-style-foundation` com status `Active` e resumo curto.
-- [ ] 13.3 `CLAUDE.md`: na tabela do roadmap, adicionar linha `game-snake` com status `Planned` e resumo "Validador da fundação Godot-style: fixed-step, signals, Camera2D.bounds, primitivas visuais, sem dependência de colisão nova".
-- [ ] 13.4 `CLAUDE.md`: atualizar a seção "Architectural Invariants" item 4 se o vocabulário mudou (verificar — `Renderer/Input/GameHost` continuam SPIs; mantém).
-- [ ] 13.5 KDoc em `GameLoop.tick` documentando o accumulator e o clamp de spiral-of-death.
-- [ ] 13.6 KDoc em `Signal.connect` documentando a semântica de ordem e safety de disconnect-from-handler.
+- [x] 13.1 `CLAUDE.md`: na seção "Coding Conventions / Scripting contract": atualizar exemplos para `_ready`, `_process`, `_physics_process`, `_draw`, `_exit_tree`, `_on_collide`. Adicionar sub-seção "Signals" com exemplo `signal: Signal = signal(str)` + `connect/emit`.
+- [x] 13.2 `CLAUDE.md`: na tabela do roadmap, adicionar linha `godot-style-foundation` com status `Active` e resumo curto.
+- [x] 13.3 `CLAUDE.md`: na tabela do roadmap, adicionar linha `game-snake` com status `Planned` e resumo "Validador da fundação Godot-style: fixed-step, signals, Camera2D.bounds, primitivas visuais, sem dependência de colisão nova".
+- [x] 13.4 `CLAUDE.md`: atualizar a seção "Architectural Invariants" item 4 se o vocabulário mudou (verificar — `Renderer/Input/GameHost` continuam SPIs; mantém). (verified: item 4 still accurate; no edit required.)
+- [x] 13.5 KDoc em `GameLoop.tick` documentando o accumulator e o clamp de spiral-of-death.
+- [x] 13.6 KDoc em `Signal.connect` documentando a semântica de ordem e safety de disconnect-from-handler.
 
 ## 14. Smoke & verify
 
