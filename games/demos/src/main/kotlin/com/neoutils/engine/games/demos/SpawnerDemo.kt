@@ -7,7 +7,7 @@ import com.neoutils.engine.physics.BoxCollider
 import com.neoutils.engine.physics.Collider
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Circle2D
-import com.neoutils.engine.scene.ColorRect
+import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
@@ -102,13 +102,19 @@ class Trap : BoxCollider() {
     init {
         size = Vec2(SIZE, SIZE)
         if (children.isEmpty()) {
-            // Translucent fill stands in for the legacy stroke-only outline:
-            // ColorRect always fills, so a low-alpha colour reads as a hint
-            // rather than a solid hit-marker.
+            // Outlined hit-marker: a Line2D loop along the four corners keeps
+            // the visual cue without filling the area (ColorRect is fill-only).
             addChild(
-                ColorRect().apply {
+                Line2D().apply {
                     name = "art"
-                    size = Vec2(SIZE, SIZE)
+                    points = listOf(
+                        Vec2(0f, 0f),
+                        Vec2(SIZE, 0f),
+                        Vec2(SIZE, SIZE),
+                        Vec2(0f, SIZE),
+                        Vec2(0f, 0f),
+                    )
+                    thickness = 1f
                     color = Color(1f, 0.2f, 0.2f, 0.6f)
                 }
             )
