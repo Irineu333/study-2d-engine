@@ -78,8 +78,11 @@ class Board : Node2D() {
     }
 
     override fun onProcess(dt: Float) {
-        val input = rootScene()?.input ?: return
-        hoveredCell = cellAt(input.pointerPosition)
+        val scene = rootScene() ?: return
+        val input = scene.input ?: return
+        // pointerPosition arrives in surface pixels; the board lives in world
+        // coordinates under the scene's Camera2D, so project before hit-testing.
+        hoveredCell = cellAt(scene.screenToWorld(input.pointerPosition))
 
         if (!input.wasMouseClicked(MouseButton.Left)) return
         if (gameOver) {

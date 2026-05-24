@@ -26,7 +26,9 @@ class StatusText : Node() {
     override fun onDraw(renderer: Renderer) {
         val scene = rootScene() ?: return
         val bounds = renderer.measureText(text, size)
-        val x = scene.width / 2f - bounds.x / 2f
+        // Center on the world width (viewport) — the camera projects this
+        // onto the surface, so we get correct centering on any window size.
+        val x = scene.viewport.size.x / 2f - bounds.x / 2f
         renderer.drawText(text, Vec2(x, baselineY), size, color)
     }
 }

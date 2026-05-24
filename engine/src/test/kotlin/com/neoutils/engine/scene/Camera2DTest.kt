@@ -148,6 +148,34 @@ class Camera2DTest {
     }
 
     @Test
+    fun `Scene screenToWorld delegates to current camera`() {
+        val scene = Scene()
+        val camera = Camera2D().apply {
+            bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
+            current = true
+            aspectMode = AspectMode.FIT
+        }
+        scene.addChild(camera)
+        scene.resize(1280f, 900f)
+        scene.start()
+
+        val screenCenter = Vec2(640f, 450f)
+        assertApprox(Vec2(400f, 300f), scene.screenToWorld(screenCenter))
+        assertApprox(screenCenter, scene.worldToScreen(Vec2(400f, 300f)))
+    }
+
+    @Test
+    fun `Scene screenToWorld identity without camera`() {
+        val scene = Scene()
+        scene.resize(800f, 600f)
+        scene.start()
+
+        val p = Vec2(123f, 456f)
+        assertEquals(p, scene.screenToWorld(p))
+        assertEquals(p, scene.worldToScreen(p))
+    }
+
+    @Test
     fun `non-zero origin shifts translation`() {
         val c = Camera2D().apply {
             bounds = Rect(Vec2(100f, 50f), Vec2(800f, 600f))

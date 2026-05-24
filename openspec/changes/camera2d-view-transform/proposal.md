@@ -56,9 +56,10 @@ Esta change completa a semântica que a foundation começou: `Camera2D` vira **v
 
 `DemoSwitcherScene` NÃO recebe `Camera2D`. Validação manual mostrou que os demos são exercícios de física/colisão que lêem `scene.size` como mundo lógico (limites de bouncing, anchors de HUD, spawn aleatório); aplicar uma view transform por cima duplica o escalonamento (balls bouncing em metade da surface em janelas pequenas, balls saindo do retângulo letterboxed em janelas grandes). Decisão: demos ficam em surface-px (fallback identity), por design. `Scene.render` sem `Camera2D` preserva o comportamento pré-change, então isso é zero cirurgia.
 
-### Sem mudança em tictactoe
+### Migração tictactoe — REVISÃO no apply (Camera2D incluído)
 
-- `:games:tictactoe` não usa `Camera2D`. Cai no fallback identity. Comportamento idêntico ao atual.
+- `:games:tictactoe` ganha `Camera2D` 600×600 FIT (primeira validação de Camera2D no backend Compose). Cena inteira (board + status text) escala como uma só sob resize. `TicTacToeScene.onResize` removido — posições estáticas no mundo. `Board.onProcess` converte `input.pointerPosition` via `Scene.screenToWorld` antes do hit-test. `StatusText` centraliza por `scene.viewport.size.x`.
+- Nova API: `Scene.screenToWorld(p)` / `Scene.worldToScreen(p)` — conveniência que delega para `currentCamera` (identity fallback). Documenta o caminho para conversão de input em jogos com câmera.
 
 ## Capabilities
 

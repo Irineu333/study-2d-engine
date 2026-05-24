@@ -130,9 +130,17 @@ Trade-off aceito: `TransformOrbitDemo` e `ScaleHierarchyDemo` continuam usando `
 **Por quê não Camera2D centralizada no switcher:**
 - Demos não compartilham um mundo lógico — eles compartilham um palco visual. Camera2D forçaria todos a viverem em 800×600, mas a vantagem disso é zero para gameplay-less demos.
 
-### D9. Tictactoe não muda
+### D9. Tictactoe migra para Camera2D (revisado em apply)
 
-Tictactoe não tem `Camera2D`. Cai no fallback identity. O `Board.kt`/`StatusText.kt`/etc. continuam desenhando em pixels da surface (lógica de centralização dele já é por `scene.size`). Zero cirurgia.
+Versão original do design dizia "tictactoe não muda". Validação manual mostrou um bug visível: ao redimensionar a janela, o `Board.onResize` reescalava cellSize e re-centrava o board, mas `StatusText` centralizava por `scene.width` em surface px — uma centralização "honesta" para o estado pré-câmera mas que, junto com a escala do board, dava a sensação de UI desconexa (texto não acompanhava o tabuleiro).
+
+Decisão revisada: tictactoe ganha `Camera2D` 600×600 FIT. Vantagens:
+- Cena inteira (board + status) escala como uma só sob resize, sem precisar de `onResize` manual.
+- Posições viram declarativas: `Board.origin`, `Board.cellSize`, posições do `Camera2D` e do status são constantes no `init` do `TicTacToeScene`.
+- Primeira validação de `Camera2D` rodando no backend Compose (Pong roda em Skiko; sem o tictactoe, o stack `pushTransform/popTransform` do `ComposeRenderer` ficaria sem smoke test end-to-end).
+- `Board.onProcess` força a aparecer o caso de uso de `Scene.screenToWorld` — converte `input.pointerPosition` (surface px) para coordenada de mundo antes do hit-test contra `cellRect`. Isso valida a API e a documenta com um caller real.
+
+Trade-off: jogos compostos quase inteiramente por HUD (caso clássico do tictactoe) agora pagam o letterbox em monitores não-quadrados. Aceitável dado o ganho de consistência e o reuso da projeção para input.
 
 ## Risks / Trade-offs
 

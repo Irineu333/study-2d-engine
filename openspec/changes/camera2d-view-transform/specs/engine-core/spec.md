@@ -123,6 +123,15 @@ When a `Camera2D` has `current = true` and is attached to a live `Scene`, the en
 
 `Scene.render(renderer)` SHALL consult the current camera at the start of the render traversal. When a current `Camera2D` exists with `bounds.size.x > 0f` and `bounds.size.y > 0f`, `Scene.render` MUST compute the view transform from `(camera.bounds, scene.size, camera.aspectMode)` and call `renderer.pushTransform(translation, scale)` BEFORE issuing any `_draw` walk, then call `renderer.popTransform()` AFTER the walk finishes (including via the `finally` of any traversal try/finally). When no current camera exists or its bounds are degenerate, `Scene.render` MUST NOT push any transform — the `_draw` walk runs against the identity transform (preserving the pre-change behavior of `pixels = world` for camera-less scenes).
 
+`Scene` SHALL additionally expose two coordinate-conversion conveniences:
+
+```kotlin
+fun screenToWorld(screenPosition: Vec2): Vec2
+fun worldToScreen(worldPosition: Vec2): Vec2
+```
+
+Both methods MUST delegate to the current `Camera2D`'s `screenToWorld` / `worldToScreen`, passing `scene.size` as the surface size argument. When no current camera exists (or its bounds are degenerate), both methods MUST return the input unchanged (identity fallback) — the same condition under which `Scene.render` skips its push, so nodes can read input pointer coordinates uniformly regardless of whether the scene has a camera.
+
 #### Scenario: Toggling current updates viewport
 
 - **GIVEN** a live scene with one `Camera2D` whose `current = false`, and `scene.viewport` returns `Rect(Vec2.ZERO, scene.size)`
@@ -150,3 +159,16 @@ When a `Camera2D` has `current = true` and is attached to a live `Scene`, the en
 - **WHEN** `scene.render(renderer)` runs
 - **THEN** no `pushTransform` or `popTransform` call is observed
 - **AND** the `_draw` calls reach the renderer unchanged
+
+#### Scenario: Scene.screenToWorld delegates to current camera
+
+- **GIVEN** a live scene with `size = Vec2(1280f, 900f)` and a current `Camera2D` whose `bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))` and `aspectMode = AspectMode.FIT`
+- **WHEN** code calls `scene.screenToWorld(Vec2(640f, 450f))` (the surface center)
+- **THEN** the result equals `Vec2(400f, 300f)` (the world center inside `bounds`)
+- **AND** `scene.worldToScreen(Vec2(400f, 300f))` round-trips back to `Vec2(640f, 450f)`
+
+#### Scenario: Scene.screenToWorld identity without current camera
+
+- **GIVEN** a live scene with no current `Camera2D` and `size = Vec2(800f, 600f)`
+- **WHEN** code calls `scene.screenToWorld(Vec2(123f, 456f))` and `scene.worldToScreen(Vec2(123f, 456f))`
+- **THEN** both calls return `Vec2(123f, 456f)` unchanged

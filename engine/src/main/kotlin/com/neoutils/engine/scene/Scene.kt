@@ -135,6 +135,19 @@ open class Scene : Node() {
         return findCurrentCamera(this)
     }
 
+    /**
+     * Converts a surface (pixel) coordinate to a world coordinate via the
+     * scene's current `Camera2D`. Returns the input unchanged when no current
+     * camera exists or its bounds are degenerate (identity fallback) — same
+     * semantics as `Scene.render` not pushing a transform in that case.
+     */
+    fun screenToWorld(screenPosition: Vec2): Vec2 =
+        currentCamera()?.screenToWorld(screenPosition, size) ?: screenPosition
+
+    /** Inverse of [screenToWorld]; identity fallback under the same conditions. */
+    fun worldToScreen(worldPosition: Vec2): Vec2 =
+        currentCamera()?.worldToScreen(worldPosition, size) ?: worldPosition
+
     private fun findCurrentCamera(node: Node): Camera2D? {
         if (node is Camera2D && node.current) return node
         for (child in node.children) {

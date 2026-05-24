@@ -32,6 +32,9 @@ import kotlin.random.Random
 @Serializable
 class SpawnerDemo : Node2D() {
 
+    @Transient
+    private var lastSize: Vec2 = Vec2.ZERO
+
     init {
         name = "SpawnerDemo"
         if (children.isEmpty()) {
@@ -40,8 +43,10 @@ class SpawnerDemo : Node2D() {
         }
     }
 
-    override fun onEnter() {
+    override fun onProcess(dt: Float) {
         val scene = rootScene() ?: return
+        if (scene.size == lastSize) return
+        lastSize = scene.size
         val trap = findChild("Trap") as? Trap ?: return
         trap.transform = Transform(
             position = Vec2(scene.width / 2f - Trap.SIZE / 2f, scene.height / 2f - Trap.SIZE / 2f),

@@ -7,6 +7,7 @@ import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlin.math.sin
 
 /**
@@ -19,9 +20,29 @@ import kotlin.math.sin
 @Serializable
 class ScaleHierarchyDemo : Node2D() {
 
+    @Transient
+    private var lastSize: Vec2 = Vec2.ZERO
+
     init {
         name = "ScaleHierarchyDemo"
         if (children.isEmpty()) buildTree()
+    }
+
+    override fun onProcess(dt: Float) {
+        val scene = rootScene() ?: return
+        if (scene.size == lastSize) return
+        lastSize = scene.size
+        val cx = scene.width / 2f
+        val cy = scene.height / 2f
+        (findChild("ScaleParent") as? Node2D)?.let { pivot ->
+            pivot.transform = pivot.transform.copy(position = Vec2(cx, cy))
+        }
+        (findChild("ScaleReference") as? Line2D)?.let { ref ->
+            // Reference outline traces the unscaled 80×80 square; its
+            // top-left sits at (cx - 40, cy - 40) so the outline frames
+            // the pivot when the child's scale is 1.
+            ref.transform = ref.transform.copy(position = Vec2(cx - 40f, cy - 40f))
+        }
     }
 
     private fun buildTree() {

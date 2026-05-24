@@ -67,9 +67,11 @@ Validação manual mostrou regressão clara — demos lêem `scene.size` como mu
 - [x] 9.2 ~~`Vec2(400f, 300f)` como pivot centrado no mundo virtual~~ — **N/A**: pivot continua sendo metade da surface (comportamento pré-change preservado pelo fallback identity em `Scene.render`).
 - [x] 9.3 ~~Validar Camera2D nos demos~~ — **N/A**: smoke test manual (12.2) só precisa confirmar paridade com comportamento pré-change.
 
-## 10. Tictactoe sample: zero mudança
+## 10. Tictactoe sample: migra para Camera2D (escopo revisado)
 
-- [ ] 10.1 Verificar que tictactoe roda idêntico (sem regressão visual) — não adiciona `Camera2D`, cai no fallback identity. Smoke test manual: clique funciona nas células, jogo termina e reinicia corretamente.
+Validação manual mostrou que o resize do tictactoe escalava só o board mas não o texto (StatusText centralizava por `scene.width` em surface px enquanto Board.layout escalava por `min(width, height)`). Decisão revisada: tictactoe ganha `Camera2D` 600×600 FIT — primeira validação de Camera2D rodando no backend Compose, e cena inteira escala como uma só. Também serve para validar `Scene.screenToWorld` (Board converte pointerPosition antes do hit-test).
+
+- [x] 10.1 ~~Tictactoe sem mudanças~~ — **revertido**: `TicTacToeScene` adiciona `Camera2D` (bounds 600×600 FIT). Layout dinâmico via `onResize` removido; posições agora estáticas no mundo (board centralizado abaixo do status reservado). Smoke test manual: clique nas células, vitória/empate/restart, redimensionamento da janela escala tudo proporcionalmente.
 
 ## 11. Documentação e roadmap
 

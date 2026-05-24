@@ -6,6 +6,7 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Two child shapes sit at fixed local positions on a parent that rotates at
@@ -16,9 +17,22 @@ import kotlinx.serialization.Serializable
 @Serializable
 class TransformOrbitDemo : Node2D() {
 
+    @Transient
+    private var lastSize: Vec2 = Vec2.ZERO
+
     init {
         name = "TransformOrbitDemo"
         if (children.isEmpty()) buildTree()
+    }
+
+    override fun onProcess(dt: Float) {
+        val scene = rootScene() ?: return
+        if (scene.size == lastSize) return
+        lastSize = scene.size
+        val pivot = findChild("OrbitPivot") as? Node2D ?: return
+        pivot.transform = pivot.transform.copy(
+            position = Vec2(scene.width / 2f, scene.height / 2f),
+        )
     }
 
     private fun buildTree() {
