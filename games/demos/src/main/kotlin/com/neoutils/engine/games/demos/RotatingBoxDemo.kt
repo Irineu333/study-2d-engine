@@ -256,8 +256,10 @@ class BoxedBall(
             )
         }
 
-        if (flashTimer > 0f || area.flashTimer > 0f) return
-
+        // Swap roda sempre — o contrato enter-only da engine exige que toda
+        // chamada de `_entered` ajuste velocidades, senão os corpos seguem
+        // com vetores apontando um pro outro e tunelam. Ver `collision-
+        // rotated-shapes/design.md` D6.
         if (overlapX < overlapY) {
             val tmp = vx; vx = area.vx; area.vx = tmp
         } else {

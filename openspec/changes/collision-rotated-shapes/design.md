@@ -66,6 +66,31 @@ O caminho `overlap(rect, rect)` na change anterior delegou para `aabb.intersects
 
 **Por quê:** o demo é o teste vivo da fix. Se SAT estiver certo, os AABBs dos retângulos rotacionados podem ficar sobrepostos, mas `overlap()` rejeita corretamente — `currentOverlapping` não inclui o par, então `_entered` refire normalmente nos próximos encontros reais.
 
+### D6. Fix script-side complementar em `BoxedBall.onAreaEntered`
+
+**Contexto pós-implementação.** Após o SAT entrar em vigor (D1) e o comentário "Known regression KR2" ser removido do demo (D5), o smoke manual da tecla 5 ainda mostra bolinhas atravessando umas as outras. O SAT em si está correto — confirmado pelos testes de `Shape2DOverlapTest` e por instrumentação rodada na demo (`earlyExitCornerTouch=0` em 116 colisões num run de 20s). A tunelagem residual vem do **script** da demo, não da engine.
+
+**Diagnóstico empírico** (Demo 5 instrumentada com contadores em `BoxedBall.onAreaEntered`, ~20s, ~116 colisões):
+
+| Mecanismo suspeito | Métrica | Ocorrências | % |
+|---|---|---|---|
+| Guarda `flashTimer` bloqueando swap de velocidade | `swapBlockedByFlash` | 21/116 | ~18% |
+| Push de meio-overlap não eliminou overlap (ruído float) | `stillOverlappingAfterPush` | 7/116 | ~6% |
+| `coerceIn` clampou push contra parede local | `pushClampedB` | 1/116 | <1% |
+| SAT detecta overlap, AABB local não (corner-touch) | `earlyExitCornerTouch` | 0/116 | 0% |
+
+**Causa dominante:** a guarda `if (flashTimer > 0f || area.flashTimer > 0f) return` antes do swap de velocidades. Quando um ball acabou de colidir com qualquer outro nos últimos 0.15s, o segundo `_entered` aplica o push (separa geometricamente) mas **pula** a troca de velocidades. Resultado: dois corpos com vetores apontando um pro outro, engine corretamente reportando overlap esporádico, e o script ignorando — eles passam através uns dos outros.
+
+**Decisão:** remover a guarda. O `flashTimer` continua sendo usado para o flash de cor cosmético (`onProcess` decrementa, restaura cor base) — esse é um efeito visual que não tem motivo para influenciar resposta a colisão. O contrato da engine (`PhysicsSystem` enter-only, documentado em `collision-overhaul/design.md` e CLAUDE.md invariante #3) exige que **toda** chamada de `_entered` seja respondida com separação **e** ajuste de velocidades. A guarda violava a segunda metade.
+
+**Por que isso não é trapaça:**
+
+- O contrato enter-only da engine é cumprido corretamente: SAT detecta overlap real (provado), `_entered` dispara uma vez por begin-of-overlap (provado), iterative resolution catalisa cadeias (cobertura ortogonal em `collision-iterative-resolution`). O bug estava no script.
+- O `stillOverlappingAfterPush=7` (6%) restante é ruído de ponto-flutuante no cálculo de `BALL_SIZE - |new_dx|`, não overlap real persistente. O engine SAT corretamente os reporta como não-overlapping (gap de ε) no próximo passo.
+- Tunelamento de alta velocidade (relação `vmax * dt` vs `BALL_SIZE`) continua deferred a uma change futura de CCD, como já documentado em Non-Goals.
+
+**Alternativa rejeitada — resposta de impulso normalizado.** Em vez de swap de velocidade no eixo dominante (atual), poderíamos computar a normal de contato e refletir só a componente da velocidade relativa ao longo dela (resposta elástica clássica de círculos). Mais correto fisicamente, mas (a) os corpos são modelados como AABBs de `BALL_SIZE` quadrados onde swap-no-eixo-dominante já é a resposta correta para a face de contato; (b) over-engineering para um demo didático. Manter swap simples.
+
 ## Risks / Trade-offs
 
 - **R1. SAT bug introduzindo falso negativo** (rejeição de overlap real). Mitigação: três testes unitários cobrindo (a) AABB sobreposto + OBB distante = `false`; (b) AABB sobreposto + OBB tocando = `true`; (c) rotações iguais em vários ângulos com contato real = `true`. Smoke test final: rodar Demo 5 e verificar que bolinhas batem (e não atravessam).
