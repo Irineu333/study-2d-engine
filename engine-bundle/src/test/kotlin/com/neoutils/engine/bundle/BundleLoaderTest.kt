@@ -140,7 +140,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "DupRoot",
                     "properties": {},
                     "children": [
@@ -181,7 +181,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "CustomRoot",
                     "properties": {},
                     "children": [
@@ -210,7 +210,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "EngineRoot",
                     "properties": {},
                     "children": [
@@ -245,7 +245,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Root",
                     "properties": {},
                     "children": [
@@ -283,7 +283,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Empty",
                     "properties": {},
                     "children": []
@@ -308,7 +308,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Root",
                     "properties": {},
                     "children": [
@@ -345,7 +345,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Root",
                     "properties": {},
                     "children": [
@@ -391,7 +391,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Root",
                     "properties": {},
                     "children": [
@@ -429,7 +429,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Root",
                     "properties": {},
                     "children": [
@@ -468,7 +468,7 @@ class BundleLoaderTest {
                 {
                   "version": 2,
                   "root": {
-                    "type": "com.neoutils.engine.scene.Scene",
+                    "type": "com.neoutils.engine.scene.Node",
                     "name": "Root",
                     "properties": {},
                     "children": [

@@ -7,7 +7,6 @@ import com.neoutils.engine.bundle.script.PropCoercion
 import com.neoutils.engine.bundle.script.Script
 import com.neoutils.engine.bundle.script.ScriptHost
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
 import com.neoutils.engine.serialization.NodeEntry
 import com.neoutils.engine.serialization.NodeRegistry
 import com.neoutils.engine.serialization.SceneFile
@@ -19,10 +18,12 @@ import kotlin.reflect.KClass
 
 /**
  * Loads a scene bundle (a folder containing `scene.json`, an optional
- * `scripts/` directory and a reserved `assets/` directory) into a detached
- * [Scene]. Two entry points cover the deployment scenarios: [fromResources]
- * resolves a bundle baked into the JVM classpath, and [fromPath] resolves a
- * bundle that lives on the filesystem (the editor scenario).
+ * `scripts/` directory and a reserved `assets/` directory) and returns the
+ * detached root [Node]. The caller wraps the result in `SceneTree(root = ...)`
+ * to make the tree live. Two entry points cover the deployment scenarios:
+ * [fromResources] resolves a bundle baked into the JVM classpath, and
+ * [fromPath] resolves a bundle that lives on the filesystem (the editor
+ * scenario).
  *
  * Scripts are discovered via the `NodeEntry.script` field and dispatched to
  * the [ScriptHost] passed via the `scripting` parameter. The legacy
@@ -50,7 +51,7 @@ object BundleLoader {
         name: String,
         types: List<KClass<out Node>> = emptyList(),
         scripting: ScriptHost? = null,
-    ): Scene {
+    ): Node {
         val resource = this::class.java.classLoader.getResource("$name/$SCENE_FILE_NAME")
             ?: throw IllegalArgumentException(
                 "Bundle '$name' not found on classpath (missing $name/$SCENE_FILE_NAME)"
@@ -82,7 +83,7 @@ object BundleLoader {
         bundleDir: File,
         types: List<KClass<out Node>> = emptyList(),
         scripting: ScriptHost? = null,
-    ): Scene {
+    ): Node {
         if (!bundleDir.isDirectory) {
             throw IllegalArgumentException(
                 "Bundle directory not found: ${bundleDir.absolutePath}"
@@ -107,7 +108,7 @@ object BundleLoader {
         sceneJsonText: String,
         types: List<KClass<out Node>>,
         scripting: ScriptHost?,
-    ): Scene {
+    ): Node {
         NodeRegistry.registerEngineTypes()
 
         for (klass in types) {

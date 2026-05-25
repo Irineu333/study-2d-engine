@@ -30,6 +30,7 @@ from engine.serialization import (
     Disposable as Disposable,
     signal as signal,
 )
+from engine.tree import SceneTree as SceneTree
 
 __all__ = [
     "Vec2",
@@ -51,4 +52,5 @@ __all__ = [
     "Signal",
     "Disposable",
     "signal",
+    "SceneTree",
 ]

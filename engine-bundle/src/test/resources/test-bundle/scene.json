@@ -1,7 +1,7 @@
 {
   "version": 2,
   "root": {
-    "type": "com.neoutils.engine.scene.Scene",
+    "type": "com.neoutils.engine.scene.Node",
     "name": "TestRoot",
     "properties": {},
     "children": [

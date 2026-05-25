@@ -37,8 +37,8 @@
 
 ## 7. Engine-bundle — BundleLoader return type
 
-- [ ] 7.1 `BundleLoader.fromResources(...)` e `BundleLoader.fromPath(...)`: tipo de retorno passa a ser `Node`. Sem outras mudanças semânticas além da assinatura.
-- [ ] 7.2 KDoc atualizado para "devolve o nó raiz destacado".
+- [x] 7.1 `BundleLoader.fromResources(...)` e `BundleLoader.fromPath(...)`: tipo de retorno passa a ser `Node`. Sem outras mudanças semânticas além da assinatura.
+- [x] 7.2 KDoc atualizado para "devolve o nó raiz destacado".
 
 ## 8. Skiko backend
 

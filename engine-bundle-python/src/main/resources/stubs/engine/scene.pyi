@@ -7,7 +7,7 @@ from engine.math import Rect, Vec2
 from engine.render import Color, Renderer
 
 if TYPE_CHECKING:
-    from engine.scene import Scene
+    from engine.tree import SceneTree
 
 
 class Node:
@@ -22,12 +22,11 @@ class Node:
     parent: Optional["Node"]
     children: List["Node"]
     is_live: bool
-    scene: Optional["Scene"]
+    tree: Optional["SceneTree"]
     groups: List[str]
 
     def add_child(self, child: "Node") -> None: ...
     def remove_child(self, child: "Node") -> None: ...
-    def root_scene(self) -> Optional["Scene"]: ...
     def find_child(self, name: str) -> Optional["Node"]: ...
     def add_to_group(self, name: str) -> None: ...
     def remove_from_group(self, name: str) -> None: ...
@@ -55,17 +54,6 @@ class Node2D(Node):
     def world_position(self) -> Vec2: ...
 
 
-class Scene(Node2D):
-    """Root of the scene graph. Obtain via node.root_scene()."""
-
-    size: Vec2
-    width: float
-    height: float
-    viewport: Rect
-
-    def get_nodes_in_group(self, name: str) -> List[Node]: ...
-
-
 class AspectMode:
     """How ``Camera2D.bounds`` is projected onto the surface when the aspect
     ratios differ. Use the string values "FIT", "FILL" or "STRETCH" in
@@ -79,8 +67,8 @@ class AspectMode:
 
 class Camera2D(Node2D):
     """2D camera node. Marking ``current = True`` makes its ``bounds`` the
-    scene's viewport, and ``Scene.render`` pushes a view transform that maps
-    ``bounds`` onto the surface under ``aspect_mode``."""
+    tree's viewport, and ``SceneTree.render`` pushes a view transform that
+    maps ``bounds`` onto the surface under ``aspect_mode``."""
 
     bounds: Rect
     current: bool
