@@ -58,11 +58,11 @@
 
 ## 11. Tic-tac-toe sample
 
-- [ ] 11.1 Criar `games/tictactoe/.../TicTacToeRoot.kt` (`class TicTacToeRoot : Node()`) cujo `onEnter()` instancia `Board` e `StatusText` e adiciona como filhos. Migrar setup que estava em `TicTacToeScene` para esse `onEnter`.
-- [ ] 11.2 Apagar `games/tictactoe/.../TicTacToeScene.kt`.
-- [ ] 11.3 Editar `games/tictactoe/.../Main.kt`: `ComposeHost().run(SceneTree(root = TicTacToeRoot()), config)`.
-- [ ] 11.4 Em `Board.kt` e `StatusText.kt`, substituir `rootScene()?.x` por `tree?.x`. Atualizar quaisquer casts `rootScene() as? TicTacToeScene` para `tree?.root as? TicTacToeRoot` (se ainda forem necessários).
-- [ ] 11.5 Migrar o resize handler que estava em `TicTacToeScene.onResize` para `tree.onResize = { w, h -> ... }` instalado dentro de `TicTacToeRoot.onEnter()`.
+- [x] 11.1 Criar `games/tictactoe/.../TicTacToeRoot.kt` (`class TicTacToeRoot : Node()`) cujo `onEnter()` instancia `Board` e `StatusText` e adiciona como filhos. Migrar setup que estava em `TicTacToeScene` para esse `onEnter`.
+- [x] 11.2 Apagar `games/tictactoe/.../TicTacToeScene.kt`.
+- [x] 11.3 Editar `games/tictactoe/.../Main.kt`: `ComposeHost().run(SceneTree(root = TicTacToeRoot()), config)`.
+- [x] 11.4 Em `Board.kt` e `StatusText.kt`, substituir `rootScene()?.x` por `tree?.x`. Atualizar quaisquer casts `rootScene() as? TicTacToeScene` para `tree?.root as? TicTacToeRoot` (se ainda forem necessários).
+- [x] 11.5 Migrar o resize handler que estava em `TicTacToeScene.onResize` para `tree.onResize = { w, h -> ... }` instalado dentro de `TicTacToeRoot.onEnter()`.
 
 ## 12. Demos sample
 
