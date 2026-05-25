@@ -10,6 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 private fun makeCharacter(size: Vec2, position: Vec2 = Vec2.ZERO): CharacterBody2D {
     val body = CharacterBody2D().apply { transform = Transform(position = position) }
@@ -91,16 +92,20 @@ class CharacterBody2DTest {
     }
 
     @Test
-    fun `moveAndCollide on rotated body falls through to no-sweep and advances unchanged`() {
+    fun `moveAndCollide on rotated body collides via temporal SAT and stops at contact`() {
+        // After kinematic-rotated-sweep, rotated bodies sweep correctly:
+        // the body's local rotation contributes to the OBB but the body
+        // still moves frontally into a wall in the parent frame.
         val root = Node()
         val body = makeCharacter(Vec2(10f, 10f), position = Vec2(0f, 0f)).apply {
             rotation = (PI / 4.0).toFloat()
         }
-        val wall = makeStatic(Vec2(10f, 10f), position = Vec2(20f, 0f))
+        val wall = makeStatic(Vec2(10f, 100f), position = Vec2(40f, -50f))
         root.addChild(body); root.addChild(wall)
         SceneTree(root).start()
-        val collision = body.moveAndCollide(Vec2(40f, 0f))
-        assertNull(collision)
-        assertEquals(40f, body.position.x, EPS)
+        val collision = body.moveAndCollide(Vec2(80f, 0f))
+        assertNotNull(collision)
+        // Sanity: body advanced toward the wall but did not pass through it.
+        assertTrue(body.position.x in 10f..50f, "expected body to stop before wall; got x=${body.position.x}")
     }
 }

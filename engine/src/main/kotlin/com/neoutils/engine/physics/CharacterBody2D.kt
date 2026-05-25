@@ -45,12 +45,6 @@ open class CharacterBody2D : PhysicsBody2D() {
      * - Only same-parent targets are considered. A target whose parent
      *   differs from this body's parent is silently skipped (rare in the
      *   demos; revisit when an actual cross-frame jump is needed).
-     * - The shape-pair sweep is axis-aligned only (see [sweepOverlap]). A
-     *   shape with non-zero composed rotation in the parent frame returns
-     *   `null` for every pair involving it — that motion falls through to
-     *   the unswept advance and any resulting overlap will be detected by
-     *   the next [PhysicsSystem.step]. Rotated-sweep support is deferred to
-     *   a future `kinematic-rotated-sweep` change.
      */
     fun moveAndCollide(motion: Vec2): KinematicCollision2D? {
         val tree = tree ?: run {

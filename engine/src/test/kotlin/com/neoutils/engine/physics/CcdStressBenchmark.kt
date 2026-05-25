@@ -1,14 +1,8 @@
 package com.neoutils.engine.physics
 
-import com.neoutils.engine.input.Input
-import com.neoutils.engine.input.Key
-import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.loop.GameLoop
-import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.render.Color
-import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.tree.SceneTree
 import kotlin.math.cos
@@ -180,22 +174,3 @@ class CcdStressBenchmark {
     }
 }
 
-private object NoopRenderer : Renderer {
-    override fun clear(color: Color) {}
-    override fun drawRect(rect: Rect, color: Color, filled: Boolean) {}
-    override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean, thickness: Float) {}
-    override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {}
-    override fun drawText(text: String, position: Vec2, size: Float, color: Color) {}
-    override fun measureText(text: String, size: Float): Vec2 = Vec2.ZERO
-    override fun drawPolygon(points: List<Vec2>, color: Color) {}
-    override fun pushTransform(translation: Vec2, scale: Vec2) {}
-    override fun popTransform() {}
-}
-
-private object NoopInput : Input {
-    override fun isKeyDown(key: Key): Boolean = false
-    override fun wasKeyPressed(key: Key): Boolean = false
-    override val pointerPosition: Vec2 = Vec2.ZERO
-    override fun isMouseDown(button: MouseButton): Boolean = false
-    override fun wasMouseClicked(button: MouseButton): Boolean = false
-}

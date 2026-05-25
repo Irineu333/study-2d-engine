@@ -3,6 +3,7 @@ package com.neoutils.engine.physics
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.math.rotate
 import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 import kotlin.math.abs
@@ -204,35 +205,57 @@ data class SweepResult(
 )
 
 /**
- * Continuous swept-overlap test for the three axis-aligned shape pairs
- * (circle-circle, circle-rect, rect-rect). [a] sweeps from [aWorld] by
- * [motion] over `t ∈ [0, 1]`; [b] is stationary at [bWorld]. Returns a
- * [SweepResult] on hit or `null` when no contact happens within the motion
- * span.
+ * Continuous swept-overlap test for the three shape pairs (circle-circle,
+ * circle-rect, rect-rect). [a] sweeps from [aWorld] by [motion] over `t ∈
+ * [0, 1]`; [b] is stationary at [bWorld]. Returns a [SweepResult] on hit or
+ * `null` when no contact happens within the motion span.
  *
- * Both `aWorld.rotation` and `bWorld.rotation` MUST be `0f`. Rotated swept
- * tests are deferred to a future change (`kinematic-rotated-sweep`); callers
- * that need to sweep in a shared rotated frame must transform inputs into
- * that frame first ([CharacterBody2D.moveAndCollide] does this by working
- * in the shared parent frame).
+ * Both transforms may have any rotation, **provided they share the same
+ * frame of origin** (in `CharacterBody2D.moveAndCollide` that's the common
+ * parent local frame). Five paths are dispatched:
  *
- * Starting-overlap is treated explicitly: `toi = 0f` is returned with a
- * separation normal pointing along the smallest-penetration axis.
+ *  - circle-vs-circle: rotation-invariant (the disc is symmetric); always
+ *    via [sweepCircleCircle].
+ *  - circle-vs-rect axis-aligned: [sweepCircleRect].
+ *  - circle-vs-rect rotated: [sweepCircleRotatedRect] (inverse-rotate into
+ *    the rect's local frame, reuse the axis-aligned math, rotate result
+ *    back).
+ *  - rect-vs-circle: dual of the above via [sweepRectVsCircle] /
+ *    [sweepRotatedRectVsCircle].
+ *  - rect-vs-rect: [sweepRectRect] when both axis-aligned;
+ *    [sweepRotatedRectRotatedRect] (temporal SAT) otherwise.
+ *
+ * Starting-overlap is treated explicitly across every path: `toi = 0f` is
+ * returned together with a `depenetration` vector along the smallest-
+ * penetration axis (the MTV in the OBB case). Callers like
+ * [CharacterBody2D.moveAndCollide] add this vector to position so the next
+ * frame begins from a non-overlapping configuration.
  */
 fun sweepOverlap(
     a: Shape2D, aWorld: Transform, motion: Vec2,
     b: Shape2D, bWorld: Transform,
 ): SweepResult? {
-    if (aWorld.rotation != 0f || bWorld.rotation != 0f) return null
     return when {
         a is CircleShape2D && b is CircleShape2D ->
             sweepCircleCircle(a, aWorld, motion, b, bWorld)
         a is CircleShape2D && b is RectangleShape2D ->
-            sweepCircleRect(a, aWorld, motion, b, bWorld)
+            if (bWorld.rotation == 0f) {
+                sweepCircleRect(a, aWorld, motion, b, bWorld)
+            } else {
+                sweepCircleRotatedRect(a, aWorld, motion, b, bWorld)
+            }
         a is RectangleShape2D && b is CircleShape2D ->
-            sweepRectVsCircle(a, aWorld, motion, b, bWorld)
+            if (aWorld.rotation == 0f) {
+                sweepRectVsCircle(a, aWorld, motion, b, bWorld)
+            } else {
+                sweepRotatedRectVsCircle(a, aWorld, motion, b, bWorld)
+            }
         a is RectangleShape2D && b is RectangleShape2D ->
-            sweepRectRect(a, aWorld, motion, b, bWorld)
+            if (aWorld.rotation == 0f && bWorld.rotation == 0f) {
+                sweepRectRect(a, aWorld, motion, b, bWorld)
+            } else {
+                sweepRotatedRectRotatedRect(a, aWorld, motion, b, bWorld)
+            }
         else -> null
     }
 }
@@ -493,6 +516,210 @@ private fun sweepRectVsCircle(
     // The swapped result's depenetration moves the circle outward; in the
     // original framing the mover is the rect, which must travel in the
     // opposite direction to achieve the same separation.
+    val depen = -swapped.depenetration
+    return SweepResult(toi = swapped.toi, point = point, normal = normal, depenetration = depen)
+}
+
+private fun inverseRotate(p: Vec2, radians: Float): Vec2 = rotate(p, -radians)
+
+private fun projectScalar(v: Vec2, axis: Vec2): Float = v.x * axis.x + v.y * axis.y
+
+/**
+ * Swept OBB-vs-OBB via temporal SAT. Static SAT projects the 4 corners of
+ * each OBB on the 4 candidate axes (two normals per OBB) and reports overlap
+ * iff every axis sees overlap; the temporal extension treats A's projection
+ * as moving by `(motion·axis)·t`, computes the per-axis `[tIn, tOut]` where
+ * intervals overlap, and intersects across axes to get the global `[tEnter,
+ * tExit]`. Starting-overlap (all axes overlap at `t=0`) returns `toi=0` with
+ * a depenetration vector along the SAT axis of least overlap (the minimum
+ * translation vector). See design.md decision D2.
+ */
+private fun sweepRotatedRectRotatedRect(
+    a: RectangleShape2D, aWorld: Transform, motion: Vec2,
+    b: RectangleShape2D, bWorld: Transform,
+): SweepResult? {
+    val cornersA = obbCorners(aWorld, a.size, Vec2.ZERO)
+    val cornersB = obbCorners(bWorld, b.size, Vec2.ZERO)
+    val rawAxes = arrayOf(
+        cornersA[1] - cornersA[0],
+        cornersA[2] - cornersA[0],
+        cornersB[1] - cornersB[0],
+        cornersB[2] - cornersB[0],
+    )
+    val nAxes = rawAxes.size
+    val axes = Array(nAxes) { rawAxes[it].normalized }
+    val intervalA = Array(nAxes) { projectOnto(axes[it], cornersA) }
+    val intervalB = Array(nAxes) { projectOnto(axes[it], cornersB) }
+    val dts = FloatArray(nAxes) { projectScalar(motion, axes[it]) }
+
+    // Phase 1: static SAT (t = 0). Tangent contact (maxA == minB) counts as
+    // separator — matches the strict-inside check the axis-aligned path uses
+    // (ax0 > ex0 && ax0 < ex1 → tangent is not "inside"). Without this, a
+    // body tangent to a wall would always be reported as starting-overlap
+    // with depen=ZERO and the next reflected step would push it into the
+    // wall, freezing in place.
+    var anyStaticSeparator = false
+    var minStaticOverlap = Float.POSITIVE_INFINITY
+    var mtvAxisIndex = -1
+    for (i in 0 until nAxes) {
+        val minA = intervalA[i].first; val maxA = intervalA[i].second
+        val minB = intervalB[i].first; val maxB = intervalB[i].second
+        if (maxA <= minB || maxB <= minA) {
+            anyStaticSeparator = true
+            // Permanent separator: motion parallel to a separating axis can
+            // never bring the intervals together.
+            if (dts[i] == 0f) return null
+        } else {
+            val overlap = min(maxA, maxB) - max(minA, minB)
+            if (overlap < minStaticOverlap) {
+                minStaticOverlap = overlap
+                mtvAxisIndex = i
+            }
+        }
+    }
+
+    // Phase 2: temporal SAT. dt == 0 axes already cleared above (non-
+    // separating), so they don't constrain tEnter/tExit and we skip them.
+    var tEnter = Float.NEGATIVE_INFINITY
+    var tExit = Float.POSITIVE_INFINITY
+    var enteringAxisIndex = -1
+    for (i in 0 until nAxes) {
+        val dt = dts[i]
+        if (dt == 0f) continue
+        val minA = intervalA[i].first; val maxA = intervalA[i].second
+        val minB = intervalB[i].first; val maxB = intervalB[i].second
+        val numIn = minB - maxA
+        val numOut = maxB - minA
+        val tIn: Float
+        val tOut: Float
+        if (dt > 0f) {
+            tIn = numIn / dt
+            tOut = numOut / dt
+        } else {
+            tIn = numOut / dt
+            tOut = numIn / dt
+        }
+        if (tIn > tEnter) {
+            tEnter = tIn
+            enteringAxisIndex = i
+        }
+        if (tOut < tExit) tExit = tOut
+    }
+
+    if (tEnter > tExit) return null
+    if (tEnter > 1f) return null
+    if (tExit < 0f) return null
+
+    val startingOverlap = !anyStaticSeparator
+    if (startingOverlap) {
+        if (mtvAxisIndex < 0) return null
+        val axis = axes[mtvAxisIndex]
+        val minA = intervalA[mtvAxisIndex].first; val maxA = intervalA[mtvAxisIndex].second
+        val minB = intervalB[mtvAxisIndex].first; val maxB = intervalB[mtvAxisIndex].second
+        val cA = (minA + maxA) * 0.5f
+        val cB = (minB + maxB) * 0.5f
+        val sign = if (cA >= cB) 1f else -1f
+        val normal = axis * sign
+        val depen = normal * minStaticOverlap
+        val midPoint = Vec2(
+            (aWorld.position.x + bWorld.position.x) * 0.5f,
+            (aWorld.position.y + bWorld.position.y) * 0.5f,
+        )
+        return SweepResult(toi = 0f, point = midPoint, normal = normal, depenetration = depen)
+    }
+
+    // Tangent-leaving guard (same rationale as axis-aligned sweepRectRect):
+    // tEnter < 0 means A was inside (in SAT sense) before t=0 and is now
+    // exiting — not a new contact. Without this, a body touching a wall and
+    // moving away gets a bogus toi=0 and the script reflects velocity back
+    // into the wall every frame, freezing in place.
+    if (tEnter < 0f) return null
+
+    val axis = axes[enteringAxisIndex]
+    val minA = intervalA[enteringAxisIndex].first; val maxA = intervalA[enteringAxisIndex].second
+    val minB = intervalB[enteringAxisIndex].first; val maxB = intervalB[enteringAxisIndex].second
+    val cAAtContact = (minA + maxA) * 0.5f + dts[enteringAxisIndex] * tEnter
+    val cB = (minB + maxB) * 0.5f
+    val sign = if (cAAtContact >= cB) 1f else -1f
+    val normal = axis * sign
+
+    // Contact point: A's OBB center at the contact moment. The OBB center is
+    // the average of its 4 corners in world space — equivalent to the AABB-
+    // envelope center for any rotation (rectangle symmetry).
+    var aCenterX = 0f; var aCenterY = 0f
+    for (c in cornersA) { aCenterX += c.x; aCenterY += c.y }
+    aCenterX /= 4f; aCenterY /= 4f
+    val point = Vec2(aCenterX + motion.x * tEnter, aCenterY + motion.y * tEnter)
+
+    return SweepResult(toi = tEnter, point = point, normal = normal)
+}
+
+/**
+ * Swept circle-vs-rotated-rect via frame transform. The circle is rotation-
+ * invariant (a disc looks the same in every frame), so we inverse-rotate the
+ * circle center and the motion vector by `-rectWorld.rotation` around the
+ * rect's origin and reuse the axis-aligned [sweepCircleRect] on the result.
+ * The contact `point`, `normal` and `depenetration` come out in the rect's
+ * local frame; we rotate them back by `+rectWorld.rotation` (the depenetration
+ * and normal are pure direction vectors; the point is rotated around the
+ * rect's origin). See `openspec/changes/kinematic-rotated-sweep/design.md`
+ * decision D1.
+ */
+private fun sweepCircleRotatedRect(
+    circle: CircleShape2D, circleWorld: Transform, motion: Vec2,
+    rect: RectangleShape2D, rectWorld: Transform,
+): SweepResult? {
+    val theta = rectWorld.rotation
+    val origin = rectWorld.position
+    val delta = circleWorld.position - origin
+    val localDelta = inverseRotate(delta, theta)
+    val localMotion = inverseRotate(motion, theta)
+    val localCircleWorld = Transform(
+        position = origin + localDelta,
+        scale = circleWorld.scale,
+        rotation = 0f,
+    )
+    val localRectWorld = Transform(
+        position = origin,
+        scale = rectWorld.scale,
+        rotation = 0f,
+    )
+    val local = sweepCircleRect(circle, localCircleWorld, localMotion, rect, localRectWorld)
+        ?: return null
+    val pointLocalDelta = local.point - origin
+    val pointWorld = origin + rotate(pointLocalDelta, theta)
+    val normalWorld = rotate(local.normal, theta)
+    val depenWorld = rotate(local.depenetration, theta)
+    return SweepResult(
+        toi = local.toi,
+        point = pointWorld,
+        normal = normalWorld,
+        depenetration = depenWorld,
+    )
+}
+
+/**
+ * Swept rotated-rect-vs-circle via geometric duality with
+ * [sweepCircleRotatedRect]: rect moving by `motion` against stationary circle
+ * is equivalent to circle moving by `-motion` against stationary rect. The
+ * resulting `normal` and `depenetration` are inverted in the original frame
+ * (the mover is the rect, so the separation direction flips); `point` is
+ * relocated to the circle's surface. See design.md decision D1.
+ */
+private fun sweepRotatedRectVsCircle(
+    rect: RectangleShape2D, rectWorld: Transform, motion: Vec2,
+    circle: CircleShape2D, circleWorld: Transform,
+): SweepResult? {
+    val swapped = sweepCircleRotatedRect(
+        circle, circleWorld, -motion,
+        rect, rectWorld,
+    ) ?: return null
+    val r = circle.radius * max(abs(circleWorld.scale.x), abs(circleWorld.scale.y))
+    val normal = -swapped.normal
+    val point = Vec2(
+        circleWorld.position.x + normal.x * r,
+        circleWorld.position.y + normal.y * r,
+    )
     val depen = -swapped.depenetration
     return SweepResult(toi = swapped.toi, point = point, normal = normal, depenetration = depen)
 }

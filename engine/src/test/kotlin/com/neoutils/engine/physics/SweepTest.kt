@@ -62,10 +62,12 @@ class SweepTest {
     }
 
     @Test
-    fun `rotated input falls through with null`() {
+    fun `swept rotated rect that misses on a far axis returns null`() {
+        // After kinematic-rotated-sweep, rotated rects no longer bail out;
+        // null now only comes from actual geometric miss.
         val a = rect(Vec2(10f, 10f)); val b = rect(Vec2(10f, 10f))
         val aWorld = Transform(position = Vec2(0f, 0f), rotation = (PI / 4.0).toFloat())
-        val bWorld = Transform(position = Vec2(20f, 0f))
+        val bWorld = Transform(position = Vec2(0f, 200f), rotation = (PI / 4.0).toFloat())
         assertNull(sweepOverlap(a, aWorld, Vec2(40f, 0f), b, bWorld))
     }
 
@@ -136,5 +138,114 @@ class SweepTest {
         // Normal points from circle outward toward rect (mover).
         // Rect moves +x, hits circle's left side → normal points -x.
         assertTrue(res.normal.x < 0f, "expected normal pointing left, got ${res.normal}")
+    }
+
+    // --- kinematic-rotated-sweep scenarios ---
+
+    @Test
+    fun `swept circle-vs-rotated-rect 90deg hits at analytic TOI`() {
+        // Rect 4x4 at (10,0) rotated 90° around its origin: corners become
+        // (10,0), (10,4), (6,0), (6,4) — occupies world x ∈ [6,10], y ∈ [0,4].
+        // Circle r=2 at (0,0) moves +x by 20. Tangency when circle right edge
+        // (cx + 2) reaches rect's leftmost world x = 6 → cx = 4, t = 4/20 = 0.2.
+        val c = circle(2f); val r = rect(Vec2(4f, 4f))
+        val cWorld = Transform(position = Vec2(0f, 0f))
+        val rWorld = Transform(position = Vec2(10f, 0f), rotation = (PI / 2.0).toFloat())
+        val res = sweepOverlap(c, cWorld, Vec2(20f, 0f), r, rWorld)
+        assertNotNull(res)
+        assertEquals(0.2f, res.toi, 0.01f)
+        // Normal points from rect outward toward circle → -x in world.
+        assertEquals(-1f, res.normal.x, 0.05f)
+    }
+
+    @Test
+    fun `swept rotated-rect-vs-rotated-rect same rotation 45deg face-to-face contact`() {
+        // Two 4x4 rects rotated 45° (diamonds in world). A at (0,0) reaches B
+        // at (10,0) via motion (20,0). A's max projection on its own x-axis
+        // edge1 = (cos45,sin45) is 4 (rect width). B's min on same axis is
+        // 10·cos45 ≈ 7.07. Contact at t = (7.07-4)/14.14 ≈ 0.217.
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val rot = (PI / 4.0).toFloat()
+        val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
+        val bWorld = Transform(position = Vec2(10f, 0f), rotation = rot)
+        val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
+        assertNotNull(res)
+        assertTrue(res.toi > 0f && res.toi < 1f, "expected TOI in (0,1); got ${res.toi}")
+        assertEquals(0.217f, res.toi, 0.02f)
+        // Some component of the normal must oppose A's motion (+x).
+        assertTrue(res.normal.x < 0f, "expected normal x < 0; got ${res.normal}")
+    }
+
+    @Test
+    fun `swept rotated-rect-vs-rotated-rect different rotation collides with valid TOI`() {
+        // A axis-aligned at (0,0), B rotated 45° at (10,0). A's right edge at
+        // x=4; B's leftmost vertex at x=7.17 (= 10 - 4·sin45). Contact between
+        // A's face and B's vertex at some t in (0,1).
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val aWorld = Transform(position = Vec2(0f, 0f))
+        val bWorld = Transform(position = Vec2(10f, 0f), rotation = (PI / 4.0).toFloat())
+        val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
+        assertNotNull(res)
+        assertTrue(res.toi >= 0f && res.toi < 1f, "expected TOI in [0,1); got ${res.toi}")
+        assertTrue(res.normal.x < 0f, "expected normal x < 0; got ${res.normal}")
+    }
+
+    @Test
+    fun `swept rotated motion parallel to separator axis returns null`() {
+        // Two 4x4 rects rotated 45°. A at (0,0), B offset along A's axis2 by
+        // 8 units: B at (axis2 * 8) = (-5.66, 5.66). They're separated on
+        // axis2 (dt = 0 along that axis with motion along axis1). Motion
+        // (10,10) is purely along axis1 — never closes the axis2 gap → null.
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val rot = (PI / 4.0).toFloat()
+        val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
+        val bWorld = Transform(position = Vec2(-5.66f, 5.66f), rotation = rot)
+        val res = sweepOverlap(a, aWorld, Vec2(10f, 10f), b, bWorld)
+        assertNull(res)
+    }
+
+    @Test
+    fun `swept rotated with zero motion returns null when separated`() {
+        // Motion zero between rotated rects far apart → static SAT separator
+        // with dt==0 on every axis → null.
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val rot = (PI / 4.0).toFloat()
+        val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
+        val bWorld = Transform(position = Vec2(100f, 0f), rotation = rot)
+        assertNull(sweepOverlap(a, aWorld, Vec2.ZERO, b, bWorld))
+    }
+
+    @Test
+    fun `swept rotated tangent contact moving away returns null`() {
+        // Two 4x4 rects rotated 45°. A at (0,0). B placed so that B's min
+        // projection on A's axis1 equals A's max (4) → tangent on axis1.
+        // B's origin should be at (cos45·4, sin45·4) = (2.83, 2.83). Motion
+        // away from B (= -axis1 direction) should NOT trigger a collision.
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val rot = (PI / 4.0).toFloat()
+        val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
+        val bWorld = Transform(position = Vec2(2.83f, 2.83f), rotation = rot)
+        // Move away: -axis1 = (-cos45, -sin45) × 20 ≈ (-14.14, -14.14).
+        assertNull(sweepOverlap(a, aWorld, Vec2(-14.14f, -14.14f), b, bWorld))
+    }
+
+    @Test
+    fun `swept rotated starting overlap reports TOI 0 with MTV depenetration`() {
+        // Deep overlap: B's origin at (2,0) rotated 45°, while A also rotated
+        // 45° at (0,0). Both diamond-shaped, heavily overlapping.
+        val a = rect(Vec2(10f, 10f)); val b = rect(Vec2(10f, 10f))
+        val rot = (PI / 6.0).toFloat()
+        val aWorld = Transform(position = Vec2(0f, 0f), rotation = rot)
+        val bWorld = Transform(position = Vec2(5f, 0f), rotation = rot)
+        val res = sweepOverlap(a, aWorld, Vec2(0f, 0f), b, bWorld)
+        assertNotNull(res)
+        assertEquals(0f, res.toi)
+        // Depenetration should be non-zero (separation vector).
+        assertTrue(res.depenetration.length > 0f, "expected non-zero MTV; got ${res.depenetration}")
+        // Depenetration pushes A away from B → projection onto (A.pos - B.pos)
+        // direction should be positive.
+        val awayDir = Vec2(-1f, 0f) // A is to the left of B in this setup
+        val dot = res.depenetration.x * awayDir.x + res.depenetration.y * awayDir.y
+        assertTrue(dot > 0f, "expected depenetration to push A away from B; got ${res.depenetration}")
     }
 }
