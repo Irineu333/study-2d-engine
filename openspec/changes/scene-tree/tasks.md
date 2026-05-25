@@ -94,24 +94,24 @@
 
 ## 15. Documentação
 
-- [ ] 15.1 `CLAUDE.md`: adicionar invariante 5 sob "Architectural Invariants" exatamente como descrito no spec `project-conventions`. Atualizar referências narrativas a "Scene" para "SceneTree"/"root" onde aplicável.
-- [ ] 15.2 `ROADMAP.md`: mover `scene-tree` para a seção Active enquanto a change está em andamento.
-- [ ] 15.3 `CLAUDE.md` — seção "Module Structure & How to Run": atualizar texto que descreve carregamento de bundles para mencionar que `BundleLoader` devolve `Node` (root) e o `Main.kt` envolve em `SceneTree`.
+- [x] 15.1 `CLAUDE.md`: adicionar invariante 5 sob "Architectural Invariants" exatamente como descrito no spec `project-conventions`. Atualizar referências narrativas a "Scene" para "SceneTree"/"root" onde aplicável.
+- [x] 15.2 `ROADMAP.md`: mover `scene-tree` para a seção Active enquanto a change está em andamento.
+- [x] 15.3 `CLAUDE.md` — seção "Module Structure & How to Run": atualizar texto que descreve carregamento de bundles para mencionar que `BundleLoader` devolve `Node` (root) e o `Main.kt` envolve em `SceneTree`.
 
 ## 16. Validação manual
 
-- [ ] 16.1 `./gradlew :engine:test :engine-bundle:test :engine-bundle-python:test` — todos verdes.
-- [ ] 16.2 `./gradlew :games:pong:run` — janela abre, paddles funcionam, AI persegue bola, F1/F2 alternam overlays.
-- [ ] 16.3 `./gradlew :games:tictactoe:run` — janela Compose abre, cliques colocam marcas, resize recentraliza o board.
-- [ ] 16.4 `./gradlew :games:demos:run` — todos os 5 demos (`1`–`5`) rodam idênticos ao comportamento pré-change. F1/F2 funcionam.
-- [ ] 16.5 `grep -r "rootScene\|class Scene\|: Scene()" engine/ engine-bundle*/ engine-skiko/ engine-compose/ games/ --include="*.kt"` — zero resultados (exceto strings de teste apontando para `UnknownNodeTypeException`).
-- [ ] 16.6 Conferir que `pong/scene.json` não contém mais `com.neoutils.engine.scene.Scene`.
+- [x] 16.1 `./gradlew :engine:test :engine-bundle:test :engine-bundle-python:test` — todos verdes.
+- [x] 16.2 `./gradlew :games:pong:run` — janela abre, paddles funcionam, AI persegue bola, F1/F2 alternam overlays.
+- [x] 16.3 `./gradlew :games:tictactoe:run` — janela Compose abre, cliques colocam marcas, resize recentraliza o board.
+- [x] 16.4 `./gradlew :games:demos:run` — todos os 5 demos (`1`–`5`) rodam idênticos ao comportamento pré-change. F1/F2 funcionam.
+- [x] 16.5 `grep -r "rootScene\|class Scene\|: Scene()" engine/ engine-bundle*/ engine-skiko/ engine-compose/ games/ --include="*.kt"` — zero resultados (exceto strings de teste apontando para `UnknownNodeTypeException`).
+- [x] 16.6 Conferir que `pong/scene.json` não contém mais `com.neoutils.engine.scene.Scene`.
 
 ## 17. Validação OpenSpec
 
-- [ ] 17.1 `openspec validate scene-tree` — passa sem erros.
-- [ ] 17.2 `openspec status --change scene-tree` — todos artifacts done; change pronta para `/opsx:apply`.
+- [x] 17.1 `openspec validate scene-tree` — passa sem erros.
+- [x] 17.2 `openspec status --change scene-tree` — todos artifacts done; change pronta para `/opsx:apply`.
 
 ## 18. Coordenação com `bundle-tictactoe`
 
-- [ ] 18.1 Adicionar nota no `bundle-tictactoe/proposal.md` ou `tasks.md` indicando que a change está em espera até `scene-tree` arquivar, e que após retomar o autor revisita o plano para refletir o retorno `Node` de `BundleLoader.fromResources`.
+- [x] 18.1 Adicionar nota no `bundle-tictactoe/proposal.md` ou `tasks.md` indicando que a change está em espera até `scene-tree` arquivar, e que após retomar o autor revisita o plano para refletir o retorno `Node` de `BundleLoader.fromResources`.

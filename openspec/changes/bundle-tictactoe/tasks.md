@@ -1,3 +1,7 @@
+## 0. Hold note
+
+> **Em espera até `scene-tree` arquivar.** A change `scene-tree` apagou a classe `Scene` de `:engine`, removeu `engine.Scene` do `NodeRegistry`, e fez `BundleLoader.fromResources` devolver `Node` (não mais `Scene`). Ao retomar este plano, revisite tasks 2.x–3.x: o registro/`extends`/binding de `Scene` deixa de fazer sentido; o root do bundle Velha deve ser `engine.Node` (ou um `TicTacToeRoot` registrado pelo jogo) e o `Main.kt` deve envolver o retorno do `BundleLoader` em `SceneTree(root = ...)` antes de passar ao `ComposeHost`.
+
 ## 1. Build deps
 
 - [ ] 1.1 Em `games/tictactoe/build.gradle.kts`: adicionar `implementation(projects.engineBundle)` e `implementation(projects.engineBundlePython)`.

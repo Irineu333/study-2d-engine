@@ -14,8 +14,9 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 
 1. **Scene graph estilo Godot, por herança.** Comportamento de gameplay é adicionado por subclasses de `Node` / `Node2D`. **Sem** `List<Component>` ou ECS. Cada Node tem sua identidade de tipo (`class Paddle : Node2D()`).
 2. **`:engine` não depende de Compose.** O módulo `:engine` não declara nenhum artefato `org.jetbrains.compose.*` ou `androidx.compose.*`, direta ou transitivamente. Quem precisa de Compose é o `:engine-compose`.
-3. **Colisão via `Collider`-como-Node + `PhysicsSystem` central.** `Collider` é um tipo de `Node`; o `PhysicsSystem.step(scene)` enumera todos os colliders ativos, testa pares e invoca `onCollide`. Broad phase é O(N²) intencionalmente.
+3. **Colisão via `Collider`-como-Node + `PhysicsSystem` central.** `Collider` é um tipo de `Node`; o `PhysicsSystem.step(tree)` enumera todos os colliders ativos, testa pares e invoca `onCollide`. Broad phase é O(N²) intencionalmente.
 4. **`Renderer`, `Input` e `GameHost` são SPIs.** Skiko é o backend padrão (`:engine-skiko`); Compose é o segundo backend (`:engine-compose`). Jogos novos devem usar Skiko por default.
+5. **A árvore viva é dona de `SceneTree`, não de uma `Scene` que é Node.** `SceneTree` não é `Node` e não é `@Serializable`; a classe `Scene` não existe mais em `:engine`. Nodes alcançam a árvore via `node.tree` (set no attach, null no detach). `SceneTree` não é subclassável para customizar setup — para popular a árvore inicial, escreva um Node root com `onEnter`. `SceneLoader.load` e `BundleLoader` devolvem `Node` (root livre); o host envolve em `SceneTree(root = ...)` antes de `run(...)`.
 
 ## Performance Notes
 
@@ -26,6 +27,8 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 3. **Mutação de ancestral** — como a invalidação propaga recursivamente pelos descendentes, alterar o transform de um pai invalida automaticamente todos os `Node2D` filhos/netos.
 
 O cache é **estado runtime puro**: nunca persiste em `scene.json` (anotado com `@Transient` do `kotlinx.serialization`). Se você adicionar um novo caminho de mutação de transform ao engine, deve chamar `invalidateWorldTransformRecursive()` para manter a coerência.
+
+`Node.tree` segue o mesmo contrato: é cacheado em `attachToLiveTree(tree)` durante `start()` e zerado em `detachFromLiveTree()` durante `stop()`. Leituras em gameplay (`tree?.input`, `tree?.viewport`) são O(1). O campo é `@Transient` e nunca persiste em `scene.json`.
 
 ## Module Structure & How to Run
 
@@ -48,7 +51,7 @@ Para rodar Pong:
 ./gradlew :games:pong:run
 ```
 
-`Main.kt` constrói o `PythonScriptHost` via `PythonScriptHost.create()`, carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.py`) via `BundleLoader.fromResources("pong", scripting = python)` e entrega a `Scene` ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON ou os `.py` altera o comportamento sem recompilar Kotlin.
+`Main.kt` constrói o `PythonScriptHost` via `PythonScriptHost.create()`, carrega o bundle `pong/` (em `:games:pong/src/main/resources/pong/`, com `scene.json` na raiz e `scripts/*.py`) via `BundleLoader.fromResources("pong", scripting = python)` — que devolve o `Node` raiz destacado — e em seguida envolve em `SceneTree(root = ...)` antes de entregar ao `SkikoHost`. O `scene.json` é a fonte da verdade da árvore — editar o JSON ou os `.py` altera o comportamento sem recompilar Kotlin.
 
 Durante o jogo:
 
@@ -97,7 +100,7 @@ Durante a execução:
 
 ### Camera2D define o mundo virtual
 
-Quando uma cena tem um `Camera2D` com `current = true`, seu `bounds` (um `Rect` em coordenadas de mundo) define a região visível do mundo virtual; o `Renderer` projeta esse `bounds` sobre a surface (`scene.size`) respeitando `aspectMode` antes do tree-walk de `_draw`. Padrão é `AspectMode.FIT` (zoom uniforme, letterbox bars nas margens sobressalentes). Cenas sem `Camera2D` (ex.: `:games:tictactoe`) caem no fallback identity — coordenadas mundiais são pixels da surface. A view transform é aplicada por `Scene.render` via `Renderer.pushTransform/popTransform` (LIFO), e o overlay de debug de colliders usa a mesma transform para que os bounds desenhem alinhados ao mundo projetado.
+Quando uma árvore tem um `Camera2D` com `current = true`, seu `bounds` (um `Rect` em coordenadas de mundo) define a região visível do mundo virtual; o `Renderer` projeta esse `bounds` sobre a surface (`tree.size`) respeitando `aspectMode` antes do tree-walk de `_draw`. Padrão é `AspectMode.FIT` (zoom uniforme, letterbox bars nas margens sobressalentes). Árvores sem `Camera2D` (ex.: `:games:tictactoe` antes da migração para Camera2D-everywhere) caem no fallback identity — coordenadas mundiais são pixels da surface. A view transform é aplicada por `SceneTree.render` via `Renderer.pushTransform/popTransform` (LIFO), e o overlay de debug de colliders usa a mesma transform para que os bounds desenhem alinhados ao mundo projetado.
 
 ### Serialization contract (`@Inspect` / `@Transient`)
 
@@ -221,7 +224,8 @@ O `Main.kt` do jogo constrói um `ScriptHost` explicitamente e injeta no `Bundle
 
 ```kotlin
 val python = PythonScriptHost.create()
-val scene = BundleLoader.fromResources("pong", scripting = python)
+val root = BundleLoader.fromResources("pong", scripting = python)
+val tree = SceneTree(root = root)
 ```
 
 `PythonScriptHost.create()` boota o `Context` GraalPy (operação cara) e devolve uma instância segura para compartilhar entre múltiplos loads — reuse a mesma referência em vez de chamar `create()` repetidamente. Bundles sem nenhum `script` referenciado podem omitir `scripting` (ou passar `null`); nesse caso o GraalPy nunca é instanciado. Se o bundle referencia ao menos um `script` e `scripting` é `null`, o `BundleLoader` falha-fast nomeando o path encontrado e recomendando a chamada literal `PythonScriptHost.create()`.

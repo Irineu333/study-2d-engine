@@ -11,6 +11,7 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | `node-timer`               | Adiciona `Timer` Node estilo Godot estendendo `Node` puro (primeiro nó lógico não-visual) com signal `timeout` conectável do Python — primeira ponte de Signal nascido em Kotlin. Pré-requisito de `game-snake`.                       |
 | `game-snake`               | Jogo Snake como `:games:snake`. Validador de gameplay discreto/grid-based, mutação dinâmica do scene graph via script, wraparound em `Camera2D.bounds`, e da ponte Kotlin Signal → Python (consome `Timer.timeout`).                    |
 | `camera2d-view-transform`  | `Camera2D` vira view transform de verdade: `Renderer` ganha `pushTransform/popTransform`, `Scene.render` projeta `bounds` sobre a surface via `aspectMode` (FIT default), Pong autoria posições no mundo 800×600 e `_layout` morre.    |
+| `scene-tree`               | Introduz `SceneTree` em `:engine` como dono da árvore viva (não-Node, não-`@Serializable`), apaga a classe `Scene`, adiciona `Node.tree` cacheado, e migra Pong/TicTacToe/Demos para `Host.run(SceneTree(root = ...))`.                |
 
 ## Planned
 
