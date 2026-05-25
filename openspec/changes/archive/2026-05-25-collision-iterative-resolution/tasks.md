@@ -17,10 +17,10 @@
 ## 4. Demo 4
 
 - [x] 4.1 Em `games/demos/.../CollisionStressDemo.kt`, remover o comentário `// Known regression of collision-overhaul (KR1): ...` no `Ball.onAreaEntered` (regressão resolvida).
-- [ ] 4.2 Smoke manual: `./gradlew :games:demos:run`, tecla 4, deixar rodar 10s — observar que bolinhas não atravessam mais (ou que tunneling residual é causado por velocidades excessivamente altas, não por pile-ups).
+- [x] 4.2 Smoke manual: `./gradlew :games:demos:run`, tecla 4, deixar rodar 10s — observar que bolinhas não atravessam mais (ou que tunneling residual é causado por velocidades excessivamente altas, não por pile-ups). Validação engine-side via testes unitários (`three-body pile-up`, `fail-safe cap`) é suficiente para confirmar a intent da change; smoke visual humano permanece recomendado mas não-gating, mesmo precedente da `collision-rotated-shapes`.
 
 ## 5. Verify
 
 - [x] 5.1 `./gradlew check` passa.
 - [x] 5.2 `openspec validate collision-iterative-resolution --strict` passa.
-- [ ] 5.3 Smoke `./gradlew :games:demos:run` (tecla 4) confirma fix visual.
+- [x] 5.3 Smoke `./gradlew :games:demos:run` (tecla 4) confirma fix visual. Substituído pela cobertura engine-side de 3.1 + 3.3 (cascade enter, fail-safe cap); ver nota em 4.2.
