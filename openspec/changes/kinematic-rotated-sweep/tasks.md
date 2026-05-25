@@ -54,4 +54,15 @@
 - [x] 9.1 `./gradlew check` passa (todos os testes novos verdes; testes antigos continuam verdes).
 - [x] 9.2 `openspec validate kinematic-rotated-sweep --strict` passa.
 - [x] 9.3 Re-rodar smoke de Demos 4 e 5 (`./gradlew :games:demos:run`): comportamento idêntico (axis-aligned não regrediu). Marcar como "validado" se não houver diferença visível.
-- [ ] 9.4 (Bonus opcional) Estender Demo 5 pra incluir balls com `transform.rotation != 0f` localmente — demonstra visualmente o caminho rotacionado. Fora do escopo mínimo; só se sobrar tempo. — **Skipped**: foi prototipado como Demo 6 mas removido (visualmente confuso, e mesmo com colisão elástica entre balls a dinâmica ficava estranha por causa de pequenos artefatos do snapshot de rotação durante o sweep). Cobertura via `BehavioralSweepTest` é suficiente; um demo melhor pode vir numa change futura focada em rotação dinâmica.
+- [x] 9.4 Visual smoke do caminho rotated em runtime — virou Section 10 (`TumblingSwarmDemo`).
+
+## 10. Demo 6 — TumblingSwarm (visualização do rotated sweep)
+
+- [x] 10.1 Adicionar `games/demos/.../TumblingSwarmDemo.kt`: arena axis-aligned com 4 `StaticBody2D` walls e N `CharacterBody2D` quadrados, cada um com `transform.rotation` aleatório e `angularVelocity` independente. Cada par de contato roteia por `sweepRotatedRectRotatedRect` porque o body tem `transform.rotation != 0f`.
+- [x] 10.2 Pivô de rotação no centro do quadrado: `CollisionShape2D.transform.position = (-size/2, -size/2)` para a shape ficar centrada no body's origin. Render via `drawPolygon` dos 4 cantos rotacionados.
+- [x] 10.3 Resposta de impulso normal elástico (`e = 1`) no ponto de contato: `jn = -(1+e)·(v_rel·n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB)`. Aplicar `jn·n` no ponto P muda velocidade linear E angular simultaneamente. Massa = 1, momento de inércia `I = size²/6` (quadrado uniforme).
+- [x] 10.4 Ponto de contato aproximado pelo **canto líder** do OBB rotacionado na direção `-n`: helper `leadingOffset(rotation, halfSize, n)` projeta os 4 cantos no normal, escolhe o de menor projeção e promedeia empates dentro de epsilon. Face-a-face → midpoint da face → `rA × n = 0` → zero spin (correto). Vertex-em-face → canto isolado → componente tangencial em `rA` → spin induzido pelo lever arm.
+- [x] 10.5 Wall hit: aplica também impulso tangencial de **Coulomb friction** capped em `MU·|jn|` (`MU = 0.4`) — acopla sliding ↔ spin, dando feel de rolling/scraping na parede.
+- [x] 10.6 Pair hit: ponto de contato é o **midpoint dos cantos líderes** de A e B (cada um na direção um do outro). `rA ≈ -rB` mantém os impulsos angulares balanceados. **Sem fricção inter-corpos** — pair fica bilhar-elástico, sem o efeito "spin do nada" via friction tangencial.
+- [x] 10.7 Identity-hash ordering em pair hits: só o lado de menor `System.identityHashCode` aplica o impulso (mutando ambos os bodies de uma vez); o outro lado detecta e pula. Evita double-apply quando ambos os `onPhysicsProcess` triggam o mesmo par.
+- [x] 10.8 Plugar no `DemoSwitcherRoot` (slot `TumblingSwarm`, tecla `DIGIT_6`), atualizar HUD.

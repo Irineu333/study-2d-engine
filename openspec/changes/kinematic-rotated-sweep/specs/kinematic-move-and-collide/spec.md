@@ -142,3 +142,27 @@ The harness MUST NOT depend on `Skiko`, `Compose`, or any backend with display s
 - **GIVEN** a `CharacterBody2D` inside an arena bounded by four `StaticBody2D` walls at rotation `π / 4` (45°)
 - **WHEN** the harness runs 60 frames with initial velocity at moderate speed
 - **THEN** the cumulative Euclidean distance traveled by the body across all frames exceeds a threshold proportional to `|velocity| * dt * 60 * 0.5` (i.e. the body moves at least half the free-flight distance — confirming it is not frozen)
+
+### Requirement: Demos module ships a rotated-sweep visualization scene
+
+The `:games:demos` module SHALL include a scene that exercises the rotated swept path of `CharacterBody2D.moveAndCollide` visually in runtime (currently `TumblingSwarmDemo`, selectable via the `DemoSwitcherRoot` digit key). The scene MUST host multiple `CharacterBody2D` squares with non-zero `transform.rotation` (so every pair sweep routes through the rotated path, not the axis-aligned fast paths), arranged inside walls built from `StaticBody2D`. Each square MUST integrate an independent `angularVelocity` into its `transform.rotation` every physics tick, so the sweep snapshot of rotation varies across frames and the rotated path is exercised under motion + spin.
+
+Contact response MUST apply a 2D rigid-body elastic impulse at the contact point that updates both linear and angular velocity from a single `j·n` application: `j = -(1+e)·(v_rel·n) / (1/mA + 1/mB + (rA × n)² / IA + (rB × n)² / IB)` with `e = 1`, `vAP = vA + ω × rA`, and `r = P − centro` for each body. The contact point `P` MUST be derived from the OBB geometry (not the OBB center) so that the angular impulse is non-zero on glancing hits: at minimum the **leading corner** of the rotated square in the `-n` direction (averaged over corners tied within a small epsilon, collapsing face-vs-face contacts to the face midpoint and zero spin). Wall hits MAY additionally apply a tangential Coulomb-friction impulse capped at `μ·|jn|` so sliding couples to spin (rolling against the arena). Pair hits MUST use a symmetric contact point (midpoint of the two bodies' leading offsets toward each other) so `rA` and `rB` are balanced and the angular impulse on the two bodies is symmetric rather than dominated by one side's lever arm.
+
+#### Scenario: A rotated body's corner hit against a wall induces spin
+
+- **GIVEN** a `CharacterBody2D` square at rotation `π / 6` moving frontally into a `StaticBody2D` wall (so contact is along an OBB corner, not a flat face)
+- **WHEN** the demo's physics tick processes the collision
+- **THEN** the body's `angularVelocity` after the collision differs from before by a non-zero amount (the lever arm of the contact corner relative to the body's center is non-zero, so the impulse produces angular change)
+
+#### Scenario: A rotated body sliding along a wall picks up rolling
+
+- **GIVEN** a `CharacterBody2D` square in tangential motion along a wall (velocity component parallel to the wall is non-zero at the contact)
+- **WHEN** the demo's contact response applies the Coulomb-friction tangential impulse
+- **THEN** the body's `angularVelocity` after the contact has changed in a sense consistent with rolling (sliding direction transfers to spin), bounded by the `μ·|jn|` cap
+
+#### Scenario: Pair contact between two squares conserves angular momentum locally
+
+- **GIVEN** two `CharacterBody2D` squares colliding in a glancing offset hit (the contact normal is not aligned with the line between centers)
+- **WHEN** the demo's pair contact response applies the elastic impulse with the symmetric leading-midpoint contact point
+- **THEN** the angular impulse magnitudes applied to the two bodies are of comparable order (one body's lever arm does not dominate the other by an unbounded factor), and the per-collision update preserves total linear + angular momentum and total kinetic energy within float precision
