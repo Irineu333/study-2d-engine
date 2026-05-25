@@ -85,6 +85,23 @@ The engine SHALL invoke five lifecycle hooks on each `Node` in deterministic ord
 - **THEN** no `open fun onUpdate(dt: Float)` or `open fun onRender(renderer: Renderer)` declarations exist
 - **AND** no override of `onUpdate` or `onRender` exists in any engine-shipped `Node` subclass
 
+### Requirement: Node base class supports non-visual logical nodes
+
+The engine SHALL support `Node` subclasses that do NOT extend `Node2D` as first-class scene members. Such nodes MUST receive `onEnter`, `onProcess`, `onPhysicsProcess`, and `onExit` lifecycle callbacks like any other `Node`, MUST be registrable in `NodeRegistry`, and MUST be loadable from `scene.json`. They MUST NOT participate in transform composition, draw traversal, or collision iteration since they carry no spatial state. `Timer` is the first such node introduced; the engine SHALL preserve this capability as a precedent for future logical nodes (e.g. `AudioPlayer`, `AnimationPlayer`).
+
+#### Scenario: A non-Node2D subclass receives lifecycle hooks
+
+- **GIVEN** a `Node` subclass that does NOT extend `Node2D` (such as `Timer`) added as a child of a live scene root
+- **WHEN** the game loop runs one frame
+- **THEN** the subclass receives `onEnter`, then `onProcess(dt)`, then `onPhysicsProcess(dt)` at the fixed step
+
+#### Scenario: A non-Node2D subclass is skipped by draw traversal
+
+- **GIVEN** a `Timer` instance attached as a child of the scene root
+- **WHEN** the engine performs the draw pass for the frame
+- **THEN** no `onDraw` invocation happens on the `Timer`
+- **AND** no transform composition is attempted for it
+
 ### Requirement: SceneTree owns the live tree
 
 The engine SHALL provide a `com.neoutils.engine.tree.SceneTree` class that owns a live node tree. `SceneTree` MUST NOT extend `Node` and MUST NOT be annotated `@Serializable`. `SceneTree` MUST be constructible as `SceneTree(root: Node)`, where `root` is any concrete `Node` subclass shipped by `:engine` (or a user-defined subclass). `SceneTree` MUST expose:
