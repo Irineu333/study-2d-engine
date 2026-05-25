@@ -4,6 +4,7 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,19 +13,20 @@ class SceneRenderCameraTest {
 
     @Test
     fun `with current camera, push wraps draws and pop ends the sequence`() {
-        val scene = Scene()
+        val root = Node()
         val camera = Camera2D().apply {
             bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
             current = true
             aspectMode = AspectMode.FIT
         }
-        scene.addChild(camera)
-        scene.addChild(DrawSpy())
-        scene.resize(1280f, 900f)
-        scene.start()
+        root.addChild(camera)
+        root.addChild(DrawSpy())
+        val tree = SceneTree(root)
+        tree.resize(1280f, 900f)
+        tree.start()
 
         val recorder = RecordingRenderer()
-        scene.render(recorder)
+        tree.render(recorder)
 
         val tags = recorder.events.map { it.tag() }
         assertTrue(tags.first() == "push", "expected push first; got $tags")
@@ -46,13 +48,14 @@ class SceneRenderCameraTest {
 
     @Test
     fun `without current camera, no push or pop is emitted`() {
-        val scene = Scene()
-        scene.addChild(DrawSpy())
-        scene.resize(1280f, 900f)
-        scene.start()
+        val root = Node()
+        root.addChild(DrawSpy())
+        val tree = SceneTree(root)
+        tree.resize(1280f, 900f)
+        tree.start()
 
         val recorder = RecordingRenderer()
-        scene.render(recorder)
+        tree.render(recorder)
 
         assertEquals(0, recorder.events.count { it is Call.Push })
         assertEquals(0, recorder.events.count { it is Call.Pop })
@@ -61,18 +64,19 @@ class SceneRenderCameraTest {
 
     @Test
     fun `current camera with degenerate bounds skips push`() {
-        val scene = Scene()
+        val root = Node()
         val camera = Camera2D().apply {
             bounds = Rect(Vec2.ZERO, Vec2.ZERO)
             current = true
         }
-        scene.addChild(camera)
-        scene.addChild(DrawSpy())
-        scene.resize(800f, 600f)
-        scene.start()
+        root.addChild(camera)
+        root.addChild(DrawSpy())
+        val tree = SceneTree(root)
+        tree.resize(800f, 600f)
+        tree.start()
 
         val recorder = RecordingRenderer()
-        scene.render(recorder)
+        tree.render(recorder)
 
         assertEquals(0, recorder.events.count { it is Call.Push })
         assertEquals(0, recorder.events.count { it is Call.Pop })

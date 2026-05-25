@@ -6,8 +6,9 @@ import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.ScriptInstanceContract
+import com.neoutils.engine.tree.SceneTree
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -37,7 +38,7 @@ class SceneLoaderTest {
 
     @Test
     fun `save produces version and root`() {
-        val scene = Scene().apply {
+        val root = Node().apply {
             name = "root"
             addChild(ColorRect().apply {
                 name = "rectangle"
@@ -45,21 +46,21 @@ class SceneLoaderTest {
                 color = Color.RED
             })
         }
-        val text = SceneLoader.save(scene)
+        val text = SceneLoader.save(root)
         val obj: JsonObject = Json.parseToJsonElement(text).jsonObject
         assertEquals(2, obj["version"]!!.jsonPrimitive.content.toInt())
-        val root = obj["root"]!!.jsonObject
-        assertEquals("com.neoutils.engine.scene.Scene", root["type"]!!.jsonPrimitive.content)
-        assertEquals("root", root["name"]!!.jsonPrimitive.content)
-        assertTrue(root["children"] != null)
-        assertTrue(root["properties"] != null)
+        val rootJson = obj["root"]!!.jsonObject
+        assertEquals("com.neoutils.engine.scene.Node", rootJson["type"]!!.jsonPrimitive.content)
+        assertEquals("root", rootJson["name"]!!.jsonPrimitive.content)
+        assertTrue(rootJson["children"] != null)
+        assertTrue(rootJson["properties"] != null)
         // No props field anywhere
-        assertTrue("props" !in root)
+        assertTrue("props" !in rootJson)
     }
 
     @Test
     fun `load preserves order and properties`() {
-        val original = Scene().apply {
+        val original = Node().apply {
             addChild(ColorRect().apply {
                 name = "first"
                 size = Vec2(10f, 10f)
@@ -83,23 +84,52 @@ class SceneLoaderTest {
     }
 
     @Test
+    fun `load returns Node type, not a Scene subtype`() {
+        val original = Node().apply {
+            name = "root"
+            addChild(ColorRect().apply { name = "child" })
+        }
+        val loaded: Node = SceneLoader.load(SceneLoader.save(original))
+        assertEquals("root", loaded.name)
+        assertEquals(Node::class, loaded::class)
+    }
+
+    @Test
+    fun `load accepts Node2D as root`() {
+        val jsonText = """
+            {
+              "version": 2,
+              "root": {
+                "type": "com.neoutils.engine.scene.Node2D",
+                "name": "root2D",
+                "properties": {},
+                "children": []
+              }
+            }
+        """.trimIndent()
+        val loaded = SceneLoader.load(jsonText)
+        assertTrue(loaded is Node2D)
+        assertEquals("root2D", loaded.name)
+    }
+
+    @Test
     fun `round-trip is stable`() {
-        val scene = Scene().apply {
+        val original = Node().apply {
             addChild(Circle2D().apply {
                 radius = 25f
                 color = Color.WHITE
             })
         }
-        val first = SceneLoader.save(scene)
+        val first = SceneLoader.save(original)
         val second = SceneLoader.save(SceneLoader.load(first))
         assertEquals(first, second)
     }
 
     @Test
-    fun `load returns detached scene without firing onEnter`() {
+    fun `load returns detached root without firing onEnter`() {
         NodeRegistry.register(CounterNode::class) { CounterNode() }
-        val original = Scene().apply {
-            name = "scene"
+        val original = Node().apply {
+            name = "root"
             addChild(CounterNode().apply { name = "counter" })
         }
         val text = SceneLoader.save(original)
@@ -107,7 +137,7 @@ class SceneLoaderTest {
         val loaded = SceneLoader.load(text)
         assertFalse(loaded.isLive)
         assertEquals(0, CounterNode.totalEnters)
-        loaded.start()
+        SceneTree(loaded).start()
         assertEquals(1, CounterNode.totalEnters)
     }
 
@@ -118,7 +148,7 @@ class SceneLoaderTest {
             {
               "version": 2,
               "root": {
-                "type": "com.neoutils.engine.scene.Scene",
+                "type": "com.neoutils.engine.scene.Node",
                 "name": "root",
                 "properties": {},
                 "children": [
@@ -145,7 +175,7 @@ class SceneLoaderTest {
             {
               "version": 2,
               "root": {
-                "type": "com.neoutils.engine.scene.Scene",
+                "type": "com.neoutils.engine.scene.Node",
                 "name": "root",
                 "properties": {},
                 "children": [
@@ -168,11 +198,11 @@ class SceneLoaderTest {
     @Test
     fun `save uses identifierFor when class was registered under a custom identifier`() {
         NodeRegistry.register("scripts/counter.nengine.kts", CounterNode::class) { CounterNode() }
-        val scene = Scene().apply {
+        val root = Node().apply {
             name = "root"
             addChild(CounterNode().apply { name = "my_script" })
         }
-        val text = SceneLoader.save(scene)
+        val text = SceneLoader.save(root)
         val obj = Json.parseToJsonElement(text).jsonObject
         val child = (obj["root"]!!.jsonObject["children"] as kotlinx.serialization.json.JsonArray)[0].jsonObject
         assertEquals("scripts/counter.nengine.kts", child["type"]!!.jsonPrimitive.content)
@@ -184,7 +214,7 @@ class SceneLoaderTest {
             {
               "version": 1,
               "root": {
-                "type": "com.neoutils.engine.scene.Scene",
+                "type": "com.neoutils.engine.scene.Node",
                 "name": "root",
                 "properties": {},
                 "children": []
@@ -206,7 +236,7 @@ class SceneLoaderTest {
             {
               "version": 2,
               "root": {
-                "type": "com.neoutils.engine.scene.Scene",
+                "type": "com.neoutils.engine.scene.Node",
                 "name": "root",
                 "properties": {},
                 "children": [
@@ -235,7 +265,7 @@ class SceneLoaderTest {
             {
               "version": 2,
               "root": {
-                "type": "com.neoutils.engine.scene.Scene",
+                "type": "com.neoutils.engine.scene.Node",
                 "name": "root",
                 "properties": {},
                 "children": [
@@ -265,7 +295,7 @@ class SceneLoaderTest {
             {
               "version": 2,
               "root": {
-                "type": "com.neoutils.engine.scene.Scene",
+                "type": "com.neoutils.engine.scene.Node",
                 "name": "root",
                 "properties": {},
                 "children": [
@@ -295,10 +325,10 @@ class SceneLoaderTest {
             instances[node]?.exports?.toMap()
         }
 
-        val scene = SceneLoader.load(jsonText, attach)
-        val first = SceneLoader.save(scene, serialize)
-        val scene2 = SceneLoader.load(first, attach)
-        val second = SceneLoader.save(scene2, serialize)
+        val loaded = SceneLoader.load(jsonText, attach)
+        val first = SceneLoader.save(loaded, serialize)
+        val loaded2 = SceneLoader.load(first, attach)
+        val second = SceneLoader.save(loaded2, serialize)
         assertEquals(first, second)
         // sanity: emitted JSON carries the export inside `properties`
         val obj = Json.parseToJsonElement(first).jsonObject

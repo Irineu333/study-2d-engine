@@ -28,10 +28,10 @@ class WorldTransformCacheTest {
     // 4.2: Two consecutive reads without mutation return equal Transforms
     @Test
     fun `consecutive worldTransform calls return equal result`() {
-        val scene = Scene()
+        val root = Node()
         val parent = Node2D().apply { transform = Transform(position = Vec2(10f, 20f)) }
         val child = Node2D().apply { transform = Transform(position = Vec2(3f, 4f)) }
-        scene.addChild(parent)
+        root.addChild(parent)
         parent.addChild(child)
         val first = child.worldTransform()
         val second = child.worldTransform()
@@ -43,10 +43,10 @@ class WorldTransformCacheTest {
     // 4.3: After parent.transform = ..., parent and child reflect new position
     @Test
     fun `assigning parent transform invalidates parent and child cache`() {
-        val scene = Scene()
+        val root = Node()
         val parent = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
         val child = Node2D().apply { transform = Transform(position = Vec2(5f, 0f)) }
-        scene.addChild(parent)
+        root.addChild(parent)
         parent.addChild(child)
         parent.worldTransform()
         child.worldTransform()
@@ -58,11 +58,11 @@ class WorldTransformCacheTest {
     // 4.4: grandparent (Node2D) → middle (raw Node) → grandchild (Node2D)
     @Test
     fun `invalidation propagates through non-Node2D intermediates`() {
-        val scene = Scene()
+        val root = Node()
         val grandparent = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
-        val middle = object : Node() {}
+        val middle = Node()
         val grandchild = Node2D().apply { transform = Transform(position = Vec2(5f, 0f)) }
-        scene.addChild(grandparent)
+        root.addChild(grandparent)
         grandparent.addChild(middle)
         middle.addChild(grandchild)
         grandparent.worldTransform()
@@ -75,12 +75,12 @@ class WorldTransformCacheTest {
     // 4.5: After reparenting, child.worldTransform reflects new parent
     @Test
     fun `reparenting invalidates child world transform`() {
-        val scene = Scene()
+        val root = Node()
         val p1 = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
         val p2 = Node2D().apply { transform = Transform(position = Vec2(100f, 0f)) }
         val child = Node2D().apply { transform = Transform(position = Vec2(5f, 0f)) }
-        scene.addChild(p1)
-        scene.addChild(p2)
+        root.addChild(p1)
+        root.addChild(p2)
         p1.addChild(child)
         assertEquals(Vec2(15f, 0f), child.worldTransform().position)
         p1.removeChild(child)
@@ -91,11 +91,11 @@ class WorldTransformCacheTest {
     // 4.6: Sibling's cache is not affected by another sibling's transform change
     @Test
     fun `reassigning local transform does not affect sibling cache`() {
-        val scene = Scene()
+        val root = Node()
         val parent = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
         val child1 = Node2D().apply { transform = Transform(position = Vec2(1f, 0f)) }
         val child2 = Node2D().apply { transform = Transform(position = Vec2(2f, 0f)) }
-        scene.addChild(parent)
+        root.addChild(parent)
         parent.addChild(child1)
         parent.addChild(child2)
         child1.worldTransform()
@@ -109,11 +109,11 @@ class WorldTransformCacheTest {
     // a node whose cache is unpopulated until the first read.
     @Test
     fun `saved JSON does not contain cachedWorldTransform field`() {
-        val scene = Scene()
+        val root = Node()
         val node = Node2D().apply { transform = Transform(position = Vec2(5f, 10f)) }
-        scene.addChild(node)
+        root.addChild(node)
         node.worldTransform()
-        val json = SceneLoader.save(scene)
+        val json = SceneLoader.save(root)
         assertFalse(json.contains("cachedWorldTransform"), "JSON must not contain cachedWorldTransform")
 
         val loaded = SceneLoader.load(json)

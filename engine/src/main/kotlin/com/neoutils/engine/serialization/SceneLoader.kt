@@ -1,7 +1,6 @@
 package com.neoutils.engine.serialization
 
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -17,9 +16,11 @@ import kotlin.reflect.full.memberProperties
  * `properties` map that holds both `@Inspect` properties of the Node and
  * exports of any attached script, and its children in order.
  *
- * Load does not invoke `Scene.start()` — the returned scene is detached and
- * `isLive == false`. The caller decides when to make it live so deferred
- * setup (e.g. resource binding) has a chance to run first.
+ * Load returns the **root `Node`** detached and `isLive == false`. The root may
+ * be any concrete `Node` subtype registered in `NodeRegistry`. The caller is
+ * expected to wrap the result in `SceneTree(root = ...)` and call `start()`
+ * when ready, so deferred setup (e.g. resource binding) has a chance to run
+ * first.
  */
 object SceneLoader {
 
@@ -32,20 +33,20 @@ object SceneLoader {
     }
 
     fun save(
-        scene: Scene,
+        root: Node,
         serializeScriptExports: ((Node) -> Map<String, JsonElement>?)? = null,
     ): String {
-        val root = nodeToEntry(scene, serializeScriptExports)
+        val rootEntry = nodeToEntry(root, serializeScriptExports)
         return json.encodeToString(
             SceneFile.serializer(),
-            SceneFile(version = SUPPORTED_VERSION, root = root),
+            SceneFile(version = SUPPORTED_VERSION, root = rootEntry),
         )
     }
 
     fun load(
         text: String,
         attachScript: ((node: Node, scriptPath: String) -> ScriptAttachment?)? = null,
-    ): Scene {
+    ): Node {
         val file = json.decodeFromString(SceneFile.serializer(), text)
         if (file.version != SUPPORTED_VERSION) {
             error(
@@ -55,9 +56,7 @@ object SceneLoader {
                     "godot-style-properties). Migrate manually."
             )
         }
-        val root = entryToNode(file.root, attachScript, path = "/${file.root.name}")
-        return root as? Scene
-            ?: error("Root node is not a Scene: ${file.root.type}")
+        return entryToNode(file.root, attachScript, path = "/${file.root.name}")
     }
 
     private fun nodeToEntry(

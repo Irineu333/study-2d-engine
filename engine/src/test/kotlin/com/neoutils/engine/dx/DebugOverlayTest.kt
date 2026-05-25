@@ -7,7 +7,8 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.AspectMode
 import com.neoutils.engine.scene.Camera2D
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.scene.Node
+import com.neoutils.engine.tree.SceneTree
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -36,9 +37,9 @@ class DebugOverlayTest {
     @Test
     fun `bothFlagsOff issues no calls`() {
         val recorder = RecordingRenderer()
-        val scene = sceneWithCollider()
+        val tree = treeWithCollider()
 
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         assertEquals(0, recorder.calls.size)
     }
@@ -47,9 +48,9 @@ class DebugOverlayTest {
     fun `only fps on draws single text`() {
         Debug.showFps = true
         val recorder = RecordingRenderer()
-        val scene = sceneWithCollider()
+        val tree = treeWithCollider()
 
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         assertEquals(1, recorder.calls.size)
         val text = recorder.calls.single() as Call.Text
@@ -60,9 +61,9 @@ class DebugOverlayTest {
     fun `only colliders on draws one outlined rect per collider`() {
         Debug.colliderVisualization = true
         val recorder = RecordingRenderer()
-        val scene = sceneWithCollider(count = 3)
+        val tree = treeWithCollider(count = 3)
 
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         val rects = recorder.calls.filterIsInstance<Call.Rect>()
         assertEquals(3, rects.size)
@@ -76,9 +77,9 @@ class DebugOverlayTest {
         Debug.showFps = true
         Debug.colliderVisualization = true
         val recorder = RecordingRenderer()
-        val scene = sceneWithCollider(count = 2)
+        val tree = treeWithCollider(count = 2)
 
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         val rects = recorder.calls.filterIsInstance<Call.Rect>()
         val texts = recorder.calls.filterIsInstance<Call.Text>()
@@ -89,20 +90,21 @@ class DebugOverlayTest {
     @Test
     fun `colliders with current camera push view transform around collider rects`() {
         Debug.colliderVisualization = true
-        val scene = Scene()
+        val root = Node()
         val camera = Camera2D().apply {
             bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
             current = true
             aspectMode = AspectMode.FIT
         }
-        scene.addChild(camera)
-        scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
-        scene.addChild(BoxCollider().apply { size = Vec2(20f, 20f) })
-        scene.resize(1280f, 900f)
-        scene.start()
+        root.addChild(camera)
+        root.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
+        root.addChild(BoxCollider().apply { size = Vec2(20f, 20f) })
+        val tree = SceneTree(root)
+        tree.resize(1280f, 900f)
+        tree.start()
 
         val recorder = RecordingRenderer()
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         val tags = recorder.calls.map {
             when (it) {
@@ -124,9 +126,9 @@ class DebugOverlayTest {
     fun `colliders without current camera draw without push or pop`() {
         Debug.colliderVisualization = true
         val recorder = RecordingRenderer()
-        val scene = sceneWithCollider(count = 2)
+        val tree = treeWithCollider(count = 2)
 
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         assertEquals(0, recorder.calls.count { it is Call.Push })
         assertEquals(0, recorder.calls.count { it is Call.Pop })
@@ -137,18 +139,19 @@ class DebugOverlayTest {
     fun `FPS draws outside any push when camera is current`() {
         Debug.showFps = true
         Debug.colliderVisualization = true
-        val scene = Scene()
+        val root = Node()
         val camera = Camera2D().apply {
             bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
             current = true
         }
-        scene.addChild(camera)
-        scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
-        scene.resize(1280f, 900f)
-        scene.start()
+        root.addChild(camera)
+        root.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
+        val tree = SceneTree(root)
+        tree.resize(1280f, 900f)
+        tree.start()
 
         val recorder = RecordingRenderer()
-        renderDebugOverlay(recorder, scene)
+        renderDebugOverlay(recorder, tree)
 
         // Order: push → collider rect → pop → text.
         val tags = recorder.calls.map {
@@ -163,11 +166,12 @@ class DebugOverlayTest {
         assertEquals(listOf("push", "rect", "pop", "text"), tags)
     }
 
-    private fun sceneWithCollider(count: Int = 1): Scene {
-        val scene = Scene()
-        repeat(count) { scene.addChild(BoxCollider().apply { size = Vec2(10f, 10f) }) }
-        scene.start()
-        return scene
+    private fun treeWithCollider(count: Int = 1): SceneTree {
+        val root = Node()
+        repeat(count) { root.addChild(BoxCollider().apply { size = Vec2(10f, 10f) }) }
+        val tree = SceneTree(root)
+        tree.start()
+        return tree
     }
 }
 

@@ -4,10 +4,10 @@ import com.neoutils.engine.dx.Log
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 
 class GameLoop(
-    val scene: Scene,
+    val tree: SceneTree,
     val renderer: Renderer,
     val input: Input,
     val physics: PhysicsSystem = PhysicsSystem(),
@@ -15,7 +15,7 @@ class GameLoop(
 ) {
 
     /**
-     * Maximum frame `dt` (seconds) emitted to `Scene.process`. Clamps the
+     * Maximum frame `dt` (seconds) emitted to `SceneTree.process`. Clamps the
      * first frame and any stalls (debugger pause, GC) so a single tick never
      * advances `_process` by more than ~50 ms in one shot.
      */
@@ -43,16 +43,16 @@ class GameLoop(
      * `ComposeHost`) need not be aware of fixed-step physics.
      */
     fun tick(dtNanos: Long) {
-        if (!scene.isLive) scene.start()
-        scene.input = input
+        if (!tree.root.isLive) tree.start()
+        tree.input = input
         val rawDt = (dtNanos / 1_000_000_000f).coerceAtLeast(0f)
         accumulator += rawDt
         var steps = 0
         while (accumulator >= physicsDt && steps < maxStepsPerFrame) {
-            scene.applyPending()
-            scene.physicsProcess(physicsDt)
-            scene.applyPending()
-            physics.step(scene)
+            tree.applyPending()
+            tree.physicsProcess(physicsDt)
+            tree.applyPending()
+            physics.step(tree)
             accumulator -= physicsDt
             steps++
         }
@@ -66,10 +66,10 @@ class GameLoop(
             accumulator = 0f
         }
         val frameDt = rawDt.coerceAtMost(maxDt)
-        scene.applyPending()
-        scene.process(frameDt)
-        scene.applyPending()
-        scene.render(renderer)
+        tree.applyPending()
+        tree.process(frameDt)
+        tree.applyPending()
+        tree.render(renderer)
     }
 
     companion object {

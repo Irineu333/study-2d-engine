@@ -4,7 +4,7 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.collectColliders
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 
 val DEBUG_COLLIDER_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
 
@@ -15,25 +15,25 @@ val DEBUG_COLLIDER_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
  *
  * Splits work into two passes:
  *  1. World pass — collider bounds rendered under the same view transform that
- *     `Scene.render` would push, so collider outlines line up with the
+ *     `SceneTree.render` would push, so collider outlines line up with the
  *     projected scene. Runs first, inside a try/finally that pops the pushed
  *     transform (when one was pushed).
  *  2. HUD pass — FPS counter in screen space (identity transform), so it
  *     anchors at the same surface corner regardless of camera bounds. Runs
  *     last, outside any push.
  */
-fun renderDebugOverlay(renderer: Renderer, scene: Scene) {
+fun renderDebugOverlay(renderer: Renderer, tree: SceneTree) {
     if (Debug.colliderVisualization) {
-        val view = scene.currentCamera()?.computeViewTransform(scene.size)
+        val view = tree.currentCamera()?.computeViewTransform(tree.size)
         if (view != null) {
             renderer.pushTransform(view.first, view.second)
             try {
-                drawColliders(renderer, scene)
+                drawColliders(renderer, tree)
             } finally {
                 renderer.popTransform()
             }
         } else {
-            drawColliders(renderer, scene)
+            drawColliders(renderer, tree)
         }
     }
     if (Debug.showFps) {
@@ -46,8 +46,8 @@ fun renderDebugOverlay(renderer: Renderer, scene: Scene) {
     }
 }
 
-private fun drawColliders(renderer: Renderer, scene: Scene) {
-    for (collider in collectColliders(scene)) {
+private fun drawColliders(renderer: Renderer, tree: SceneTree) {
+    for (collider in collectColliders(tree)) {
         renderer.drawRect(collider.bounds(), DEBUG_COLLIDER_COLOR, filled = false)
     }
 }

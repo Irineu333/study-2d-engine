@@ -1,6 +1,7 @@
 package com.neoutils.engine.scene
 
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -47,42 +48,42 @@ class NodeTest {
     }
 
     @Test
-    fun `scene start fires onEnter pre-order`() {
+    fun `tree start fires onEnter pre-order`() {
         val log = mutableListOf<String>()
-        val scene = Scene()
+        val root = Node()
         val a = Spy("a", log)
         val b = Spy("b", log)
         val c = Spy("c", log)
-        scene.addChild(a)
+        root.addChild(a)
         a.addChild(b)
-        scene.addChild(c)
-        scene.start()
+        root.addChild(c)
+        SceneTree(root).start()
         assertEquals(listOf("enter:a", "enter:b", "enter:c"), log)
     }
 
     @Test
     fun `adding to a live tree fires onEnter on new subtree`() {
         val log = mutableListOf<String>()
-        val scene = Scene()
-        scene.start()
+        val root = Node()
+        SceneTree(root).start()
         val a = Spy("a", log)
         val b = Spy("b", log)
         a.addChild(b)
-        scene.addChild(a)
+        root.addChild(a)
         assertEquals(listOf("enter:a", "enter:b"), log)
     }
 
     @Test
     fun `removing from live tree fires onExit post-order`() {
         val log = mutableListOf<String>()
-        val scene = Scene()
+        val root = Node()
         val a = Spy("a", log)
         val b = Spy("b", log)
         a.addChild(b)
-        scene.addChild(a)
-        scene.start()
+        root.addChild(a)
+        SceneTree(root).start()
         log.clear()
-        scene.removeChild(a)
+        root.removeChild(a)
         assertEquals(listOf("exit:b", "exit:a"), log)
         assertFalse(a.isLive)
         assertFalse(b.isLive)
@@ -90,34 +91,35 @@ class NodeTest {
 
     @Test
     fun `worldPosition sums ancestor transforms`() {
-        val scene = Scene()
+        val root = Node()
         val parent = Node2D().apply { transform = transform.copy(position = Vec2(100f, 50f)) }
         val child = Node2D().apply { transform = transform.copy(position = Vec2(5f, 7f)) }
-        scene.addChild(parent)
+        root.addChild(parent)
         parent.addChild(child)
         assertEquals(Vec2(105f, 57f), child.worldPosition())
     }
 
     @Test
     fun `transform isolation between siblings`() {
-        val scene = Scene()
+        val root = Node()
         val left = Node2D()
         val right = Node2D()
-        scene.addChild(left)
-        scene.addChild(right)
+        root.addChild(left)
+        root.addChild(right)
         left.transform = left.transform.copy(position = Vec2(5f, 0f))
         assertEquals(Vec2(5f, 0f), left.transform.position)
         assertEquals(Vec2.ZERO, right.transform.position)
     }
 
     @Test
-    fun `scene process propagates to all live nodes`() {
-        val scene = Scene()
+    fun `tree process propagates to all live nodes`() {
+        val root = Node()
         var ticks = 0
         val node = object : Node() { override fun onProcess(dt: Float) { ticks++ } }
-        scene.addChild(node)
-        scene.start()
-        scene.process(0.016f)
+        root.addChild(node)
+        val tree = SceneTree(root)
+        tree.start()
+        tree.process(0.016f)
         assertEquals(1, ticks)
     }
 
@@ -210,8 +212,8 @@ class NodeTest {
     }
 
     @Test
-    fun `scene render visits parents before children in pre-order`() {
-        val scene = Scene()
+    fun `tree render visits parents before children in pre-order`() {
+        val root = Node()
         val order = mutableListOf<String>()
         class R(val tag: String) : Node() {
             override fun onDraw(renderer: com.neoutils.engine.render.Renderer) { order += tag }
@@ -219,11 +221,12 @@ class NodeTest {
         val a = R("a")
         val b = R("b")
         val c = R("c")
-        scene.addChild(a)
+        root.addChild(a)
         a.addChild(b)
-        scene.addChild(c)
-        scene.start()
-        scene.render(NoopRenderer)
+        root.addChild(c)
+        val tree = SceneTree(root)
+        tree.start()
+        tree.render(NoopRenderer)
         assertEquals(listOf("a", "b", "c"), order)
     }
 }

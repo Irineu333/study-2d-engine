@@ -1,6 +1,6 @@
 package com.neoutils.engine.runtime
 
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 
 /**
  * Host of execution of a game: owns a window/surface, drives the per-frame
@@ -11,5 +11,5 @@ import com.neoutils.engine.scene.Scene
 interface GameHost {
 
     /** Runs the game blocking until the host window closes. */
-    fun run(scene: Scene, config: GameConfig = GameConfig())
+    fun run(tree: SceneTree, config: GameConfig = GameConfig())
 }

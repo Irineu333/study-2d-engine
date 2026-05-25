@@ -9,7 +9,6 @@ import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Polygon2D
-import com.neoutils.engine.scene.Scene
 import kotlin.reflect.KClass
 
 /**
@@ -59,8 +58,8 @@ object NodeRegistry {
     /** Registers every concrete `Node` subclass shipped by `:engine`. Idempotent:
      *  re-entry is a no-op when the engine types are already registered. */
     fun registerEngineTypes() {
-        if (identifierByClass.containsKey(Scene::class)) return
-        register(Scene::class) { Scene() }
+        if (identifierByClass.containsKey(Node::class)) return
+        register(Node::class) { Node() }
         register(Node2D::class) { Node2D() }
         register(Camera2D::class) { Camera2D() }
         register(ColorRect::class) { ColorRect() }

@@ -1,11 +1,12 @@
 package com.neoutils.engine.serialization
 
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -61,7 +62,7 @@ class NodeRegistryTest {
     @Test
     fun `registerEngineTypes registers built-ins`() {
         NodeRegistry.registerEngineTypes()
-        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Scene"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Node"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Node2D"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Camera2D"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.ColorRect"))
@@ -73,13 +74,23 @@ class NodeRegistryTest {
     }
 
     @Test
+    fun `registerEngineTypes does not register Scene`() {
+        NodeRegistry.registerEngineTypes()
+        assertFalse(NodeRegistry.isRegistered("com.neoutils.engine.scene.Scene"))
+        val ex = assertFailsWith<UnknownNodeTypeException> {
+            NodeRegistry.create("com.neoutils.engine.scene.Scene")
+        }
+        assertEquals("com.neoutils.engine.scene.Scene", ex.typeName)
+    }
+
+    @Test
     fun `registerEngineTypes is idempotent`() {
         NodeRegistry.registerEngineTypes()
         // Second call must not throw nor duplicate; we observe equivalence by
         // confirming the engine identifiers still resolve.
         NodeRegistry.registerEngineTypes()
-        val scene = NodeRegistry.create("com.neoutils.engine.scene.Scene")
-        assertTrue(scene is Scene)
-        assertEquals("com.neoutils.engine.scene.Scene", NodeRegistry.identifierFor(Scene::class))
+        val node = NodeRegistry.create("com.neoutils.engine.scene.Node")
+        assertTrue(node is Node)
+        assertEquals("com.neoutils.engine.scene.Node", NodeRegistry.identifierFor(Node::class))
     }
 }

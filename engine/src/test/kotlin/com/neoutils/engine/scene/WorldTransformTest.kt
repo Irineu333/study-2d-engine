@@ -11,10 +11,10 @@ class WorldTransformTest {
 
     @Test
     fun `pure translation chain sums positions`() {
-        val scene = Scene()
+        val root = Node()
         val a = Node2D().apply { transform = Transform(position = Vec2(10f, 20f)) }
         val b = Node2D().apply { transform = Transform(position = Vec2(3f, 4f)) }
-        scene.addChild(a)
+        root.addChild(a)
         a.addChild(b)
         val world = b.worldTransform()
         assertEquals(Vec2(13f, 24f), world.position)
@@ -24,10 +24,10 @@ class WorldTransformTest {
 
     @Test
     fun `parent scale multiplies child position and propagates scale`() {
-        val scene = Scene()
+        val root = Node()
         val parent = Node2D().apply { transform = Transform(scale = Vec2(2f, 3f)) }
         val child = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
-        scene.addChild(parent)
+        root.addChild(parent)
         parent.addChild(child)
         val world = child.worldTransform()
         assertEquals(Vec2(20f, 0f), world.position)
@@ -36,12 +36,12 @@ class WorldTransformTest {
 
     @Test
     fun `parent rotation rotates child local position`() {
-        val scene = Scene()
+        val root = Node()
         val parent = Node2D().apply {
             transform = Transform(rotation = (PI / 2.0).toFloat())
         }
         val child = Node2D().apply { transform = Transform(position = Vec2(10f, 0f)) }
-        scene.addChild(parent)
+        root.addChild(parent)
         parent.addChild(child)
         val world = child.worldTransform()
         assertApprox(Vec2(0f, 10f), world.position)
@@ -50,11 +50,11 @@ class WorldTransformTest {
 
     @Test
     fun `three-level chain composes transforms left-to-right`() {
-        val scene = Scene()
+        val root = Node()
         val a = Node2D().apply { transform = Transform(position = Vec2(10f, 20f), scale = Vec2(2f, 2f)) }
         val b = Node2D().apply { transform = Transform(position = Vec2(5f, 0f), rotation = (PI / 2.0).toFloat()) }
         val c = Node2D().apply { transform = Transform(position = Vec2(3f, 0f)) }
-        scene.addChild(a)
+        root.addChild(a)
         a.addChild(b)
         b.addChild(c)
         val expected = a.transform.compose(b.transform).compose(c.transform)

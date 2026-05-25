@@ -148,31 +148,33 @@ class Camera2DTest {
     }
 
     @Test
-    fun `Scene screenToWorld delegates to current camera`() {
-        val scene = Scene()
+    fun `SceneTree screenToWorld delegates to current camera`() {
+        val root = Node()
         val camera = Camera2D().apply {
             bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
             current = true
             aspectMode = AspectMode.FIT
         }
-        scene.addChild(camera)
-        scene.resize(1280f, 900f)
-        scene.start()
+        root.addChild(camera)
+        val tree = com.neoutils.engine.tree.SceneTree(root)
+        tree.resize(1280f, 900f)
+        tree.start()
 
         val screenCenter = Vec2(640f, 450f)
-        assertApprox(Vec2(400f, 300f), scene.screenToWorld(screenCenter))
-        assertApprox(screenCenter, scene.worldToScreen(Vec2(400f, 300f)))
+        assertApprox(Vec2(400f, 300f), tree.screenToWorld(screenCenter))
+        assertApprox(screenCenter, tree.worldToScreen(Vec2(400f, 300f)))
     }
 
     @Test
-    fun `Scene screenToWorld identity without camera`() {
-        val scene = Scene()
-        scene.resize(800f, 600f)
-        scene.start()
+    fun `SceneTree screenToWorld identity without camera`() {
+        val root = Node()
+        val tree = com.neoutils.engine.tree.SceneTree(root)
+        tree.resize(800f, 600f)
+        tree.start()
 
         val p = Vec2(123f, 456f)
-        assertEquals(p, scene.screenToWorld(p))
-        assertEquals(p, scene.worldToScreen(p))
+        assertEquals(p, tree.screenToWorld(p))
+        assertEquals(p, tree.worldToScreen(p))
     }
 
     @Test

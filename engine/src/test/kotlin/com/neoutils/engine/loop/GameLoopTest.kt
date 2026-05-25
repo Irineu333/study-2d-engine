@@ -11,7 +11,7 @@ import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -41,11 +41,12 @@ class GameLoopTest {
 
     @Test
     fun `tick converts nanoseconds to seconds`() {
-        val scene = Scene()
+        val root = Node()
         val received = mutableListOf<Float>()
         val node = object : Node() { override fun onProcess(dt: Float) { received += dt } }
-        scene.addChild(node)
-        val loop = GameLoop(scene, CountingRenderer(), NoopInput)
+        root.addChild(node)
+        val tree = SceneTree(root)
+        val loop = GameLoop(tree, CountingRenderer(), NoopInput)
         loop.tick(16_666_666L)
         assertEquals(1, received.size)
         assertTrue(kotlin.math.abs(received[0] - 0.01666f) < 1e-4f)
@@ -53,18 +54,18 @@ class GameLoopTest {
 
     @Test
     fun `tick order is physics then process then draw`() {
-        val scene = Scene()
+        val root = Node()
         val order = mutableListOf<String>()
         val node = object : Node() { override fun onProcess(dt: Float) { order += "process" } }
-        scene.addChild(node)
+        root.addChild(node)
         val a = object : BoxCollider() {
             override fun onCollide(other: Collider) { order += "physics" }
         }
         val b = object : BoxCollider() {
             override fun onCollide(other: Collider) { /* not recorded */ }
         }
-        scene.addChild(a)
-        scene.addChild(b)
+        root.addChild(a)
+        root.addChild(b)
         val renderer = object : Renderer {
             override fun clear(color: Color) {}
             override fun drawRect(rect: Rect, color: Color, filled: Boolean) {}
@@ -79,18 +80,20 @@ class GameLoopTest {
         val recorder = object : Node() {
             override fun onDraw(renderer: Renderer) { order += "draw" }
         }
-        scene.addChild(recorder)
+        root.addChild(recorder)
+        val tree = SceneTree(root)
         // 20 ms > 1/60s so the accumulator drains one full physics step.
-        GameLoop(scene, renderer, NoopInput, PhysicsSystem()).tick(20_000_000L)
+        GameLoop(tree, renderer, NoopInput, PhysicsSystem()).tick(20_000_000L)
         assertEquals(listOf("physics", "process", "draw"), order)
     }
 
     @Test
     fun `large dtNanos is clamped to maxDt`() {
-        val scene = Scene()
+        val root = Node()
         val received = mutableListOf<Float>()
-        scene.addChild(object : Node() { override fun onProcess(dt: Float) { received += dt } })
-        val loop = GameLoop(scene, CountingRenderer(), NoopInput).apply { maxDt = 0.05f }
+        root.addChild(object : Node() { override fun onProcess(dt: Float) { received += dt } })
+        val tree = SceneTree(root)
+        val loop = GameLoop(tree, CountingRenderer(), NoopInput).apply { maxDt = 0.05f }
         loop.tick(10_000_000_000L) // 10 seconds raw
         assertEquals(0.05f, received[0])
     }

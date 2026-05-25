@@ -2,7 +2,7 @@ package com.neoutils.engine.serialization
 
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,11 +22,11 @@ class NodeRefTest {
 
     @Test
     fun `walks up and down`() {
-        val scene = Scene()
+        val root = Node()
         val a = Named("A")
         val b = Named("B")
         val c = Named("C")
-        scene.addChild(a)
+        root.addChild(a)
         a.addChild(b)
         a.addChild(c)
         val ref = NodeRef<Node>(path = "../B")
@@ -35,18 +35,18 @@ class NodeRefTest {
 
     @Test
     fun `returns null when target type does not match`() {
-        val scene = Scene()
+        val root = Node()
         val foo = Named("Foo")
-        scene.addChild(foo)
+        root.addChild(foo)
         val ref = NodeRef<Node2D>(path = "Foo")
-        assertNull(ref.resolve(from = scene))
+        assertNull(ref.resolve(from = root))
     }
 
     @Test
     fun `returns null for invalid path`() {
-        val scene = Scene()
+        val root = Node()
         val a = Named("A")
-        scene.addChild(a)
+        root.addChild(a)
         val ref = NodeRef<Node>(path = "Missing")
         assertNull(ref.resolve(from = a))
     }
@@ -70,22 +70,24 @@ class NodeRefTest {
 
     @Test
     fun `cache invalidates after bearer re-attach`() {
-        val scene = Scene()
+        val root = Node()
         val paddle = Tagged("Paddle")
         val ball = Tagged("Ball")
-        scene.addChild(paddle)
-        scene.addChild(ball)
-        scene.start()
+        root.addChild(paddle)
+        root.addChild(ball)
+        val tree = SceneTree(root)
+        tree.start()
 
         val ref = NodeRef<Node2D>(path = "../Ball")
         assertSame(ball, ref.resolve(from = paddle))
 
-        scene.removeChild(paddle)
-        val sceneTwo = Scene()
+        root.removeChild(paddle)
+        val rootTwo = Node()
         val newBall = Tagged("Ball")
-        sceneTwo.addChild(paddle)
-        sceneTwo.addChild(newBall)
-        sceneTwo.start()
+        rootTwo.addChild(paddle)
+        rootTwo.addChild(newBall)
+        val treeTwo = SceneTree(rootTwo)
+        treeTwo.start()
 
         val resolved = ref.resolve(from = paddle)
         assertSame(newBall, resolved)

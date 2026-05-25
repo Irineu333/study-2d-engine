@@ -3,11 +3,12 @@ package com.neoutils.engine.scene
 import com.neoutils.engine.dx.Log
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.serialization.Inspect
+import com.neoutils.engine.tree.SceneTree
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
-abstract class Node {
+open class Node {
 
     @Inspect
     var name: String = this::class.simpleName ?: "Node"
@@ -20,19 +21,19 @@ abstract class Node {
     private val _children: MutableList<Node> = mutableListOf()
     val children: List<Node> get() = _children
 
-    @Transient
-    var isLive: Boolean = false
-        private set
-
     /**
-     * Cached owning `Scene` while this node is live. Populated by
+     * Owning `SceneTree` while this node is live. Populated by
      * `attachToLiveTree` before `onEnter` runs and cleared by
-     * `detachFromLiveTree` after `onExit` returns. Lets `rootScene()` run in
-     * O(1) instead of walking the parent chain every frame.
+     * `detachFromLiveTree` after `onExit` returns. Lets gameplay code reach
+     * tree-wide state (`tree?.width`, `tree?.input`, ...) in O(1) instead of
+     * walking the parent chain every frame.
      */
     @Transient
-    var scene: Scene? = null
+    var tree: SceneTree? = null
         internal set
+
+    /** `true` while attached to a live `SceneTree`; derived from [tree]. */
+    val isLive: Boolean get() = tree != null
 
     /**
      * Monotonic counter bumped each time the node re-enters the live tree.
@@ -67,9 +68,9 @@ abstract class Node {
     fun addChild(child: Node) {
         require(child.parent == null) { "Node '${child.name}' already has a parent" }
         require(child !== this) { "Cannot add a node as its own child" }
-        val owning = if (this is Scene) this else scene
-        if (owning != null && owning.isMutationDeferred) {
-            if (owning.isRendering) {
+        val owningTree = tree
+        if (owningTree != null && owningTree.isMutationDeferred) {
+            if (owningTree.isRendering) {
                 Log.w(TAG, "addChild called during onDraw; ignored ('${child.name}' -> '$name')")
                 return
             }
@@ -81,9 +82,9 @@ abstract class Node {
 
     fun removeChild(child: Node) {
         require(child.parent === this) { "Node '${child.name}' is not a child of '$name'" }
-        val owning = if (this is Scene) this else scene
-        if (owning != null && owning.isMutationDeferred) {
-            if (owning.isRendering) {
+        val owningTree = tree
+        if (owningTree != null && owningTree.isMutationDeferred) {
+            if (owningTree.isRendering) {
                 Log.w(TAG, "removeChild called during onDraw; ignored ('${child.name}' from '$name')")
                 return
             }
@@ -98,10 +99,8 @@ abstract class Node {
         child.parent = this
         _children.add(child)
         (child as? Node2D)?.invalidateWorldTransformRecursive()
-        if (isLive) {
-            val owning = if (this is Scene) this else scene
-            if (owning != null) child.attachToLiveTree(owning)
-        }
+        val owningTree = tree
+        if (owningTree != null) child.attachToLiveTree(owningTree)
     }
 
     private fun uniqueChildName(desired: String): String {
@@ -112,27 +111,25 @@ abstract class Node {
     }
 
     private fun applyRemove(child: Node) {
-        if (isLive) child.detachFromLiveTree()
+        if (child.isLive) child.detachFromLiveTree()
         _children.remove(child)
         child.parent = null
         (child as? Node2D)?.invalidateWorldTransformRecursive()
     }
 
-    internal fun attachToLiveTree(owningScene: Scene) {
+    internal fun attachToLiveTree(owningTree: SceneTree) {
         if (isLive) return
-        scene = owningScene
+        tree = owningTree
         attachGeneration++
-        isLive = true
         onEnter()
-        for (child in _children) child.attachToLiveTree(owningScene)
+        for (child in _children) child.attachToLiveTree(owningTree)
     }
 
     internal fun detachFromLiveTree() {
         if (!isLive) return
         for (child in _children) child.detachFromLiveTree()
         onExit()
-        isLive = false
-        scene = null
+        tree = null
     }
 
     /**
@@ -157,9 +154,6 @@ abstract class Node {
             }
         }
     }
-
-    /** Returns the owning `Scene` in O(1) when live, or `null` otherwise. */
-    fun rootScene(): Scene? = scene
 
     /**
      * Single-level lookup of a direct child by `name`. Returns `null` when
@@ -198,6 +192,6 @@ abstract class Node {
     }
 
     companion object {
-        private const val TAG = "Scene"
+        private const val TAG = "Node"
     }
 }

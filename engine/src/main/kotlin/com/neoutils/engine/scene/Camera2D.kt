@@ -20,12 +20,12 @@ enum class AspectMode { FIT, FILL, STRETCH }
 
 /**
  * 2D camera node. The first `Camera2D` whose `current` is `true` discovered
- * via a pre-order walk from the scene root becomes the scene's active camera
- * and exposes `bounds` as `Scene.viewport`. With no current camera the scene
- * falls back to `Rect(Vec2.ZERO, scene.size)`.
+ * via a pre-order walk from the tree root becomes the tree's active camera
+ * and exposes `bounds` as `SceneTree.viewport`. With no current camera the
+ * tree falls back to `Rect(Vec2.ZERO, tree.size)`.
  *
- * When `current` is `true`, `Scene.render` projects `bounds` onto the surface
- * via `Renderer.pushTransform` using the [aspectMode] policy. Helpers
+ * When `current` is `true`, `SceneTree.render` projects `bounds` onto the
+ * surface via `Renderer.pushTransform` using the [aspectMode] policy. Helpers
  * [screenToWorld] / [worldToScreen] expose the same projection for input
  * conversion.
  */

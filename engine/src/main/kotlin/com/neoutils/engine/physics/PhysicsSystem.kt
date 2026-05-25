@@ -1,7 +1,7 @@
 package com.neoutils.engine.physics
 
 import com.neoutils.engine.scene.Node
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 
 /**
  * Naive broad phase: O(N^2) pair test over all live colliders. Adequate for
@@ -10,10 +10,10 @@ import com.neoutils.engine.scene.Scene
  */
 class PhysicsSystem {
 
-    fun step(scene: Scene) {
-        val colliders = collectColliders(scene)
+    fun step(tree: SceneTree) {
+        val colliders = collectColliders(tree)
         val n = colliders.size
-        scene.beginPhysicsPhase()
+        tree.beginPhysicsPhase()
         try {
             for (i in 0 until n) {
                 val a = colliders[i]
@@ -29,19 +29,19 @@ class PhysicsSystem {
                 }
             }
         } finally {
-            scene.endPhysicsPhase()
+            tree.endPhysicsPhase()
         }
     }
 }
 
 /**
- * Enumerates every live `Collider` reachable from `scene`. Exposed publicly so
+ * Enumerates every live `Collider` reachable from the tree. Exposed publicly so
  * the integrating runtime (e.g. the Compose `GameSurface`) can draw a debug
- * overlay without `Scene` itself depending on the DX layer.
+ * overlay without the engine core depending on the DX layer.
  */
-fun collectColliders(scene: Scene): List<Collider> {
+fun collectColliders(tree: SceneTree): List<Collider> {
     val out = mutableListOf<Collider>()
-    collect(scene, out)
+    collect(tree.root, out)
     return out
 }
 
