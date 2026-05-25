@@ -131,7 +131,7 @@ object BundleLoader {
                 exportNames = script.exports.map { it.name }.toSet(),
                 applyExport = { name, jsonEl ->
                     val export = script.exports.first { it.name == name }
-                    val value = PropCoercion.coerce(jsonEl, export.type, export.nullable)
+                    val value = PropCoercion.coerce(jsonEl, export.type, export.nullable, name)
                     instance.setExport(name, value)
                 },
             )

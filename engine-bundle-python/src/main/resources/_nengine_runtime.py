@@ -157,6 +157,50 @@ def _nengine_parse_extends(source):
     return None
 
 
+class _SignalProxy:
+    """Python-side wrapper around a Kotlin `Signal<T>` that adapts Python
+    callables to the Kotlin `(T) -> Unit` handler signature.
+
+    `connect(handler)` registers an adapter on the underlying Kotlin signal:
+      - for `Signal<Unit>` (`is_unit=True`), the adapter ignores the emitted
+        Unit and calls `handler()` with zero arguments — matching the user's
+        expectation of `def my_handler(): ...`.
+      - for `Signal<T>` with non-Unit `T`, the adapter forwards the emitted
+        value as a single positional argument.
+
+    `disconnect(handler)` removes the adapter via the `Disposable` returned
+    by `Signal.connect` (matched by Python `id(handler)`), avoiding
+    Polyglot's lambda-equality pitfalls. Exceptions raised by `handler`
+    propagate out of `Signal.emit` — consistent with the engine-wide
+    fail-fast policy for script errors.
+    """
+
+    def __init__(self, kotlin_signal, is_unit):
+        object.__setattr__(self, '_signal', kotlin_signal)
+        object.__setattr__(self, '_is_unit', bool(is_unit))
+        object.__setattr__(self, '_disposables', {})
+
+    def connect(self, handler):
+        is_unit = object.__getattribute__(self, '_is_unit')
+        disposables = object.__getattribute__(self, '_disposables')
+        signal = object.__getattribute__(self, '_signal')
+        if is_unit:
+            def adapter(_v):
+                handler()
+        else:
+            def adapter(v):
+                handler(v)
+        d = signal.connect(adapter)
+        disposables[id(handler)] = d
+        return d
+
+    def disconnect(self, handler):
+        disposables = object.__getattribute__(self, '_disposables')
+        d = disposables.pop(id(handler), None)
+        if d is not None:
+            d.dispose()
+
+
 class _ScriptNode:
     """
     Wraps the host Kotlin `Node` so that scripts can read engine-side
@@ -165,10 +209,12 @@ class _ScriptNode:
 
     Attribute lookup order on `self.<name>`:
       1. Instance dict (set via setExport, hooks, or `self.foo = ...`).
-      2. Top-level `def`s in the script module — exposed as bound
+      2. `_SignalProxy` for any Kotlin `Signal<*>` `val` field declared on
+         the underlying Node (discovered via reflection at construction).
+      3. Top-level `def`s in the script module — exposed as bound
          methods so peer scripts can call `score.increment()` after
          retrieving the wrapper via `script_of(node)`.
-      3. The underlying Kotlin Node (`self.transform`, `self.findChild`,
+      4. The underlying Kotlin Node (`self.transform`, `self.findChild`,
          ...).
 
     `self._node` is the explicit handle to the underlying Kotlin `Node`
@@ -180,8 +226,25 @@ class _ScriptNode:
     def __init__(self, node, module_ns):
         object.__setattr__(self, '_node', node)
         object.__setattr__(self, '_module_ns', module_ns)
+        # Reflection-based discovery of `Signal<*>` val fields on the
+        # underlying Kotlin Node. Each is wrapped in a `_SignalProxy` so
+        # `wrapper.<signal_name>.connect(python_handler)` works uniformly
+        # regardless of `Signal<T>`'s erased `T`.
+        proxies = {}
+        try:
+            sig_infos = _nengine_discover_signals(node)
+            n = len(sig_infos)
+            for i in range(n):
+                info = sig_infos[i]
+                proxies[info.name] = _SignalProxy(info.signal, info.isUnit)
+        except Exception:
+            pass
+        object.__setattr__(self, '_signal_proxies', proxies)
 
     def __getattr__(self, name):
+        proxies = object.__getattribute__(self, '_signal_proxies')
+        if name in proxies:
+            return proxies[name]
         module_ns = object.__getattribute__(self, '_module_ns')
         if hasattr(module_ns, name):
             value = getattr(module_ns, name)
@@ -206,3 +269,12 @@ class _ScriptNode:
 
 def _nengine_create_instance(node, module_ns):
     return _ScriptNode(node, module_ns)
+
+
+def _nengine_bare_wrapper(node):
+    """Returns a `_ScriptNode` for a Node without an attached script. Used by
+    `script_of(node)` so callers get uniform access to Kotlin-declared
+    Signal fields (e.g. `script_of(timer).timeout`) regardless of whether
+    the Node has a Python script attached.
+    """
+    return _ScriptNode(node, _NS())

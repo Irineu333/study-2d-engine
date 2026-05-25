@@ -5,6 +5,7 @@ from typing import List, Optional, TYPE_CHECKING
 
 from engine.math import Rect, Vec2
 from engine.render import Color, Renderer
+from engine.serialization import Signal
 
 if TYPE_CHECKING:
     from engine.tree import SceneTree
@@ -122,3 +123,53 @@ class Polygon2D(Node2D):
 
     points: List[Vec2]
     color: Color
+
+
+class TimerMode:
+    """Selects which engine tick advances a ``Timer``. ``PHYSICS`` (default)
+    drains during ``onPhysicsProcess`` at the fixed step — deterministic. ``IDLE``
+    drains during ``onProcess`` (variable ``dt``) — may drift across frames."""
+
+    PHYSICS: "TimerMode"
+    IDLE: "TimerMode"
+
+
+class Timer(Node):
+    """Logical node that emits ``timeout`` at fixed intervals.
+
+    Extends :class:`Node` (not :class:`Node2D`) — has no transform, no draw,
+    no spatial state. Connect a handler via ``timer.timeout.connect(my_fn)``::
+
+        # extends Node
+        def _ready(self):
+            t = script_of(self._node.findChild("MoveTimer"))
+            t.timeout.connect(self.on_tick)
+
+        def on_tick(self):
+            # called with no args; Signal[Unit] is bridged to a 0-arg call.
+            ...
+
+    Property names mirror Kotlin's camelCase (the Polyglot bridge does
+    not translate to snake_case; using ``timer.wait_time`` would fail
+    at runtime — use ``timer.waitTime``).
+    """
+
+    waitTime: float
+    autostart: bool
+    oneShot: bool
+    processCallback: TimerMode
+    timeLeft: float
+    isStopped: bool
+    timeout: Signal
+
+    def start(self, override: Optional[float] = None) -> None:
+        """Resets ``timeLeft`` to ``waitTime`` (no argument) or to ``override``
+        (one-shot override applied only to the next emission). ``override``
+        must be strictly positive — non-positive raises
+        ``IllegalArgumentException`` naming the offending value."""
+        ...
+
+    def stop(self) -> None:
+        """Zeroes ``timeLeft`` and marks the timer as stopped. Any pending
+        emission that hasn't fired this tick is discarded."""
+        ...

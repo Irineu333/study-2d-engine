@@ -22,6 +22,8 @@ from engine.scene import (
     Circle2D as Circle2D,
     Line2D as Line2D,
     Polygon2D as Polygon2D,
+    Timer as Timer,
+    TimerMode as TimerMode,
 )
 from engine.physics import BoxCollider as BoxCollider
 from engine.serialization import (
@@ -47,6 +49,8 @@ __all__ = [
     "Circle2D",
     "Line2D",
     "Polygon2D",
+    "Timer",
+    "TimerMode",
     "BoxCollider",
     "NodeRef",
     "Signal",

@@ -85,6 +85,7 @@ Durante a execução:
 - `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2)
 - `4` Collision stress — 30 `BoxCollider`s colidindo em broad phase O(N²); valida o cache de `worldTransform()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
 - `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `worldTransform()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados das `BoxCollider`s rotacionadas.
+- `6` Timer demo — bundle Python (`timer_demo/`) com dois `Timer` Nodes nativos (`PHYSICS` 0.5s, `IDLE` 0.5s); cada `timeout` (signal Kotlin) é conectado em script Python, que alterna o texto de um `Label` entre TICK e TOCK. Valida a ponte `Signal<Unit>` Kotlin → handler Python (zero args). Boot do GraalPy é pago apenas se você selecionar a slot — `PythonScriptHost` é `lazy` em `DemoSwitcherRoot`.
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 

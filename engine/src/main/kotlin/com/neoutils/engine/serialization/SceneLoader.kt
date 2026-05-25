@@ -156,12 +156,38 @@ object SceneLoader {
                     if (key == NAME_PROPERTY) continue
                     val mutable = inspectMutables[key] ?: continue
                     val serializer = json.serializersModule.serializer(mutable.returnType)
-                    val value = json.decodeFromJsonElement(serializer, element)
+                    val value = try {
+                        json.decodeFromJsonElement(serializer, element)
+                    } catch (e: Exception) {
+                        val targetClass = mutable.returnType.classifier as? kotlin.reflect.KClass<*>
+                        val javaClass = targetClass?.java
+                        if (javaClass != null && javaClass.isEnum) {
+                            @Suppress("UNCHECKED_CAST")
+                            val entries = (javaClass.enumConstants as Array<Enum<*>>)
+                            val raw = (element as? kotlinx.serialization.json.JsonPrimitive)?.content ?: element.toString()
+                            error(
+                                "Cannot apply property '$key' on node '${node.name}' (path '$path'): " +
+                                    "value '$raw' is not a valid ${javaClass.simpleName} " +
+                                    "(valid: ${entries.joinToString(", ") { it.name }})"
+                            )
+                        }
+                        error(
+                            "Cannot apply property '$key' on node '${node.name}' (path '$path') " +
+                                "to ${mutable.returnType}: ${e.message}"
+                        )
+                    }
                     @Suppress("UNCHECKED_CAST")
                     (mutable as KMutableProperty1<Any, Any?>).set(node, value)
                 }
                 isExport -> {
-                    attachment!!.applyExport(key, element)
+                    try {
+                        attachment!!.applyExport(key, element)
+                    } catch (e: Exception) {
+                        error(
+                            "Cannot apply export '$key' on node '${node.name}' (path '$path'): " +
+                                "${e.message}"
+                        )
+                    }
                 }
                 else -> {
                     val inspectMsg = inspectNames.sorted().toString()

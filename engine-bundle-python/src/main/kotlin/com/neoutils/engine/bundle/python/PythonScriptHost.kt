@@ -24,6 +24,8 @@ import org.graalvm.polyglot.Source
 import org.graalvm.polyglot.Value
 import org.graalvm.polyglot.proxy.ProxyExecutable
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.memberProperties
 
 class PythonScriptHost internal constructor(private val context: Context) : ScriptHost {
 
@@ -41,6 +43,7 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
     private val inspectSignalsFn: Value
     private val parseExtendsFn: Value
     private val createInstanceFn: Value
+    private val bareWrapperFn: Value
 
     init {
         val bindings = context.getBindings("python")
@@ -99,11 +102,26 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
         // Lookup hook for cross-script communication: returns the Python
         // `_ScriptNode` wrapper for a host Node so the caller can invoke the
         // script's top-level def's (e.g. `score.increment()` after
-        // `script_of(score_node)`). Returns null when the Node has no
-        // attached script.
+        // `script_of(score_node)`). For Nodes without an attached script,
+        // returns a *bare* wrapper that still exposes Kotlin-declared
+        // `Signal<*>` fields via `_SignalProxy` (e.g. `Timer.timeout`); this
+        // makes `script_of(some_timer).timeout.connect(handler)` work
+        // uniformly across scripted and script-less Nodes. Caches the
+        // bare wrapper in `instanceByNode` so repeated calls return the same
+        // proxy instances (required for `.disconnect(handler)` to match).
         bindings.putMember("script_of", ProxyExecutable { args ->
             val node = args[0].asHostObject<Node>()
-            instanceByNode[node]
+            instanceByNode.getOrPut(node) { bareWrapperFn.execute(node) }
+        })
+        // Reflection-based discovery of Kotlin `Signal<*>` `val` fields on a
+        // Node. Used by `_ScriptNode` at construction time to expose every
+        // Signal as a `_SignalProxy` attribute. The proxy adapts Python
+        // callables to the Kotlin `Signal<T>` API and shields scripts from
+        // the JVM erasure of `T` (the proxy is told whether `T == Unit` so
+        // it can call zero-arg Python handlers correctly).
+        bindings.putMember("_nengine_discover_signals", ProxyExecutable { args ->
+            val node = args[0].asHostObject<Node>()
+            discoverSignals(node)
         })
         bindings.putMember("Key", Key::class.java)
         bindings.putMember("BoxCollider", BoxCollider::class.java)
@@ -127,7 +145,25 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
         inspectSignalsFn = bindings.getMember("_nengine_inspect_signals")
         parseExtendsFn = bindings.getMember("_nengine_parse_extends")
         createInstanceFn = bindings.getMember("_nengine_create_instance")
+        bareWrapperFn = bindings.getMember("_nengine_bare_wrapper")
     }
+
+    private fun discoverSignals(node: Node): List<PySignalInfo> {
+        val result = mutableListOf<PySignalInfo>()
+        for (prop in node::class.memberProperties) {
+            val classifier = prop.returnType.classifier as? KClass<*> ?: continue
+            if (classifier != Signal::class) continue
+            val arg = prop.returnType.arguments.firstOrNull()?.type
+            val isUnit = (arg?.classifier as? KClass<*>) == Unit::class
+            @Suppress("UNCHECKED_CAST")
+            val getter = prop as KProperty1<Any, Any?>
+            val sig = getter.get(node) as? Signal<Any?> ?: continue
+            result += PySignalInfo(prop.name, sig, isUnit)
+        }
+        return result
+    }
+
+    data class PySignalInfo(val name: String, val signal: Signal<Any?>, val isUnit: Boolean)
 
     override fun load(path: String, bundle: BundleSource): Script {
         val source = bundle.read(path)

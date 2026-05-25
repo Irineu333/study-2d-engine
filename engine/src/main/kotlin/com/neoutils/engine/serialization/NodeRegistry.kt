@@ -9,6 +9,7 @@ import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Polygon2D
+import com.neoutils.engine.scene.Timer
 import kotlin.reflect.KClass
 
 /**
@@ -68,6 +69,8 @@ object NodeRegistry {
         register(Polygon2D::class) { Polygon2D() }
         register(Label::class) { Label() }
         register(BoxCollider::class) { BoxCollider() }
+        register(Timer::class) { Timer() }
+        register("engine.Timer", Timer::class) { Timer() }
     }
 }
 
