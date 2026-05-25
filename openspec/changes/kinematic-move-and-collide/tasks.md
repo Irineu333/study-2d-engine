@@ -81,10 +81,10 @@
 
 ## 9. Stress test pós-migração
 
-- [ ] 9.1 Re-instrumentar `PhysicsSystem` + `CollisionStressDemo` com contadores (`PhysicsStats` + `entered/exited/capHits/iterHist`) como na exploração anterior.
-- [ ] 9.2 Crankear parâmetros: BALL_COUNT=80, BALL_SIZE=12, speed=800-2000 px/s (vmax·dt ≈ 2.7·BALL_SIZE).
-- [ ] 9.3 Rodar 30s, capturar stats. Verificar que `capHits` cai para 0 (ou ordem de grandeza menor) — sinaliza que CCD estrutural eliminou os pile-ups patológicos.
-- [ ] 9.4 Reverter instrumentação. Comparar números com a baseline pré-change em `design.md` (Context).
+- [x] 9.1 Re-instrumentar `PhysicsSystem` + `CollisionStressDemo` com contadores (`PhysicsStats` + `entered/exited/capHits/iterHist`) como na exploração anterior. Implementado como benchmark headless `engine/src/test/.../physics/CcdStressBenchmark.kt` (deletado após captura) com counters temporários em `PhysicsSystem` (`stepCount`, `capHits`, `iterHistogram`, `totalEntered`, `totalExited`, `resetStats()`).
+- [x] 9.2 Crankear parâmetros: BALL_COUNT=80, BALL_SIZE=12, speed=800-2000 px/s (vmax·dt ≈ 2.7·BALL_SIZE). Replicado no benchmark.
+- [x] 9.3 Rodar 30s, capturar stats. Verificar que `capHits` cai para 0 (ou ordem de grandeza menor) — sinaliza que CCD estrutural eliminou os pile-ups patológicos. **Resultado**: `steps=1799 avgIter=1.001 maxIter=2 capHits=0 totalEntered=3 totalExited=0`. Histograma: iter=1:1797, iter=2:2, iter=3+:0. Comparado à baseline pré-change (~5.6% capHits documentado em `design.md` Context), eliminação estrutural confirmada — moveAndCollide para os bodies no TOI antes de overlap discreto acontecer, então o `step` praticamente nunca observa pares para resolver.
+- [x] 9.4 Reverter instrumentação. Comparar números com a baseline pré-change em `design.md` (Context). Counters e arquivo de benchmark removidos após captura.
 
 ## 10. Documentação e invariantes
 
@@ -96,4 +96,4 @@
 - [x] 11.1 `./gradlew check` passa (todos os testes novos verdes; testes antigos continuam verdes).
 - [x] 11.2 `openspec validate kinematic-move-and-collide --strict` passa.
 - [ ] 11.3 Smoke `./gradlew :games:demos:run`: tecla 4 mostra balls bouncing em alta velocidade sem tunelar nem oscilar; tecla 5 mostra balls dentro da caixa rotativa também sem tunelar.
-- [ ] 11.4 Stress quantitativo (9.3) confirma `capHits → 0`.
+- [x] 11.4 Stress quantitativo (9.3) confirma `capHits → 0`. Confirmado pelo benchmark: 0 capHits em 1799 steps com 80 balls a vmax=2000 px/s.
