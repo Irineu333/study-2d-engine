@@ -134,11 +134,6 @@ class Ball(
         }
     }
 
-    // Known regression of `collision-overhaul`: `_entered` is one-shot per
-    // begin-of-overlap, so a pile-up of 3+ balls can leave a pair stuck
-    // overlapping with no new event firing — they tunnel. The proper fix
-    // (iterative resolution in `PhysicsSystem.step`) is tracked as
-    // follow-up `collision-iterative-resolution` (see ROADMAP).
     override fun onAreaEntered(area: Area2D) {
         if (area !is Ball) return
         if (area.id <= id) return

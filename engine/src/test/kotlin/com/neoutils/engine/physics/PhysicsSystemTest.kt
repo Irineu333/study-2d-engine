@@ -1,9 +1,14 @@
 package com.neoutils.engine.physics
 
+import com.neoutils.engine.dx.ConsoleLogSink
+import com.neoutils.engine.dx.Log
+import com.neoutils.engine.dx.LogLevel
+import com.neoutils.engine.dx.LogSink
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -22,7 +27,7 @@ private fun makeArea(size: Vec2, position: Vec2 = Vec2.ZERO): Area2D {
     return area
 }
 
-private class RecordingBody(
+private open class RecordingBody(
     size: Vec2,
     position: Vec2 = Vec2.ZERO,
 ) : StaticBody2D() {
@@ -239,6 +244,95 @@ class PhysicsSystemTest {
         phys.step(tree) // second step: no double enter regardless of internal order
         assertEquals(1, a.bodyEnters.size)
         assertTrue(a.bodyExits.isEmpty())
+    }
+
+    @Test
+    fun `three-body pile-up emits all chained entered events in one step`() {
+        // A overlaps B initially; C is far. A.onBodyEntered(B) reacts by
+        // mutating B's transform so that B now overlaps C. The convergence
+        // loop must detect the new (B, C) overlap *within the same step*.
+        val root = Node()
+        val c = RecordingBody(Vec2(10f, 10f), position = Vec2(50f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 0f))
+        val a = object : RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f)) {
+            override fun onBodyEntered(body: PhysicsBody2D) {
+                super.onBodyEntered(body)
+                if (body === b) {
+                    // Slide B over so it overlaps C.
+                    b.transform = Transform(position = Vec2(48f, 0f))
+                }
+            }
+        }
+        root.addChild(a); root.addChild(b); root.addChild(c)
+        val tree = SceneTree(root)
+        tree.start()
+
+        PhysicsSystem().step(tree)
+
+        // First overlap detected and dispatched.
+        assertEquals(listOf<PhysicsBody2D>(b), a.bodyEnters)
+        // Cascading overlap dispatched in the same step.
+        assertTrue(c in b.bodyEnters, "B should have received bodyEntered(C) within the same step")
+        assertTrue(b in c.bodyEnters, "C should have received bodyEntered(B) within the same step")
+    }
+
+    @Test
+    fun `fail-safe cap logs warning when oscillating without converging`() {
+        // Two bodies whose enter handler pushes them apart and exit handler
+        // pulls them back together — they oscillate forever in principle.
+        // The cap must kick in, the warning must be logged, and step() must
+        // return without exception.
+        val root = Node()
+        lateinit var a: OscillatingBody
+        lateinit var b: OscillatingBody
+        a = OscillatingBody(
+            size = Vec2(10f, 10f),
+            position = Vec2(0f, 0f),
+            onEnter = { _, self -> self.transform = Transform(position = Vec2(100f, 0f)) },
+            onExit = { _, self -> self.transform = Transform(position = Vec2(0f, 0f)) },
+        )
+        b = OscillatingBody(
+            size = Vec2(10f, 10f),
+            position = Vec2(5f, 0f),
+            onEnter = { _, _ -> },
+            onExit = { _, _ -> },
+        )
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+
+        val warnings = mutableListOf<String>()
+        Log.sink = LogSink { _, level, tag, message ->
+            if (level == LogLevel.Warn && tag == "PhysicsSystem") warnings += message
+        }
+
+        PhysicsSystem().step(tree)
+
+        assertTrue(
+            warnings.any { it.contains("MAX_RESOLUTION_ITERATIONS") },
+            "expected PhysicsSystem warning naming MAX_RESOLUTION_ITERATIONS, got $warnings"
+        )
+    }
+
+    @AfterTest
+    fun restoreLogSink() {
+        Log.sink = ConsoleLogSink
+    }
+
+    private class OscillatingBody(
+        size: Vec2,
+        position: Vec2,
+        private val onEnter: (PhysicsBody2D, OscillatingBody) -> Unit,
+        private val onExit: (PhysicsBody2D, OscillatingBody) -> Unit,
+    ) : StaticBody2D() {
+
+        init {
+            transform = Transform(position = position)
+            addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+        }
+
+        override fun onBodyEntered(body: PhysicsBody2D) { onEnter(body, this) }
+        override fun onBodyExited(body: PhysicsBody2D) { onExit(body, this) }
     }
 
     @Test

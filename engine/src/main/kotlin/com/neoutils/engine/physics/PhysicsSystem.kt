@@ -1,5 +1,6 @@
 package com.neoutils.engine.physics
 
+import com.neoutils.engine.dx.Log
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
 
@@ -10,15 +11,26 @@ import com.neoutils.engine.tree.SceneTree
  * per pair-transition. Pairs that are still overlapping fire nothing —
  * `_on_*_entered` is one-shot per begin-of-overlap.
  *
+ * **Convergence loop.** Within a single [step], dispatching a
+ * `*_entered` / `*_exited` may itself mutate transforms (a script
+ * separates two bodies, swaps velocities, etc.); that mutation can in
+ * turn introduce or remove overlap with *other* objects. The system
+ * therefore recomputes the overlapping set and re-dispatches the new
+ * transitions until the set stabilises or [MAX_RESOLUTION_ITERATIONS]
+ * is reached. The common case (no script mutation, or mutations that
+ * don't cascade) converges in a single iteration — same cost as before.
+ * If the cap is hit while transitions are still being emitted, a warning
+ * is logged and the step returns normally — no infinite loops.
+ *
  * Cleanup: before computing the new snapshot the system drops any tracked
  * pair whose endpoint left the live tree (e.g. via `parent.removeChild` in
- * the middle of two steps). That avoids spurious `_exited` events for
- * detached nodes and lets the GC reclaim them — pairs of detached nodes
- * are simply forgotten, not "exit-dispatched."
+ * the middle of two steps). That cleanup runs **once** at the top of the
+ * step (not per iteration), so detached objects never receive `_on_*_exited`.
  *
  * Density and accuracy assumptions are documented in
  * `openspec/changes/archive/2026-05-18-engine-foundation/design.md` and
- * `collision-overhaul/design.md` (D4).
+ * `collision-overhaul/design.md` (D4). The convergence loop is documented
+ * in `openspec/changes/collision-iterative-resolution/design.md`.
  */
 class PhysicsSystem {
 
@@ -30,41 +42,60 @@ class PhysicsSystem {
         previousOverlapping.removeAll { !it.a.isLive || !it.b.isLive }
 
         val objects = collectObjects(tree).filter { !it.disabled }
-        val n = objects.size
-        val currentOverlapping = HashSet<UnorderedPair<CollisionObject2D>>()
 
         tree.beginPhysicsPhase()
         try {
-            for (i in 0 until n) {
-                val a = objects[i]
-                if (!a.isLive) continue
-                val aShapes = a.collectActiveShapes()
-                if (aShapes.isEmpty()) continue
-                for (j in i + 1 until n) {
-                    val b = objects[j]
-                    if (!b.isLive) continue
-                    val bShapes = b.collectActiveShapes()
-                    if (bShapes.isEmpty()) continue
-                    if (anyShapePairOverlaps(aShapes, bShapes)) {
-                        currentOverlapping += UnorderedPair(a, b)
-                    }
-                }
+            var iteration = 0
+            var dispatchedSomething = true
+            var newlyEnteredCount = 0
+            var newlyExitedCount = 0
+            while (dispatchedSomething && iteration < MAX_RESOLUTION_ITERATIONS) {
+                val currentOverlapping = computeOverlapping(objects)
+                val newlyEntered = currentOverlapping - previousOverlapping
+                val newlyExited = previousOverlapping - currentOverlapping
+                newlyEnteredCount = newlyEntered.size
+                newlyExitedCount = newlyExited.size
+                dispatchedSomething = newlyEntered.isNotEmpty() || newlyExited.isNotEmpty()
+                for (pair in newlyExited) dispatchExit(pair)
+                for (pair in newlyEntered) dispatchEnter(pair)
+                previousOverlapping.clear()
+                previousOverlapping.addAll(currentOverlapping)
+                iteration++
             }
-
-            // Exits first: pairs in previous but not in current.
-            for (pair in previousOverlapping) {
-                if (pair !in currentOverlapping) dispatchExit(pair)
-            }
-            // Then enters: pairs in current but not in previous.
-            for (pair in currentOverlapping) {
-                if (pair !in previousOverlapping) dispatchEnter(pair)
+            if (iteration == MAX_RESOLUTION_ITERATIONS && dispatchedSomething) {
+                Log.w(
+                    TAG,
+                    "step hit MAX_RESOLUTION_ITERATIONS=$MAX_RESOLUTION_ITERATIONS — " +
+                        "pile-up not converged " +
+                        "(pairs still in transition: enter=$newlyEnteredCount, exit=$newlyExitedCount)"
+                )
             }
         } finally {
             tree.endPhysicsPhase()
         }
+    }
 
-        previousOverlapping.clear()
-        previousOverlapping.addAll(currentOverlapping)
+    private fun computeOverlapping(
+        objects: List<CollisionObject2D>,
+    ): HashSet<UnorderedPair<CollisionObject2D>> {
+        val n = objects.size
+        val out = HashSet<UnorderedPair<CollisionObject2D>>()
+        for (i in 0 until n) {
+            val a = objects[i]
+            if (!a.isLive) continue
+            val aShapes = a.collectActiveShapes()
+            if (aShapes.isEmpty()) continue
+            for (j in i + 1 until n) {
+                val b = objects[j]
+                if (!b.isLive) continue
+                val bShapes = b.collectActiveShapes()
+                if (bShapes.isEmpty()) continue
+                if (anyShapePairOverlaps(aShapes, bShapes)) {
+                    out += UnorderedPair(a, b)
+                }
+            }
+        }
+        return out
     }
 
     private fun anyShapePairOverlaps(
@@ -127,6 +158,11 @@ class PhysicsSystem {
                 b.onBodyExited(a); b.bodyExited.emit(a)
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "PhysicsSystem"
+        private const val MAX_RESOLUTION_ITERATIONS = 8
     }
 }
 
