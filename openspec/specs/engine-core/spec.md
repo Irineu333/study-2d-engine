@@ -357,49 +357,154 @@ The engine SHALL define an `Input` interface providing read-only access to curre
 - **WHEN** the user presses and holds the left mouse button across multiple ticks without releasing
 - **THEN** `Input.isMouseDown(MouseButton.Left)` returns `true` for every tick during the hold
 
-### Requirement: Collision as Collider nodes
+### Requirement: Physics primitives are Godot-style nodes
 
-The engine SHALL provide an abstract `Collider` subclass of `Node2D` exposing a `bounds(): Rect` method computed in world space. The engine SHALL provide at least one concrete subclass, `BoxCollider`, whose bounds are derived from the node's `world()` and a configurable local size. `BoxCollider.bounds()` MUST honor `scale` inherited along the ancestor chain. When `world()` includes a non-zero rotation along the chain, `BoxCollider.bounds()` MUST return the axis-aligned bounding box of the rotated rectangle (AABB-of-OBB); this is a known conservative approximation documented as an evolution point for the future collision-lifecycle change. `Collider` MUST expose an open `onCollide(other: Collider)` hook invoked by the physics system; default implementation MUST be empty.
+The engine SHALL provide collision support via a `CollisionObject2D` hierarchy rather than a single `Collider` class. The hierarchy MUST be:
 
-#### Scenario: BoxCollider bounds reflect transform
+```
+CollisionObject2D (abstract, : Node2D)
+├── Area2D                                    (trigger; does not block)
+└── PhysicsBody2D (abstract)
+    ├── StaticBody2D                          (solid, position moved by script)
+    └── CharacterBody2D                       (solid, exposes velocity slot)
+```
 
-- **WHEN** a `BoxCollider` is created with size `(10, 20)` and its node's transform position is set to `(5, 7)`, with no ancestor transforms
-- **THEN** `bounds()` returns a `Rect` covering position `(5, 7)` and size `(10, 20)` (axis-aligned)
+Every concrete subclass (`Area2D`, `StaticBody2D`, `CharacterBody2D`) MUST be `@Serializable` and instantiable with a public no-args constructor. `CollisionObject2D` MUST expose `@Inspect var disabled: Boolean = false`. `CharacterBody2D` MUST expose `@Inspect var velocity: Vec2 = Vec2.ZERO`. The engine MUST NOT integrate `CharacterBody2D.velocity` automatically — integration is the script's responsibility (Godot-style).
 
-#### Scenario: BoxCollider bounds reflect parent translation
+#### Scenario: Each collision class is instantiable with no args
 
-- **WHEN** a `BoxCollider` with size `(10, 20)` is a child of a `Node2D` whose transform position is `(100, 100)` and the collider's own position is `(5, 7)`
-- **THEN** `bounds()` returns a `Rect` covering position `(105, 107)` and size `(10, 20)`
+- **WHEN** code evaluates `Area2D()`, `StaticBody2D()`, `CharacterBody2D()`
+- **THEN** each call returns a valid instance assignable to `CollisionObject2D`
 
-#### Scenario: BoxCollider bounds reflect parent scale
+#### Scenario: CharacterBody2D velocity slot exists and is mutable
 
-- **WHEN** a `BoxCollider` with size `(10, 20)` is a child of a `Node2D` whose transform has `scale = (2, 3)` and identity otherwise, and the collider's own transform is identity
-- **THEN** `bounds()` returns a `Rect` whose size equals `(20, 60)`
+- **WHEN** code creates `CharacterBody2D()` and sets `body.velocity = Vec2(100f, 0f)`
+- **THEN** reading `body.velocity` returns `Vec2(100f, 0f)`
+- **AND** the engine does NOT automatically integrate `transform.position` from `velocity` between ticks
 
-#### Scenario: BoxCollider bounds with rotation expand to AABB of OBB
+#### Scenario: PhysicsBody2D is not directly instantiable
 
-- **WHEN** a `BoxCollider` with size `(10, 10)` has a parent `Node2D` rotated by `π / 4` (45°), with no scale and no translation
-- **THEN** `bounds()` returns the axis-aligned bounding box that fully contains the rotated rectangle (width and height ≈ `10 · √2`)
+- **WHEN** code attempts to call `PhysicsBody2D()`
+- **THEN** the compiler rejects the call (`abstract`)
 
-#### Scenario: onCollide receives the colliding partner
+### Requirement: CollisionShape2D holds a Shape2D resource
 
-- **WHEN** the physics system detects overlap between colliders A and B
-- **THEN** A receives `onCollide(B)` and B receives `onCollide(A)` within the same tick
+The engine SHALL provide a `CollisionShape2D : Node2D` class with `@Inspect var shape: Shape2D? = null` and `@Inspect var disabled: Boolean = false`. `CollisionShape2D` MUST be `@Serializable` and instantiable with no args. The `Shape2D` type MUST be a `@Serializable sealed class` with at least two concrete subtypes: `RectangleShape2D(@Inspect var size: Vec2 = Vec2(10f, 10f))` and `CircleShape2D(@Inspect var radius: Float = 5f)`. `Shape2D` MUST expose a method `bounds(world: Transform, localOffset: Vec2): Rect` returning the axis-aligned bounding box in world space.
 
-### Requirement: Physics step exposes a naive O(N²) broad phase
+`CollisionShape2D` is meaningful only as a direct child of a `CollisionObject2D`; placing one elsewhere SHALL NOT crash but SHALL be ignored by `PhysicsSystem`.
 
-The engine SHALL provide a `PhysicsSystem` that, on each `step(tree: SceneTree)` call, enumerates all `Collider` nodes reachable from `tree.root` and tests every pair for intersection using axis-aligned bounding boxes. For each intersecting pair, it MUST invoke `onCollide` on both colliders exactly once per tick. The current implementation MAY use a naive O(N²) algorithm; this MUST be documented as a known evolution point.
+#### Scenario: CollisionShape2D defaults
 
-#### Scenario: Each pair is tested exactly once per tick
+- **WHEN** code evaluates `CollisionShape2D()`
+- **THEN** `shape` is `null`, `disabled` is `false`
 
-- **WHEN** `physics.step(tree)` runs with N active colliders
-- **THEN** at most `N * (N - 1) / 2` intersection tests are performed in that tick
+#### Scenario: RectangleShape2D bounds reflect transform scale
 
-#### Scenario: Non-overlapping colliders never receive onCollide
+- **GIVEN** a `RectangleShape2D` with `size = Vec2(10f, 20f)`
+- **WHEN** `bounds(Transform(position = Vec2(50f, 50f), scale = Vec2(2f, 2f), rotation = 0f), Vec2.ZERO)` is computed
+- **THEN** the resulting `Rect` has `origin = Vec2(50f, 50f)` and `size = Vec2(20f, 40f)`
 
-- **WHEN** `physics.step(tree)` runs and colliders A and B do not intersect
-- **THEN** A does not receive `onCollide(B)` for that tick
-- **AND** B does not receive `onCollide(A)` for that tick
+#### Scenario: CircleShape2D bounds are square
+
+- **GIVEN** a `CircleShape2D` with `radius = 10f`
+- **WHEN** `bounds(Transform(position = Vec2(0f, 0f), scale = Vec2(1f, 1f), rotation = 0f), Vec2.ZERO)` is computed
+- **THEN** the resulting `Rect` has `size.x == 20f` and `size.y == 20f`
+
+#### Scenario: Shape2D supports polymorphic serialization
+
+- **WHEN** code round-trips a `RectangleShape2D(size = Vec2(8f, 4f))` through `kotlinx.serialization` JSON
+- **THEN** the JSON contains a polymorphic discriminator identifying the subtype
+- **AND** deserialization produces an instance whose `size` equals `Vec2(8f, 4f)`
+
+### Requirement: Collision lifecycle hooks emit enter and exit events
+
+The engine SHALL provide four open hooks on `CollisionObject2D`, all defaulting to no-op:
+
+```kotlin
+open fun onAreaEntered(area: Area2D)
+open fun onAreaExited(area: Area2D)
+open fun onBodyEntered(body: PhysicsBody2D)
+open fun onBodyExited(body: PhysicsBody2D)
+```
+
+The engine SHALL also expose four built-in signals on every `CollisionObject2D`, all `@Transient`:
+
+```kotlin
+val areaEntered: Signal<Area2D>
+val areaExited:  Signal<Area2D>
+val bodyEntered: Signal<PhysicsBody2D>
+val bodyExited:  Signal<PhysicsBody2D>
+```
+
+When two objects begin overlapping, the engine MUST dispatch — exactly once per pair, per begin-of-overlap event — both the corresponding hook AND emit on the corresponding signal, on **both** objects of the pair. Symmetric dispatch on exit. The previous `Collider.onCollide(other)` hook and the previous `Collider`/`BoxCollider` classes MUST be removed entirely.
+
+#### Scenario: Body-vs-Body emits bodyEntered on both
+
+- **GIVEN** two `StaticBody2D` instances A and B in a live scene, not overlapping
+- **WHEN** A's `transform.position` changes such that their shapes overlap, and a physics step runs
+- **THEN** `A.onBodyEntered(B)` is invoked exactly once
+- **AND** `B.onBodyEntered(A)` is invoked exactly once
+- **AND** `A.bodyEntered.emit(B)` and `B.bodyEntered.emit(A)` each fire exactly once
+
+#### Scenario: Area-vs-Body dispatches across both APIs
+
+- **GIVEN** an `Area2D` A and a `CharacterBody2D` B starting non-overlapping
+- **WHEN** their shapes start overlapping in a physics step
+- **THEN** `A.onBodyEntered(B)` is invoked (Area sees Body)
+- **AND** `B.onAreaEntered(A)` is invoked (Body sees Area)
+
+#### Scenario: Exit fires when overlap ends
+
+- **GIVEN** two `CollisionObject2D` previously overlapping
+- **WHEN** their shapes separate in a subsequent physics step
+- **THEN** the corresponding `*Exited` hook is invoked on both
+- **AND** the corresponding `*Exited` signal emits on both
+
+#### Scenario: Sustained overlap does not re-fire enter
+
+- **GIVEN** two `CollisionObject2D` whose shapes overlap during a physics step
+- **WHEN** they remain overlapping in the next physics step
+- **THEN** no `*Entered` hook or signal fires again
+
+#### Scenario: Old onCollide hook is removed
+
+- **WHEN** the `:engine` source tree is inspected
+- **THEN** no `Collider` class exists under `com.neoutils.engine.physics`
+- **AND** no `BoxCollider` class exists
+- **AND** no `onCollide(other)` method exists on any `Node` subclass in `:engine`
+
+### Requirement: PhysicsSystem detects overlaps between CollisionObjects
+
+The engine SHALL provide a `PhysicsSystem` whose `step(scene: Scene)` operation:
+
+1. Enumerates every `CollisionObject2D` with `disabled == false` in the live scene tree.
+2. Collects each object's active `CollisionShape2D` children (those whose `shape != null` and `disabled == false`).
+3. For every unordered pair `(A, B)` of objects (A ≠ B), tests whether **any** pair `(shapeA, shapeB)` overlaps. Overlap MUST be exact for axis-aligned cases (rect-rect AABB, circle-circle distance, rect-circle closest-point); rotated shapes MAY be approximated by their AABB.
+4. Maintains an internal `Set<UnorderedPair<CollisionObject2D>>` of currently overlapping pairs. Pairs new this step → dispatch enter. Pairs gone this step → dispatch exit.
+5. Filters out pairs whose endpoints are no longer in the live scene before dispatching (cleanup of detached nodes).
+
+Order: enter dispatches MUST run after exit dispatches within the same step. Both MUST run after the per-pair overlap test (no interleaving). The system MUST NOT crash if a hook removes a node from the scene mid-dispatch — mutation deferral applies.
+
+#### Scenario: Detached nodes are removed from pair set
+
+- **GIVEN** two `CollisionObject2D` A and B that were overlapping last step
+- **WHEN** A is detached from the scene (via `parent.removeChild(A)`) before the next step
+- **THEN** the next `step(scene)` does NOT invoke `B.onBodyExited(A)` for A
+- **AND** the pair (A, B) is no longer tracked
+
+#### Scenario: Multiple shapes per object — overlap is union
+
+- **GIVEN** a `CollisionObject2D` with two `CollisionShape2D` children at different positions
+- **AND** another `CollisionObject2D` whose single shape overlaps only the second of the first object's shapes
+- **WHEN** a physics step runs
+- **THEN** the pair is treated as overlapping
+- **AND** exactly one `*Entered` event is dispatched per side (not one per shape pair)
+
+#### Scenario: Step runs after physicsProcess each fixed step
+
+- **WHEN** `GameLoop.tick` runs one physics step (configured in `godot-style-foundation`)
+- **THEN** `scene.physicsProcess(dt)` runs before `physics.step(scene)` in that step
+- **AND** the engine drains pending mutations before each phase
 
 ### Requirement: Game loop coordination
 
@@ -595,11 +700,11 @@ The engine SHALL allow `addChild` and `removeChild` to be called from within `on
 - **THEN** `other` is part of the live tree during `physics.step(tree)` of the same physics step
 - **AND** `other.onEnter()` has been invoked exactly once before `physics.step` begins
 
-#### Scenario: removeChild during onCollide does not crash
+#### Scenario: removeChild during a collision hook does not crash
 
-- **WHEN** a `Collider`'s `onCollide(other)` calls `parent.removeChild(self)` and the physics step is in progress
+- **WHEN** a `CollisionObject2D`'s `onBodyEntered(other)` or `onAreaEntered(other)` calls `parent.removeChild(self)` and the physics step is in progress
 - **THEN** no exception is raised
-- **AND** the collider continues to receive any remaining `onCollide` callbacks already in flight for the current pair iteration without crash
+- **AND** the object continues to receive any remaining enter/exit callbacks already in flight for the current dispatch pass without crash
 
 #### Scenario: Mutation outside traversal applies immediately
 
@@ -814,11 +919,11 @@ The engine SHALL expose `Node.findChild(name: String): Node?` that returns the d
 
 ### Requirement: Serializable Node classes have no-args public constructors
 
-Every concrete `Node` subclass shipped by `:engine` (i.e. `Node2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Camera2D`, `BoxCollider`) SHALL provide a public no-args primary constructor with sensible defaults. All initial configuration that previously lived in constructor parameters SHALL be exposed as `var` properties on the class instead. Each such property SHALL be annotated either with `@Inspect` (when it is part of the serialized contract) or with `@Transient` (when it is internal runtime state). The class itself SHALL be annotated with `@Serializable` (kotlinx.serialization). DX-oriented factory functions MAY exist on the side to reduce verbosity, but they MUST NOT be the only path to instantiate the class.
+Every concrete `Node` subclass shipped by `:engine` (i.e. `Node2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Camera2D`, `Area2D`, `StaticBody2D`, `CharacterBody2D`, `CollisionShape2D`) SHALL provide a public no-args primary constructor with sensible defaults. All initial configuration that previously lived in constructor parameters SHALL be exposed as `var` properties on the class instead. Each such property SHALL be annotated either with `@Inspect` (when it is part of the serialized contract) or with `@Transient` (when it is internal runtime state). The class itself SHALL be annotated with `@Serializable` (kotlinx.serialization). DX-oriented factory functions MAY exist on the side to reduce verbosity, but they MUST NOT be the only path to instantiate the class.
 
 #### Scenario: Concrete Node classes can be instantiated with no arguments
 
-- **WHEN** code evaluates `Node2D()`, `ColorRect()`, `Circle2D()`, `Line2D()`, `Polygon2D()`, `Label()`, `Camera2D()`, `BoxCollider()`
+- **WHEN** code evaluates `Node2D()`, `ColorRect()`, `Circle2D()`, `Line2D()`, `Polygon2D()`, `Label()`, `Camera2D()`, `Area2D()`, `StaticBody2D()`, `CharacterBody2D()`, `CollisionShape2D()`
 - **THEN** each call returns a valid instance with default property values
 
 #### Scenario: Configuration is set via mutable properties
