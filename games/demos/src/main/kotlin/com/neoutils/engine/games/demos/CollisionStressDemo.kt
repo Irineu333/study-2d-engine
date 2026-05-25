@@ -2,9 +2,10 @@ package com.neoutils.engine.games.demos
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Circle2D
@@ -16,6 +17,7 @@ import kotlin.random.Random
 
 private const val BALL_COUNT = 30
 private const val BALL_SIZE = 20f
+private const val WALL_THICKNESS = 10f
 
 @Serializable
 class CollisionStressDemo : Node2D() {
@@ -34,6 +36,13 @@ class CollisionStressDemo : Node2D() {
         val tree = tree ?: return
         val w = tree.width
         val h = tree.height
+        // Walls bracket the play field. Each is a StaticBody2D + CollisionShape2D
+        // with a RectangleShape2D positioned in world coordinates; `moveAndCollide`
+        // sweeps balls against these and reflects them on the returned normal.
+        addChild(makeWall(Vec2(-WALL_THICKNESS, -WALL_THICKNESS), Vec2(w + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
+        addChild(makeWall(Vec2(-WALL_THICKNESS, h), Vec2(w + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
+        addChild(makeWall(Vec2(-WALL_THICKNESS, 0f), Vec2(WALL_THICKNESS, h)).apply { name = "leftWall" })
+        addChild(makeWall(Vec2(w, 0f), Vec2(WALL_THICKNESS, h)).apply { name = "rightWall" })
         repeat(BALL_COUNT) { i ->
             val px = BALL_SIZE + rng.nextFloat() * (w - BALL_SIZE * 2)
             val py = BALL_SIZE + rng.nextFloat() * (h - BALL_SIZE * 2)
@@ -49,6 +58,16 @@ class CollisionStressDemo : Node2D() {
                 ).apply { name = "Ball$i" }
             )
         }
+    }
+
+    private fun makeWall(position: Vec2, size: Vec2): StaticBody2D {
+        val body = StaticBody2D().apply { transform = Transform(position = position) }
+        body.addChild(
+            CollisionShape2D().apply {
+                shape = RectangleShape2D().apply { this.size = size }
+            }
+        )
+        return body
     }
 
     override fun onProcess(dt: Float) {
@@ -88,7 +107,7 @@ class Ball(
     initPos: Vec2,
     initVx: Float,
     initVy: Float,
-) : Area2D() {
+) : CharacterBody2D() {
 
     @Transient
     internal var vx: Float = initVx
@@ -118,62 +137,30 @@ class Ball(
         )
     }
 
-    override fun onProcess(dt: Float) {
-        val tree = tree ?: return
-        var nx = transform.position.x + vx * dt
-        var ny = transform.position.y + vy * dt
-        if (nx < 0f) { nx = 0f; vx = -vx }
-        if (nx + BALL_SIZE > tree.width) { nx = tree.width - BALL_SIZE; vx = -vx }
-        if (ny < 0f) { ny = 0f; vy = -vy }
-        if (ny + BALL_SIZE > tree.height) { ny = tree.height - BALL_SIZE; vy = -vy }
-        transform = transform.copy(position = Vec2(nx, ny))
+    override fun onPhysicsProcess(dt: Float) {
+        // CCD-correct kinematic move: sweep against every body until contact,
+        // reflect velocity on the contact normal, then optionally slide the
+        // remainder. For pure bouncing the residual is discarded — the next
+        // frame starts fresh from the post-reflect velocity.
+        val collision = moveAndCollide(Vec2(vx, vy) * dt) ?: return
+        val reflected = Vec2(vx, vy).reflect(collision.normal)
+        vx = reflected.x
+        vy = reflected.y
 
+        // Cosmetic flash: both sides flash white when ball-vs-ball.
+        setArtColor(Color.WHITE)
+        flashTimer = 0.15f
+        val other = collision.collider
+        if (other is Ball) {
+            other.setArtColor(Color.WHITE)
+            other.flashTimer = 0.15f
+        }
+    }
+
+    override fun onProcess(dt: Float) {
         if (flashTimer > 0f) {
             flashTimer -= dt
             if (flashTimer <= 0f) setArtColor(baseColor)
-        }
-    }
-
-    override fun onAreaEntered(area: Area2D) {
-        if (area !is Ball) return
-        if (area.id <= id) return
-
-        separate(area)
-
-        if (flashTimer > 0f || area.flashTimer > 0f) return
-
-        val posA = transform.position
-        val posB = area.transform.position
-        val overlapX = BALL_SIZE - kotlin.math.abs(posA.x - posB.x)
-        val overlapY = BALL_SIZE - kotlin.math.abs(posA.y - posB.y)
-        if (overlapX < overlapY) {
-            val tmp = vx; vx = area.vx; area.vx = tmp
-        } else {
-            val tmp = vy; vy = area.vy; area.vy = tmp
-        }
-
-        setArtColor(Color.WHITE)
-        area.setArtColor(Color.WHITE)
-        flashTimer = 0.15f
-        area.flashTimer = 0.15f
-    }
-
-    private fun separate(other: Ball) {
-        val posA = transform.position
-        val posB = other.transform.position
-        val dx = posA.x - posB.x
-        val dy = posA.y - posB.y
-        val overlapX = BALL_SIZE - kotlin.math.abs(dx)
-        val overlapY = BALL_SIZE - kotlin.math.abs(dy)
-        if (overlapX <= 0f || overlapY <= 0f) return
-        if (overlapX < overlapY) {
-            val push = overlapX * 0.5f * if (dx >= 0f) 1f else -1f
-            transform = transform.copy(position = Vec2(posA.x + push, posA.y))
-            other.transform = other.transform.copy(position = Vec2(posB.x - push, posB.y))
-        } else {
-            val push = overlapY * 0.5f * if (dy >= 0f) 1f else -1f
-            transform = transform.copy(position = Vec2(posA.x, posA.y + push))
-            other.transform = other.transform.copy(position = Vec2(posB.x, posB.y - push))
         }
     }
 

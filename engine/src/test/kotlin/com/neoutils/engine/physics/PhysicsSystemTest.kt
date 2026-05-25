@@ -27,6 +27,13 @@ private fun makeArea(size: Vec2, position: Vec2 = Vec2.ZERO): Area2D {
     return area
 }
 
+private fun makeCharacter(size: Vec2, position: Vec2 = Vec2.ZERO): CharacterBody2D {
+    val body = CharacterBody2D().apply { transform = Transform(position = position) }
+    val shapeNode = CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } }
+    body.addChild(shapeNode)
+    return body
+}
+
 private open class RecordingBody(
     size: Vec2,
     position: Vec2 = Vec2.ZERO,
@@ -344,5 +351,26 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
         PhysicsSystem().step(tree) // overlap area+body, no crash
+    }
+
+    @Test
+    fun `moveAndCollide pushing a body into an Area2D triggers area enter on next step`() {
+        val root = Node()
+        val character = makeCharacter(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val sensor = RecordingArea(Vec2(10f, 10f), position = Vec2(20f, 0f))
+        root.addChild(character); root.addChild(sensor)
+        val tree = SceneTree(root)
+        val system = PhysicsSystem()
+        tree.physicsSystem = system
+        tree.start()
+        // Initial step: no overlap.
+        system.step(tree)
+        assertEquals(0, sensor.bodyEnters.size)
+        // moveAndCollide skips areas — body passes through.
+        val result = character.moveAndCollide(Vec2(25f, 0f))
+        assertEquals(null, result)
+        // Next step detects the discrete overlap and dispatches body_entered.
+        system.step(tree)
+        assertEquals(1, sensor.bodyEnters.size)
     }
 }

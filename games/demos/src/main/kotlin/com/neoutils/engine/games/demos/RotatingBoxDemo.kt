@@ -2,9 +2,10 @@ package com.neoutils.engine.games.demos
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
@@ -18,6 +19,7 @@ import kotlin.random.Random
 
 private const val BOX_SIZE = 280f
 private const val HALF_BOX = BOX_SIZE / 2f
+private const val WALL_THICKNESS = 12f
 private const val ANGULAR_VELOCITY = 0.4f
 private const val BALL_COUNT = 12
 private const val BALL_SIZE = 18f
@@ -41,6 +43,14 @@ class RotatingBoxDemo : Node2D() {
             transform = Transform(position = Vec2(tree.width / 2f, tree.height / 2f))
         }
         addChild(wrapper)
+        // 4 walls in the wrapper's *local* frame. moveAndCollide sweeps in the
+        // shared parent frame (the wrapper's local space), so walls + balls
+        // stay axis-aligned in that frame regardless of the wrapper's rotation
+        // in world space — that's the whole reason Demo 5 is shaped this way.
+        wrapper.addChild(makeWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX - WALL_THICKNESS), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "topWall" })
+        wrapper.addChild(makeWall(Vec2(-HALF_BOX - WALL_THICKNESS, HALF_BOX), Vec2(BOX_SIZE + 2f * WALL_THICKNESS, WALL_THICKNESS)).apply { name = "bottomWall" })
+        wrapper.addChild(makeWall(Vec2(-HALF_BOX - WALL_THICKNESS, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "leftWall" })
+        wrapper.addChild(makeWall(Vec2(HALF_BOX, -HALF_BOX), Vec2(WALL_THICKNESS, BOX_SIZE)).apply { name = "rightWall" })
         repeat(BALL_COUNT) { i ->
             val px = -HALF_BOX + BALL_SIZE + rng.nextFloat() * (BOX_SIZE - 2f * BALL_SIZE)
             val py = -HALF_BOX + BALL_SIZE + rng.nextFloat() * (BOX_SIZE - 2f * BALL_SIZE)
@@ -56,6 +66,16 @@ class RotatingBoxDemo : Node2D() {
                 ).apply { name = "BoxedBall$i" }
             )
         }
+    }
+
+    private fun makeWall(position: Vec2, size: Vec2): StaticBody2D {
+        val body = StaticBody2D().apply { transform = Transform(position = position) }
+        body.addChild(
+            CollisionShape2D().apply {
+                shape = RectangleShape2D().apply { this.size = size }
+            }
+        )
+        return body
     }
 
     override fun onProcess(dt: Float) {
@@ -158,7 +178,7 @@ class BoxedBall(
     initLocalPos: Vec2,
     initVx: Float,
     initVy: Float,
-) : Area2D() {
+) : CharacterBody2D() {
 
     @Transient
     internal var vx: Float = initVx
@@ -185,10 +205,9 @@ class BoxedBall(
     }
 
     // Custom render so the circle center honors the wrapper's rotation. The
-    // built-in `Shape` would place the circle at `world.position + (size/2)`
-    // in world axes — a known limitation (see `Shape` KDoc) that visually
-    // shifts the ball by up to `BALL_SIZE` from its logical local position
-    // when the parent rotates, leaking through the box outline.
+    // built-in `Circle2D` would place the circle at `world.position + (size/2)`
+    // in world axes — a known limitation that visually shifts the ball when
+    // the parent rotates, leaking through the box outline.
     override fun onDraw(renderer: Renderer) {
         val world = world()
         val c = cos(world.rotation)
@@ -207,68 +226,30 @@ class BoxedBall(
         super.onDraw(renderer)
     }
 
-    override fun onProcess(dt: Float) {
-        val min = -HALF_BOX
-        val max = HALF_BOX - BALL_SIZE
-        var nx = transform.position.x + vx * dt
-        var ny = transform.position.y + vy * dt
-        if (nx < min) { nx = min; vx = -vx }
-        if (nx > max) { nx = max; vx = -vx }
-        if (ny < min) { ny = min; vy = -vy }
-        if (ny > max) { ny = max; vy = -vy }
-        transform = transform.copy(position = Vec2(nx, ny))
+    override fun onPhysicsProcess(dt: Float) {
+        // Motion lives in the RotatingBox's local frame (= moveAndCollide's
+        // parent frame); the wrapper's world rotation is invisible to the
+        // sweep because every shape in the sweep shares it. Walls + sibling
+        // balls handle every reflect.
+        val collision = moveAndCollide(Vec2(vx, vy) * dt) ?: return
+        val reflected = Vec2(vx, vy).reflect(collision.normal)
+        vx = reflected.x
+        vy = reflected.y
 
+        setArtColor(Color.WHITE)
+        flashTimer = 0.15f
+        val other = collision.collider
+        if (other is BoxedBall) {
+            other.setArtColor(Color.WHITE)
+            other.flashTimer = 0.15f
+        }
+    }
+
+    override fun onProcess(dt: Float) {
         if (flashTimer > 0f) {
             flashTimer -= dt
             if (flashTimer <= 0f) setArtColor(baseColor)
         }
-    }
-
-    override fun onAreaEntered(area: Area2D) {
-        if (area !is BoxedBall) return
-        if (area.id <= id) return
-
-        val posA = transform.position
-        val posB = area.transform.position
-        val dx = posA.x - posB.x
-        val dy = posA.y - posB.y
-        val overlapX = BALL_SIZE - abs(dx)
-        val overlapY = BALL_SIZE - abs(dy)
-        if (overlapX <= 0f || overlapY <= 0f) return
-
-        val min = -HALF_BOX
-        val max = HALF_BOX - BALL_SIZE
-        if (overlapX < overlapY) {
-            val push = overlapX * 0.5f * if (dx >= 0f) 1f else -1f
-            transform = transform.copy(
-                position = Vec2((posA.x + push).coerceIn(min, max), posA.y),
-            )
-            area.transform = area.transform.copy(
-                position = Vec2((posB.x - push).coerceIn(min, max), posB.y),
-            )
-        } else {
-            val push = overlapY * 0.5f * if (dy >= 0f) 1f else -1f
-            transform = transform.copy(
-                position = Vec2(posA.x, (posA.y + push).coerceIn(min, max)),
-            )
-            area.transform = area.transform.copy(
-                position = Vec2(posB.x, (posB.y - push).coerceIn(min, max)),
-            )
-        }
-
-        // Swap roda sempre — o contrato enter-only da engine exige que toda
-        // chamada de `_entered` ajuste velocidades, senão os corpos seguem
-        // com vetores apontando um pro outro e tunelam. Ver `collision-
-        // rotated-shapes/design.md` D6.
-        if (overlapX < overlapY) {
-            val tmp = vx; vx = area.vx; area.vx = tmp
-        } else {
-            val tmp = vy; vy = area.vy; area.vy = tmp
-        }
-        setArtColor(Color.WHITE)
-        area.setArtColor(Color.WHITE)
-        flashTimer = 0.15f
-        area.flashTimer = 0.15f
     }
 
     internal fun setArtColor(c: Color) {

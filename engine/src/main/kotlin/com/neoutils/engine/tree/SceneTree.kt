@@ -3,6 +3,7 @@ package com.neoutils.engine.tree
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Node
@@ -28,6 +29,14 @@ class SceneTree(val root: Node) {
     /** Set by the runtime (`GameLoop`) at the start of each tick. */
     @Volatile var input: Input? = null
         internal set
+
+    /**
+     * Set by [com.neoutils.engine.loop.GameLoop] at construction so engine-side
+     * collision queries (e.g. [com.neoutils.engine.physics.Area2D.getOverlappingAreas])
+     * can reach the active physics state. `null` while the tree is not driven
+     * by a GameLoop (e.g. unit tests that exercise the tree directly).
+     */
+    internal var physicsSystem: PhysicsSystem? = null
 
     /**
      * Surface size in pixels, kept current by the host via [resize]. The

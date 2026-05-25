@@ -56,10 +56,14 @@ class PhysicsSystem {
                 newlyEnteredCount = newlyEntered.size
                 newlyExitedCount = newlyExited.size
                 dispatchedSomething = newlyEntered.isNotEmpty() || newlyExited.isNotEmpty()
-                for (pair in newlyExited) dispatchExit(pair)
-                for (pair in newlyEntered) dispatchEnter(pair)
+                // Snapshot becomes "current" before dispatch so that handlers
+                // observing this state via Area2D.getOverlappingAreas/Bodies
+                // see the post-transition truth (D3 in
+                // kinematic-move-and-collide/design.md).
                 previousOverlapping.clear()
                 previousOverlapping.addAll(currentOverlapping)
+                for (pair in newlyExited) dispatchExit(pair)
+                for (pair in newlyEntered) dispatchEnter(pair)
                 iteration++
             }
             if (iteration == MAX_RESOLUTION_ITERATIONS && dispatchedSomething) {
@@ -158,6 +162,25 @@ class PhysicsSystem {
                 b.onBodyExited(a); b.bodyExited.emit(a)
             }
         }
+    }
+
+    /**
+     * Snapshot of every [CollisionObject2D] that is currently overlapping
+     * [obj] (post-dispatch of the last [step]). Used by
+     * [Area2D.getOverlappingAreas] / [Area2D.getOverlappingBodies] to expose
+     * Godot-style persistent overlap queries without forcing scripts to
+     * maintain a parallel set themselves. Cost is O(K) in the size of the
+     * currently-tracked pair set.
+     */
+    internal fun overlappingPeersOf(obj: CollisionObject2D): List<CollisionObject2D> {
+        val out = mutableListOf<CollisionObject2D>()
+        for (pair in previousOverlapping) {
+            when {
+                pair.a === obj -> out += pair.b
+                pair.b === obj -> out += pair.a
+            }
+        }
+        return out
     }
 
     companion object {

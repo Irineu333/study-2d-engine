@@ -25,6 +25,10 @@ class GameLoop(
     private val maxStepsPerFrame: Int = 5
     private var accumulator: Float = 0f
 
+    init {
+        tree.physicsSystem = physics
+    }
+
     /**
      * One frame of the engine. Logically:
      *

@@ -19,6 +19,17 @@ data class Vec2(val x: Float, val y: Float) {
             return if (l == 0f) ZERO else Vec2(x / l, y / l)
         }
 
+    /**
+     * Reflects this vector across the surface described by [normal] (assumed
+     * unit length): `v − 2·(v·n)·n`. Bouncing a velocity vector on a contact
+     * normal returned by [com.neoutils.engine.physics.CharacterBody2D.moveAndCollide]
+     * is the canonical use; pre-normalize the normal if it might not be unit.
+     */
+    fun reflect(normal: Vec2): Vec2 {
+        val dot = x * normal.x + y * normal.y
+        return Vec2(x - 2f * dot * normal.x, y - 2f * dot * normal.y)
+    }
+
     companion object {
         val ZERO: Vec2 = Vec2(0f, 0f)
         val ONE: Vec2 = Vec2(1f, 1f)
