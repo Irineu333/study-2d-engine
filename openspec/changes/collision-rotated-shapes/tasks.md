@@ -5,16 +5,7 @@
 
 ## 2. SAT em `overlap` para o caso rect-rect rotacionado
 
-- [x] 2.1 Em `Shape2D.kt`, no `when` de `overlap(...)`, substituir o caso `a is RectangleShape2D && b is RectangleShape2D` por:
-  ```kotlin
-  a is RectangleShape2D && b is RectangleShape2D -> {
-      if (aWorld.rotation == 0f && bWorld.rotation == 0f) {
-          a.bounds(aWorld, Vec2.ZERO).intersects(b.bounds(bWorld, Vec2.ZERO))
-      } else {
-          obbVsObbOverlap(a, aWorld, b, bWorld)
-      }
-  }
-  ```
+- [x] 2.1 Em `Shape2D.kt`, no `when` de `overlap(...)`, no caso `a is RectangleShape2D && b is RectangleShape2D`: caminho rápido AABB quando `aWorld.rotation == 0f && bWorld.rotation == 0f`; caso contrário delegar a `obbVsObbOverlap(a, aWorld, b, bWorld)`.
 - [x] 2.2 Implementar `private fun obbVsObbOverlap(a, aWorld, b, bWorld): Boolean` usando SAT:
   - obter `cornersA = obbCorners(aWorld, a.size, Vec2.ZERO)` e `cornersB = obbCorners(bWorld, b.size, Vec2.ZERO)`.
   - obter os 4 eixos candidatos: 2 normais perpendiculares aos lados de A (basta `(cornersA[1] - cornersA[0])` rotacionado 90° e `(cornersA[2] - cornersA[1])` rotacionado 90°) e 2 análogas para B.

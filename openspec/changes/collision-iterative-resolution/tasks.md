@@ -5,34 +5,7 @@
 ## 2. Convergence loop
 
 - [x] 2.1 Adicionar `private const val MAX_RESOLUTION_ITERATIONS = 8` no companion object (criar `companion object { private const val TAG = "PhysicsSystem" }` se não existir).
-- [x] 2.2 Reescrever `step(tree)` para o loop convergente:
-  ```kotlin
-  fun step(tree: SceneTree) {
-      previousOverlapping.removeAll { !it.a.isLive || !it.b.isLive }
-      val objects = collectObjects(tree).filter { !it.disabled }
-      tree.beginPhysicsPhase()
-      try {
-          var iteration = 0
-          var dispatchedSomething = true
-          while (dispatchedSomething && iteration < MAX_RESOLUTION_ITERATIONS) {
-              val currentOverlapping = computeOverlapping(objects)
-              val newlyEntered = currentOverlapping - previousOverlapping
-              val newlyExited = previousOverlapping - currentOverlapping
-              dispatchedSomething = newlyEntered.isNotEmpty() || newlyExited.isNotEmpty()
-              for (pair in newlyExited) dispatchExit(pair)
-              for (pair in newlyEntered) dispatchEnter(pair)
-              previousOverlapping.clear()
-              previousOverlapping.addAll(currentOverlapping)
-              iteration++
-          }
-          if (iteration == MAX_RESOLUTION_ITERATIONS && dispatchedSomething) {
-              Log.w(TAG, "step hit MAX_RESOLUTION_ITERATIONS=$MAX_RESOLUTION_ITERATIONS — pile-up not converged")
-          }
-      } finally {
-          tree.endPhysicsPhase()
-      }
-  }
-  ```
+- [x] 2.2 Reescrever `step(tree)` para o loop convergente (snippet em `design.md` D1).
 - [x] 2.3 Atualizar o KDoc de `PhysicsSystem` mencionando o loop convergente e o teto.
 
 ## 3. Tests
@@ -44,10 +17,10 @@
 ## 4. Demo 4
 
 - [x] 4.1 Em `games/demos/.../CollisionStressDemo.kt`, remover o comentário `// Known regression of collision-overhaul (KR1): ...` no `Ball.onAreaEntered` (regressão resolvida).
-- [x] 4.2 Smoke manual: `./gradlew :games:demos:run`, tecla 4, deixar rodar 10s — observar que bolinhas não atravessam mais (ou que tunneling residual é causado por velocidades excessivamente altas, não por pile-ups).
+- [ ] 4.2 Smoke manual: `./gradlew :games:demos:run`, tecla 4, deixar rodar 10s — observar que bolinhas não atravessam mais (ou que tunneling residual é causado por velocidades excessivamente altas, não por pile-ups).
 
 ## 5. Verify
 
 - [x] 5.1 `./gradlew check` passa.
 - [x] 5.2 `openspec validate collision-iterative-resolution --strict` passa.
-- [x] 5.3 Smoke `./gradlew :games:demos:run` (tecla 4) confirma fix visual.
+- [ ] 5.3 Smoke `./gradlew :games:demos:run` (tecla 4) confirma fix visual.
