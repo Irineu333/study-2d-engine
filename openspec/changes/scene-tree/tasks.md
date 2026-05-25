@@ -53,8 +53,8 @@
 
 ## 10. Pong sample
 
-- [ ] 10.1 Editar `games/pong/src/main/resources/pong/scene.json`: mudar `root.type` de `com.neoutils.engine.scene.Scene` para `com.neoutils.engine.scene.Node`. Manter `version: 2`. Conferir que o `Camera2D` filho continua presente.
-- [ ] 10.2 Editar `games/pong/src/main/kotlin/.../Main.kt`: envolver o resultado de `BundleLoader.fromResources("pong", ...)` em `SceneTree(root = ...)` antes de chamar `SkikoHost().run(tree, config)`. Conferir que o tipo declarado da variável é `Node` ou inferido.
+- [x] 10.1 Editar `games/pong/src/main/resources/pong/scene.json`: mudar `root.type` de `com.neoutils.engine.scene.Scene` para `com.neoutils.engine.scene.Node`. Manter `version: 2`. Conferir que o `Camera2D` filho continua presente.
+- [x] 10.2 Editar `games/pong/src/main/kotlin/.../Main.kt`: envolver o resultado de `BundleLoader.fromResources("pong", ...)` em `SceneTree(root = ...)` antes de chamar `SkikoHost().run(tree, config)`. Conferir que o tipo declarado da variável é `Node` ou inferido.
 
 ## 11. Tic-tac-toe sample
 

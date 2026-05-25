@@ -31,8 +31,8 @@ def _physics_process(self, dt):
         return
     pos = self.transform.position
     new_y = pos.y + dy
-    scene = self.rootScene()
-    play_field_height = scene.viewport.size.y if scene is not None else 0.0
+    tree = self.tree
+    play_field_height = tree.viewport.size.y if tree is not None else 0.0
     max_y = play_field_height - self.size.y
     if new_y < 0.0:
         new_y = 0.0
@@ -51,10 +51,10 @@ def _draw(self, renderer):
 
 
 def _compute_human(self, dt):
-    scene = self.rootScene()
-    if scene is None:
+    tree = self.tree
+    if tree is None:
         return 0.0
-    input_ref = scene.input
+    input_ref = tree.input
     if input_ref is None:
         return 0.0
     direction = 0.0

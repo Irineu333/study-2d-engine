@@ -1,4 +1,4 @@
-# extends Scene
+# extends Node
 
 # Orchestration script for the Pong root. The world is fixed at 800×600 and
 # `Camera2D` (declared in scene.json) projects it onto the surface, so layout
