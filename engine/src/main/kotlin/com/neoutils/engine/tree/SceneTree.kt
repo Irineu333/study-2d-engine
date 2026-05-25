@@ -49,7 +49,8 @@ class SceneTree(val root: Node) {
 
     /**
      * `true` while the tree is inside an `onProcess`, `onPhysicsProcess`,
-     * `onCollide` or `onDraw` traversal (or another physics phase). Read by
+     * collision event dispatch or `onDraw` traversal (or another physics
+     * phase). Read by
      * `Node.addChild` / `Node.removeChild` to decide between immediate
      * mutation and enqueuing onto the pending queues.
      */

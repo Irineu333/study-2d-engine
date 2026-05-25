@@ -2,8 +2,9 @@ package com.neoutils.engine.games.demos
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
-import com.neoutils.engine.physics.Collider
+import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.RectangleShape2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Circle2D
@@ -87,7 +88,7 @@ class Ball(
     initPos: Vec2,
     initVx: Float,
     initVy: Float,
-) : BoxCollider() {
+) : Area2D() {
 
     @Transient
     internal var vx: Float = initVx
@@ -102,8 +103,12 @@ class Ball(
     internal var flashTimer: Float = 0f
 
     init {
-        size = Vec2(BALL_SIZE, BALL_SIZE)
         transform = Transform(position = initPos)
+        addChild(
+            CollisionShape2D().apply {
+                shape = RectangleShape2D().apply { size = Vec2(BALL_SIZE, BALL_SIZE) }
+            }
+        )
         addChild(
             Circle2D().apply {
                 name = "art"
@@ -129,30 +134,32 @@ class Ball(
         }
     }
 
-    override fun onCollide(other: Collider) {
-        if (other !is Ball) return
-        if (other.id <= id) return  // each pair handled once
+    // Enter-only dispatch (single fire per begin-of-overlap) replaces the
+    // continuous `onCollide` of pre-overhaul. Position correction in
+    // `separate` is enough — after the swap the balls separate, the pair
+    // exits, and the next overlap fires `_entered` again.
+    override fun onAreaEntered(area: Area2D) {
+        if (area !is Ball) return
+        if (area.id <= id) return  // each pair handled once
 
-        // Position correction: push balls apart before any velocity logic.
-        separate(other)
+        separate(area)
 
-        if (flashTimer > 0f || other.flashTimer > 0f) return
+        if (flashTimer > 0f || area.flashTimer > 0f) return
 
-        // Elastic collision: swap only the velocity component on the collision axis.
         val posA = transform.position
-        val posB = other.transform.position
+        val posB = area.transform.position
         val overlapX = BALL_SIZE - kotlin.math.abs(posA.x - posB.x)
         val overlapY = BALL_SIZE - kotlin.math.abs(posA.y - posB.y)
         if (overlapX < overlapY) {
-            val tmp = vx; vx = other.vx; other.vx = tmp
+            val tmp = vx; vx = area.vx; area.vx = tmp
         } else {
-            val tmp = vy; vy = other.vy; other.vy = tmp
+            val tmp = vy; vy = area.vy; area.vy = tmp
         }
 
         setArtColor(Color.WHITE)
-        other.setArtColor(Color.WHITE)
+        area.setArtColor(Color.WHITE)
         flashTimer = 0.15f
-        other.flashTimer = 0.15f
+        area.flashTimer = 0.15f
     }
 
     private fun separate(other: Ball) {

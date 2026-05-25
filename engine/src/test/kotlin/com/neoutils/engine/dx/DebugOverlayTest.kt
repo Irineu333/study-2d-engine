@@ -2,7 +2,10 @@ package com.neoutils.engine.dx
 
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
+import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.AspectMode
@@ -37,7 +40,7 @@ class DebugOverlayTest {
     @Test
     fun `bothFlagsOff issues no calls`() {
         val recorder = RecordingRenderer()
-        val tree = treeWithCollider()
+        val tree = treeWithBody()
 
         renderDebugOverlay(recorder, tree)
 
@@ -48,7 +51,7 @@ class DebugOverlayTest {
     fun `only fps on draws single text`() {
         Debug.showFps = true
         val recorder = RecordingRenderer()
-        val tree = treeWithCollider()
+        val tree = treeWithBody()
 
         renderDebugOverlay(recorder, tree)
 
@@ -58,18 +61,16 @@ class DebugOverlayTest {
     }
 
     @Test
-    fun `only colliders on draws one outlined rect per collider`() {
+    fun `only colliders on draws one outlined rect per active shape`() {
         Debug.colliderVisualization = true
         val recorder = RecordingRenderer()
-        val tree = treeWithCollider(count = 3)
+        val tree = treeWithBody(count = 3)
 
         renderDebugOverlay(recorder, tree)
 
         val rects = recorder.calls.filterIsInstance<Call.Rect>()
         assertEquals(3, rects.size)
-        rects.forEach { call ->
-            assertEquals(false, call.filled)
-        }
+        rects.forEach { call -> assertEquals(false, call.filled) }
     }
 
     @Test
@@ -77,7 +78,7 @@ class DebugOverlayTest {
         Debug.showFps = true
         Debug.colliderVisualization = true
         val recorder = RecordingRenderer()
-        val tree = treeWithCollider(count = 2)
+        val tree = treeWithBody(count = 2)
 
         renderDebugOverlay(recorder, tree)
 
@@ -88,7 +89,26 @@ class DebugOverlayTest {
     }
 
     @Test
-    fun `colliders with current camera push view transform around collider rects`() {
+    fun `Areas and Bodies are colored distinctly`() {
+        Debug.colliderVisualization = true
+        val root = Node()
+        root.addChild(makeArea(Vec2(10f, 10f)))
+        root.addChild(makeBody(Vec2(10f, 10f)))
+        val tree = SceneTree(root)
+        tree.start()
+
+        val recorder = RecordingRenderer()
+        renderDebugOverlay(recorder, tree)
+
+        val rects = recorder.calls.filterIsInstance<Call.Rect>()
+        assertEquals(2, rects.size)
+        val colors = rects.map { it.color }.toSet()
+        // Area must use the green-ish debug color, Body the red-ish one.
+        assertEquals(setOf(DEBUG_AREA_COLOR, DEBUG_BODY_COLOR), colors)
+    }
+
+    @Test
+    fun `colliders with current camera push view transform around rects`() {
         Debug.colliderVisualization = true
         val root = Node()
         val camera = Camera2D().apply {
@@ -97,8 +117,8 @@ class DebugOverlayTest {
             aspectMode = AspectMode.FIT
         }
         root.addChild(camera)
-        root.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
-        root.addChild(BoxCollider().apply { size = Vec2(20f, 20f) })
+        root.addChild(makeBody(Vec2(10f, 10f)))
+        root.addChild(makeBody(Vec2(20f, 20f)))
         val tree = SceneTree(root)
         tree.resize(1280f, 900f)
         tree.start()
@@ -114,7 +134,6 @@ class DebugOverlayTest {
                 else -> "other"
             }
         }
-        // push → rect, rect → pop (no HUD because showFps is off)
         assertEquals(listOf("push", "rect", "rect", "pop"), tags)
 
         val push = recorder.calls.filterIsInstance<Call.Push>().single()
@@ -126,7 +145,7 @@ class DebugOverlayTest {
     fun `colliders without current camera draw without push or pop`() {
         Debug.colliderVisualization = true
         val recorder = RecordingRenderer()
-        val tree = treeWithCollider(count = 2)
+        val tree = treeWithBody(count = 2)
 
         renderDebugOverlay(recorder, tree)
 
@@ -145,7 +164,7 @@ class DebugOverlayTest {
             current = true
         }
         root.addChild(camera)
-        root.addChild(BoxCollider().apply { size = Vec2(10f, 10f) })
+        root.addChild(makeBody(Vec2(10f, 10f)))
         val tree = SceneTree(root)
         tree.resize(1280f, 900f)
         tree.start()
@@ -153,7 +172,6 @@ class DebugOverlayTest {
         val recorder = RecordingRenderer()
         renderDebugOverlay(recorder, tree)
 
-        // Order: push → collider rect → pop → text.
         val tags = recorder.calls.map {
             when (it) {
                 is Call.Push -> "push"
@@ -166,9 +184,21 @@ class DebugOverlayTest {
         assertEquals(listOf("push", "rect", "pop", "text"), tags)
     }
 
-    private fun treeWithCollider(count: Int = 1): SceneTree {
+    private fun makeBody(size: Vec2): StaticBody2D {
+        val body = StaticBody2D()
+        body.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+        return body
+    }
+
+    private fun makeArea(size: Vec2): Area2D {
+        val area = Area2D()
+        area.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+        return area
+    }
+
+    private fun treeWithBody(count: Int = 1): SceneTree {
         val root = Node()
-        repeat(count) { root.addChild(BoxCollider().apply { size = Vec2(10f, 10f) }) }
+        repeat(count) { root.addChild(makeBody(Vec2(10f, 10f))) }
         val tree = SceneTree(root)
         tree.start()
         return tree
@@ -189,33 +219,19 @@ private class RecordingRenderer : Renderer {
 
     val calls: MutableList<Call> = mutableListOf()
 
-    override fun clear(color: Color) {
-        calls += Call.Clear(color)
-    }
-
-    override fun drawRect(rect: Rect, color: Color, filled: Boolean) {
-        calls += Call.Rect(rect, color, filled)
-    }
-
+    override fun clear(color: Color) { calls += Call.Clear(color) }
+    override fun drawRect(rect: Rect, color: Color, filled: Boolean) { calls += Call.Rect(rect, color, filled) }
     override fun drawCircle(center: Vec2, radius: Float, color: Color, filled: Boolean, thickness: Float) {
         calls += Call.Circle(center, radius, color, filled, thickness)
     }
-
     override fun drawLine(from: Vec2, to: Vec2, thickness: Float, color: Color) {
         calls += Call.Line(from, to, thickness, color)
     }
-
     override fun drawText(text: String, position: Vec2, size: Float, color: Color) {
         calls += Call.Text(text, position, size, color)
     }
-
     override fun measureText(text: String, size: Float): Vec2 = Vec2(text.length * size * 0.5f, size)
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
-    override fun pushTransform(translation: Vec2, scale: Vec2) {
-        calls += Call.Push(translation, scale)
-    }
-
-    override fun popTransform() {
-        calls += Call.Pop
-    }
+    override fun pushTransform(translation: Vec2, scale: Vec2) { calls += Call.Push(translation, scale) }
+    override fun popTransform() { calls += Call.Pop }
 }

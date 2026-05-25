@@ -70,7 +70,10 @@ class NodeRegistryTest {
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Line2D"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Polygon2D"))
         assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.scene.Label"))
-        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.BoxCollider"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.Area2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.StaticBody2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.CharacterBody2D"))
+        assertTrue(NodeRegistry.isRegistered("com.neoutils.engine.physics.CollisionShape2D"))
     }
 
     @Test

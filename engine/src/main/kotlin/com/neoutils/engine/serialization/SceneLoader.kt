@@ -25,6 +25,7 @@ import kotlin.reflect.full.memberProperties
 object SceneLoader {
 
     private const val NAME_PROPERTY = "name"
+    private const val GROUPS_PROPERTY = "groups"
     private const val SUPPORTED_VERSION = 2
 
     private val json = Json {
@@ -142,6 +143,10 @@ object SceneLoader {
         val exportNames: Set<String> = attachment?.exportNames ?: emptySet()
 
         for ((key, element) in properties) {
+            if (key == GROUPS_PROPERTY) {
+                applyGroups(node, element, path)
+                continue
+            }
             val isInspect = key in inspectNames
             val isExport = key in exportNames
             when {
@@ -204,6 +209,28 @@ object SceneLoader {
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Reads `"groups": ["a", "b", ...]` and calls `addToGroup` on the node
+     * for each entry. Group membership is declarative state (not a `var`),
+     * so it bypasses the `@Inspect` routing — Godot-style group tagging
+     * straight from `scene.json`.
+     */
+    private fun applyGroups(node: Node, element: JsonElement, path: String) {
+        val array = element as? kotlinx.serialization.json.JsonArray
+            ?: error(
+                "Property 'groups' on node '${node.name}' (path '$path') must be a " +
+                    "JSON array of strings (got $element)"
+            )
+        for (item in array) {
+            val name = (item as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+                ?: error(
+                    "Property 'groups' on node '${node.name}' (path '$path') must contain " +
+                        "string entries (got $item)"
+                )
+            node.addToGroup(name)
         }
     }
 }

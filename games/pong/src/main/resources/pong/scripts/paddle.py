@@ -1,4 +1,4 @@
-# extends Node2D
+# extends StaticBody2D
 
 from typing import Optional
 
@@ -12,17 +12,7 @@ aiTolerance: float = 8.0
 target: NodeRef = NodeRef("")
 
 
-def _ready(self):
-    if not hasattr(self, '_collider') or self._collider is None:
-        c = BoxCollider()
-        c.size = self.size
-        self._collider = c
-        self.addChild(c)
-
-
 def _physics_process(self, dt):
-    if self._collider is not None:
-        self._collider.size = self.size
     if self.ai:
         dy = _compute_ai(self, dt)
     else:

@@ -30,7 +30,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.scene.Node2D",
+        "type": "com.neoutils.engine.physics.StaticBody2D",
         "name": "left",
         "properties": {
           "transform": {
@@ -45,13 +45,25 @@
           "speed": 360.0,
           "aiMaxSpeed": 220.0,
           "aiTolerance": 8.0,
-          "target": ""
+          "target": "",
+          "groups": ["paddles", "paddle.left"]
         },
         "script": "scripts/paddle.py",
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 16.0, "y": 96.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
-        "type": "com.neoutils.engine.scene.Node2D",
+        "type": "com.neoutils.engine.physics.StaticBody2D",
         "name": "right",
         "properties": {
           "transform": {
@@ -66,13 +78,25 @@
           "speed": 360.0,
           "aiMaxSpeed": 220.0,
           "aiTolerance": 8.0,
-          "target": "../Ball"
+          "target": "../Ball",
+          "groups": ["paddles", "paddle.right"]
         },
         "script": "scripts/paddle.py",
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 16.0, "y": 96.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
-        "type": "com.neoutils.engine.physics.BoxCollider",
+        "type": "com.neoutils.engine.physics.CharacterBody2D",
         "name": "Ball",
         "properties": {
           "transform": {
@@ -80,7 +104,6 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 16.0, "y": 16.0 },
           "ballSize": 16.0,
           "initialSpeed": 280.0,
           "maxSpeed": 560.0,
@@ -88,10 +111,21 @@
           "fieldCenter": { "x": 400.0, "y": 300.0 }
         },
         "script": "scripts/ball.py",
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 8.0, "y": 8.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.CircleShape2D", "radius": 8.0 },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
-        "type": "com.neoutils.engine.physics.BoxCollider",
+        "type": "com.neoutils.engine.physics.StaticBody2D",
         "name": "topWall",
         "properties": {
           "transform": {
@@ -99,12 +133,23 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 800.0, "y": 8.0 }
+          "groups": ["walls"]
         },
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 800.0, "y": 8.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
-        "type": "com.neoutils.engine.physics.BoxCollider",
+        "type": "com.neoutils.engine.physics.StaticBody2D",
         "name": "bottomWall",
         "properties": {
           "transform": {
@@ -112,12 +157,23 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 800.0, "y": 8.0 }
+          "groups": ["walls"]
         },
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 800.0, "y": 8.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
-        "type": "com.neoutils.engine.physics.BoxCollider",
+        "type": "com.neoutils.engine.physics.Area2D",
         "name": "leftGoal",
         "properties": {
           "transform": {
@@ -125,14 +181,24 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 8.0, "y": 600.0 },
           "side": "Left"
         },
         "script": "scripts/goal.py",
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 8.0, "y": 600.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
-        "type": "com.neoutils.engine.physics.BoxCollider",
+        "type": "com.neoutils.engine.physics.Area2D",
         "name": "rightGoal",
         "properties": {
           "transform": {
@@ -140,11 +206,21 @@
             "scale": { "x": 1.0, "y": 1.0 },
             "rotation": 0.0
           },
-          "size": { "x": 8.0, "y": 600.0 },
           "side": "Right"
         },
         "script": "scripts/goal.py",
-        "children": []
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 8.0, "y": 600.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
       },
       {
         "type": "com.neoutils.engine.scene.Node2D",

@@ -30,7 +30,6 @@ class NodeScriptInstanceTest {
         override fun onPhysicsProcess(dt: Float) { calls += "onPhysicsProcess($dt)" }
         override fun onDraw(renderer: Renderer) { calls += "onDraw" }
         override fun onExit() { calls += "onExit" }
-        override fun onCollide(other: Node) { calls += "onCollide" }
     }
 
     @Test

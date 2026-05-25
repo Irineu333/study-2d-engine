@@ -3,8 +3,10 @@ package com.neoutils.engine.games.demos
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
-import com.neoutils.engine.physics.Collider
+import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CircleShape2D
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.RectangleShape2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.Line2D
@@ -22,12 +24,12 @@ import kotlin.random.Random
  *
  *  - `Spawner.onProcess` calls `addChild` while the process traversal is
  *    iterating the scene's children;
- *  - `Trap.onCollide` calls `removeChild` while `PhysicsSystem.step` is
- *    iterating the collider list.
+ *  - `Trap.onAreaEntered` calls `removeChild` while `PhysicsSystem.step`
+ *    is iterating the collider list.
  *
  * After A4 both calls are buffered and drained between phases, so the demo
- * runs smoothly. F2 shows that the collider overlay is now drawn by
- * `GameSurface` (A2), not by `Scene` itself.
+ * runs smoothly. F2 shows the colliders rendered by the engine debug
+ * overlay (A2).
  */
 @Serializable
 class SpawnerDemo : Node2D() {
@@ -102,11 +104,17 @@ class Spawner : Node2D() {
 }
 
 @Serializable
-class Trap : BoxCollider() {
+class Trap : Area2D() {
 
     init {
-        size = Vec2(SIZE, SIZE)
-        if (children.isEmpty()) {
+        if (children.none { it is CollisionShape2D }) {
+            addChild(
+                CollisionShape2D().apply {
+                    shape = RectangleShape2D().apply { size = Vec2(SIZE, SIZE) }
+                }
+            )
+        }
+        if (children.none { it is Line2D }) {
             // Outlined hit-marker: a Line2D loop along the four corners keeps
             // the visual cue without filling the area (ColorRect is fill-only).
             addChild(
@@ -126,8 +134,8 @@ class Trap : BoxCollider() {
         }
     }
 
-    override fun onCollide(other: Collider) {
-        val victim = other as? SpawnerBall ?: return
+    override fun onAreaEntered(area: Area2D) {
+        val victim = area as? SpawnerBall ?: return
         val parent = victim.parent ?: return
         parent.removeChild(victim)
     }
@@ -138,14 +146,21 @@ class Trap : BoxCollider() {
 }
 
 @Serializable
-class SpawnerBall : BoxCollider() {
+class SpawnerBall : Area2D() {
 
     @Transient
     private var velocity: Vec2 = Vec2.ZERO
 
     init {
-        size = Vec2(SIZE, SIZE)
-        if (children.isEmpty()) {
+        if (children.none { it is CollisionShape2D }) {
+            addChild(
+                CollisionShape2D().apply {
+                    transform = Transform(position = Vec2(SIZE / 2f, SIZE / 2f))
+                    shape = CircleShape2D().apply { radius = SIZE / 2f }
+                }
+            )
+        }
+        if (children.none { it is Circle2D }) {
             addChild(
                 Circle2D().apply {
                     name = "art"

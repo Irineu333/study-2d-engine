@@ -2,8 +2,9 @@ package com.neoutils.engine.games.demos
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
-import com.neoutils.engine.physics.Collider
+import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.RectangleShape2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node2D
@@ -157,7 +158,7 @@ class BoxedBall(
     initLocalPos: Vec2,
     initVx: Float,
     initVy: Float,
-) : BoxCollider() {
+) : Area2D() {
 
     @Transient
     internal var vx: Float = initVx
@@ -175,8 +176,12 @@ class BoxedBall(
     internal var flashTimer: Float = 0f
 
     init {
-        size = Vec2(BALL_SIZE, BALL_SIZE)
         transform = Transform(position = initLocalPos)
+        addChild(
+            CollisionShape2D().apply {
+                shape = RectangleShape2D().apply { size = Vec2(BALL_SIZE, BALL_SIZE) }
+            }
+        )
     }
 
     // Custom render so the circle center honors the wrapper's rotation. The
@@ -224,12 +229,12 @@ class BoxedBall(
     // before the squares themselves touch. We re-check overlap in the local
     // frame — siblings under the same parent, so positions are directly
     // comparable — and bail out if it was a phantom contact.
-    override fun onCollide(other: Collider) {
-        if (other !is BoxedBall) return
-        if (other.id <= id) return
+    override fun onAreaEntered(area: Area2D) {
+        if (area !is BoxedBall) return
+        if (area.id <= id) return
 
         val posA = transform.position
-        val posB = other.transform.position
+        val posB = area.transform.position
         val dx = posA.x - posB.x
         val dy = posA.y - posB.y
         val overlapX = BALL_SIZE - abs(dx)
@@ -243,7 +248,7 @@ class BoxedBall(
             transform = transform.copy(
                 position = Vec2((posA.x + push).coerceIn(min, max), posA.y),
             )
-            other.transform = other.transform.copy(
+            area.transform = area.transform.copy(
                 position = Vec2((posB.x - push).coerceIn(min, max), posB.y),
             )
         } else {
@@ -251,22 +256,22 @@ class BoxedBall(
             transform = transform.copy(
                 position = Vec2(posA.x, (posA.y + push).coerceIn(min, max)),
             )
-            other.transform = other.transform.copy(
+            area.transform = area.transform.copy(
                 position = Vec2(posB.x, (posB.y - push).coerceIn(min, max)),
             )
         }
 
-        if (flashTimer > 0f || other.flashTimer > 0f) return
+        if (flashTimer > 0f || area.flashTimer > 0f) return
 
         if (overlapX < overlapY) {
-            val tmp = vx; vx = other.vx; other.vx = tmp
+            val tmp = vx; vx = area.vx; area.vx = tmp
         } else {
-            val tmp = vy; vy = other.vy; other.vy = tmp
+            val tmp = vy; vy = area.vy; area.vy = tmp
         }
         setArtColor(Color.WHITE)
-        other.setArtColor(Color.WHITE)
+        area.setArtColor(Color.WHITE)
         flashTimer = 0.15f
-        other.flashTimer = 0.15f
+        area.flashTimer = 0.15f
     }
 
     internal fun setArtColor(c: Color) {

@@ -1,9 +1,12 @@
 package com.neoutils.engine.scene
 
+import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
-import com.neoutils.engine.physics.Collider
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.PhysicsBody2D
 import com.neoutils.engine.physics.PhysicsSystem
+import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,6 +17,12 @@ private class LifecycleSpy(name: String, val log: MutableList<String>) : Node() 
     init { this.name = name }
     override fun onEnter() { log += "enter:$name" }
     override fun onExit() { log += "exit:$name" }
+}
+
+private fun staticBodyAt(size: Vec2, position: Vec2): StaticBody2D {
+    val body = StaticBody2D().apply { transform = Transform(position = position) }
+    body.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+    return body
 }
 
 class SceneMutationDuringTraversalTest {
@@ -68,21 +77,23 @@ class SceneMutationDuringTraversalTest {
     }
 
     @Test
-    fun `addChild during onCollide does not crash and applies before next phase`() {
+    fun `addChild during enter dispatch does not crash and applies before next phase`() {
         val root = Node()
         val tree = SceneTree(root)
         val log = mutableListOf<String>()
         val spawned = LifecycleSpy("spawn", log)
-        val a = object : BoxCollider() {
+        val a = object : StaticBody2D() {
             var didSpawn = false
-            override fun onCollide(other: Collider) {
+            override fun onBodyEntered(body: PhysicsBody2D) {
                 if (!didSpawn) {
                     didSpawn = true
                     root.addChild(spawned)
                 }
             }
+        }.apply {
+            addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(10f, 10f) } })
         }
-        val b = BoxCollider().apply { size = Vec2(10f, 10f) }
+        val b = staticBodyAt(Vec2(10f, 10f), position = Vec2(5f, 5f))
         root.addChild(a)
         root.addChild(b)
         tree.start()
@@ -96,16 +107,18 @@ class SceneMutationDuringTraversalTest {
     }
 
     @Test
-    fun `removeChild during onCollide does not crash and applies before next phase`() {
+    fun `removeChild during enter dispatch does not crash and applies before next phase`() {
         val root = Node()
         val tree = SceneTree(root)
         val log = mutableListOf<String>()
         val victim = LifecycleSpy("victim", log)
         root.addChild(victim)
-        val a = object : BoxCollider() {
-            override fun onCollide(other: Collider) { root.removeChild(victim) }
+        val a = object : StaticBody2D() {
+            override fun onBodyEntered(body: PhysicsBody2D) { root.removeChild(victim) }
+        }.apply {
+            addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(10f, 10f) } })
         }
-        val b = BoxCollider().apply { size = Vec2(10f, 10f) }
+        val b = staticBodyAt(Vec2(10f, 10f), position = Vec2(5f, 5f))
         root.addChild(a)
         root.addChild(b)
         tree.start()

@@ -152,14 +152,18 @@ def _process(self, dt):
     }
 
     @Test
-    fun `attach and missing _on_collide does not throw`() {
+    fun `attach and missing collision hooks do not throw`() {
         val script = host.load("test.py", bundle(mapOf(
             "test.py" to EXTENDS_NODE2D
         )))
         val node = Node2D()
         val instance = host.attach(node, script)
-        val other = Node2D()
-        instance.onCollide(other)  // no exception
+        val area = com.neoutils.engine.physics.Area2D()
+        val body = com.neoutils.engine.physics.StaticBody2D()
+        instance.onAreaEntered(area)  // no exception
+        instance.onAreaExited(area)
+        instance.onBodyEntered(body)
+        instance.onBodyExited(body)
     }
 
     // --- currentValue --------------------------------------------------------

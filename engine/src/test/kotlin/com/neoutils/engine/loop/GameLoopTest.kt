@@ -5,9 +5,12 @@ import com.neoutils.engine.input.Key
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
-import com.neoutils.engine.physics.Collider
+import com.neoutils.engine.math.Transform
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.PhysicsBody2D
 import com.neoutils.engine.physics.PhysicsSystem
+import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Node
@@ -58,11 +61,15 @@ class GameLoopTest {
         val order = mutableListOf<String>()
         val node = object : Node() { override fun onProcess(dt: Float) { order += "process" } }
         root.addChild(node)
-        val a = object : BoxCollider() {
-            override fun onCollide(other: Collider) { order += "physics" }
+        val a = object : StaticBody2D() {
+            override fun onBodyEntered(body: PhysicsBody2D) { order += "physics" }
+        }.apply {
+            transform = Transform(position = Vec2(0f, 0f))
+            addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(10f, 10f) } })
         }
-        val b = object : BoxCollider() {
-            override fun onCollide(other: Collider) { /* not recorded */ }
+        val b = StaticBody2D().apply {
+            transform = Transform(position = Vec2(5f, 5f))
+            addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(10f, 10f) } })
         }
         root.addChild(a)
         root.addChild(b)

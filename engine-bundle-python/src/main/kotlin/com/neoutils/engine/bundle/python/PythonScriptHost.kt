@@ -5,7 +5,15 @@ import com.neoutils.engine.input.Key
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.BoxCollider
+import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CharacterBody2D
+import com.neoutils.engine.physics.CircleShape2D
+import com.neoutils.engine.physics.CollisionObject2D
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.PhysicsBody2D
+import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.Shape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Camera2D
@@ -124,7 +132,15 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
             discoverSignals(node)
         })
         bindings.putMember("Key", Key::class.java)
-        bindings.putMember("BoxCollider", BoxCollider::class.java)
+        bindings.putMember("CollisionObject2D", CollisionObject2D::class.java)
+        bindings.putMember("Area2D", Area2D::class.java)
+        bindings.putMember("PhysicsBody2D", PhysicsBody2D::class.java)
+        bindings.putMember("StaticBody2D", StaticBody2D::class.java)
+        bindings.putMember("CharacterBody2D", CharacterBody2D::class.java)
+        bindings.putMember("CollisionShape2D", CollisionShape2D::class.java)
+        bindings.putMember("Shape2D", Shape2D::class.java)
+        bindings.putMember("RectangleShape2D", RectangleShape2D::class.java)
+        bindings.putMember("CircleShape2D", CircleShape2D::class.java)
         bindings.putMember("Node2D", Node2D::class.java)
         bindings.putMember("Camera2D", Camera2D::class.java)
         bindings.putMember("ColorRect", ColorRect::class.java)
@@ -315,8 +331,20 @@ private class PythonScriptInstance(
         callHook("_exit_tree")
     }
 
-    override fun onCollide(other: Node) {
-        callHook("_on_collide", other)
+    override fun onAreaEntered(area: Area2D) {
+        callHook("_on_area_entered", area)
+    }
+
+    override fun onAreaExited(area: Area2D) {
+        callHook("_on_area_exited", area)
+    }
+
+    override fun onBodyEntered(body: PhysicsBody2D) {
+        callHook("_on_body_entered", body)
+    }
+
+    override fun onBodyExited(body: PhysicsBody2D) {
+        callHook("_on_body_exited", body)
     }
 
     private fun callHook(name: String, vararg args: Any?) {

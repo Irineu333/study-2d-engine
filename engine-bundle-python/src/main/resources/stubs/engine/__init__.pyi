@@ -25,7 +25,17 @@ from engine.scene import (
     Timer as Timer,
     TimerMode as TimerMode,
 )
-from engine.physics import BoxCollider as BoxCollider
+from engine.physics import (
+    Shape2D as Shape2D,
+    RectangleShape2D as RectangleShape2D,
+    CircleShape2D as CircleShape2D,
+    CollisionShape2D as CollisionShape2D,
+    CollisionObject2D as CollisionObject2D,
+    Area2D as Area2D,
+    PhysicsBody2D as PhysicsBody2D,
+    StaticBody2D as StaticBody2D,
+    CharacterBody2D as CharacterBody2D,
+)
 from engine.serialization import (
     NodeRef as NodeRef,
     Signal as Signal,
@@ -52,7 +62,15 @@ __all__ = [
     "Polygon2D",
     "Timer",
     "TimerMode",
-    "BoxCollider",
+    "Shape2D",
+    "RectangleShape2D",
+    "CircleShape2D",
+    "CollisionShape2D",
+    "CollisionObject2D",
+    "Area2D",
+    "PhysicsBody2D",
+    "StaticBody2D",
+    "CharacterBody2D",
     "NodeRef",
     "Signal",
     "Disposable",

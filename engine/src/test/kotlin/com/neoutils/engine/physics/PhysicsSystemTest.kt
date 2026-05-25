@@ -4,105 +4,251 @@ import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
-import kotlin.math.PI
-import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private class RecordingBox(boxSize: Vec2) : BoxCollider() {
-    init { size = boxSize }
-    val partners: MutableList<Collider> = mutableListOf()
-    override fun onCollide(other: Collider) { partners += other }
+private fun makeBody(size: Vec2, position: Vec2 = Vec2.ZERO): StaticBody2D {
+    val body = StaticBody2D().apply { transform = Transform(position = position) }
+    val shapeNode = CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } }
+    body.addChild(shapeNode)
+    return body
+}
+
+private fun makeArea(size: Vec2, position: Vec2 = Vec2.ZERO): Area2D {
+    val area = Area2D().apply { transform = Transform(position = position) }
+    val shapeNode = CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } }
+    area.addChild(shapeNode)
+    return area
+}
+
+private class RecordingBody(
+    size: Vec2,
+    position: Vec2 = Vec2.ZERO,
+) : StaticBody2D() {
+
+    val bodyEnters: MutableList<PhysicsBody2D> = mutableListOf()
+    val bodyExits: MutableList<PhysicsBody2D> = mutableListOf()
+    val areaEnters: MutableList<Area2D> = mutableListOf()
+
+    init {
+        transform = Transform(position = position)
+        addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+    }
+
+    override fun onBodyEntered(body: PhysicsBody2D) { bodyEnters += body }
+    override fun onBodyExited(body: PhysicsBody2D) { bodyExits += body }
+    override fun onAreaEntered(area: Area2D) { areaEnters += area }
+}
+
+private class RecordingArea(
+    size: Vec2,
+    position: Vec2 = Vec2.ZERO,
+) : Area2D() {
+
+    val bodyEnters: MutableList<PhysicsBody2D> = mutableListOf()
+
+    init {
+        transform = Transform(position = position)
+        addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+    }
+
+    override fun onBodyEntered(body: PhysicsBody2D) { bodyEnters += body }
 }
 
 class PhysicsSystemTest {
 
     @Test
-    fun `bounds derived from transform position`() {
+    fun `non-overlapping objects do not fire enter`() {
         val root = Node()
-        val box = BoxCollider().apply {
-            size = Vec2(10f, 20f)
-            transform = Transform(position = Vec2(5f, 7f))
-        }
-        root.addChild(box)
-        SceneTree(root).start()
-        val b = box.bounds()
-        assertEquals(Vec2(5f, 7f), b.origin)
-        assertEquals(Vec2(10f, 20f), b.size)
-    }
-
-    @Test
-    fun `non-overlapping colliders do not fire onCollide`() {
-        val root = Node()
-        val a = RecordingBox(Vec2(10f, 10f)).apply { transform = Transform(position = Vec2(0f, 0f)) }
-        val b = RecordingBox(Vec2(10f, 10f)).apply { transform = Transform(position = Vec2(100f, 100f)) }
-        root.addChild(a)
-        root.addChild(b)
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(100f, 100f))
+        root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
         PhysicsSystem().step(tree)
-        assertEquals(0, a.partners.size)
-        assertEquals(0, b.partners.size)
+        assertEquals(0, a.bodyEnters.size)
+        assertEquals(0, b.bodyEnters.size)
     }
 
     @Test
-    fun `overlapping pair fires onCollide exactly once each`() {
+    fun `overlapping body pair fires bodyEntered exactly once on each`() {
         val root = Node()
-        val a = RecordingBox(Vec2(10f, 10f)).apply { transform = Transform(position = Vec2(0f, 0f)) }
-        val b = RecordingBox(Vec2(10f, 10f)).apply { transform = Transform(position = Vec2(5f, 5f)) }
-        root.addChild(a)
-        root.addChild(b)
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f))
+        root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
         PhysicsSystem().step(tree)
-        assertEquals(listOf<Collider>(b), a.partners)
-        assertEquals(listOf<Collider>(a), b.partners)
+        assertEquals(listOf<PhysicsBody2D>(b), a.bodyEnters)
+        assertEquals(listOf<PhysicsBody2D>(a), b.bodyEnters)
     }
 
     @Test
-    fun `bounds account for parent scale`() {
+    fun `Area-vs-Body dispatches across both APIs`() {
         val root = Node()
-        val parent = com.neoutils.engine.scene.Node2D().apply {
-            transform = Transform(scale = Vec2(2f, 3f))
-        }
-        val box = BoxCollider().apply { size = Vec2(10f, 20f) }
-        parent.addChild(box)
-        root.addChild(parent)
-        SceneTree(root).start()
-        val b = box.bounds()
-        assertEquals(Vec2(20f, 60f), b.size)
+        val area = RecordingArea(Vec2(20f, 20f), position = Vec2(0f, 0f))
+        val body = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f))
+        root.addChild(area); root.addChild(body)
+        val tree = SceneTree(root)
+        tree.start()
+        PhysicsSystem().step(tree)
+        assertEquals(listOf<PhysicsBody2D>(body), area.bodyEnters)
+        assertEquals(listOf<Area2D>(area), body.areaEnters)
     }
 
     @Test
-    fun `bounds expand to AABB of OBB when parent is rotated`() {
+    fun `sustained overlap does not re-fire enter`() {
         val root = Node()
-        val parent = com.neoutils.engine.scene.Node2D().apply {
-            transform = Transform(rotation = (PI / 4.0).toFloat())
-        }
-        val box = BoxCollider().apply { size = Vec2(10f, 10f) }
-        parent.addChild(box)
-        root.addChild(parent)
-        SceneTree(root).start()
-        val expected = 10f * sqrt(2f)
-        val b = box.bounds()
-        assertTrue(kotlin.math.abs(b.size.x - expected) < 1e-3f, "width=${b.size.x}, expected≈$expected")
-        assertTrue(kotlin.math.abs(b.size.y - expected) < 1e-3f, "height=${b.size.y}, expected≈$expected")
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f))
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        val phys = PhysicsSystem()
+        phys.step(tree)
+        phys.step(tree)
+        assertEquals(1, a.bodyEnters.size)
+        assertEquals(1, b.bodyEnters.size)
     }
 
     @Test
-    fun `bounds account for parent transform`() {
+    fun `exit fires when overlap ends`() {
         val root = Node()
-        val parent = com.neoutils.engine.scene.Node2D().apply {
-            transform = Transform(position = Vec2(100f, 50f))
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f))
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        val phys = PhysicsSystem()
+        phys.step(tree)
+        b.transform = Transform(position = Vec2(100f, 100f))
+        phys.step(tree)
+        assertEquals(1, a.bodyExits.size)
+        assertEquals(b, a.bodyExits.single())
+    }
+
+    @Test
+    fun `detached node does not generate exit event next step`() {
+        val root = Node()
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f))
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        val phys = PhysicsSystem()
+        phys.step(tree)
+        root.removeChild(b)
+        phys.step(tree)
+        assertEquals(0, a.bodyExits.size)
+    }
+
+    @Test
+    fun `circle shapes overlap is exact (rejects AABB-only matches)`() {
+        val root = Node()
+        val a = StaticBody2D().apply {
+            transform = Transform(position = Vec2(0f, 0f))
+            addChild(CollisionShape2D().apply { shape = CircleShape2D().apply { radius = 5f } })
         }
-        val box = BoxCollider().apply {
-            size = Vec2(10f, 10f)
-            transform = Transform(position = Vec2(5f, 5f))
+        // Position both circles so their AABBs overlap (diagonally adjacent)
+        // but the circles themselves do not (distance > sum of radii).
+        val b = RecordingBody(Vec2(0f, 0f), position = Vec2(8f, 8f)).also {
+            it.children.toList().forEach { c -> it.removeChild(c) }
+            it.addChild(CollisionShape2D().apply { shape = CircleShape2D().apply { radius = 5f } })
         }
-        parent.addChild(box)
-        root.addChild(parent)
-        SceneTree(root).start()
-        assertEquals(Vec2(105f, 55f), box.bounds().origin)
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        PhysicsSystem().step(tree)
+        assertEquals(0, b.bodyEnters.size)
+    }
+
+    @Test
+    fun `multiple shapes per object — overlap is union`() {
+        val root = Node()
+        val a = StaticBody2D().apply { transform = Transform(position = Vec2(0f, 0f)) }
+        a.addChild(CollisionShape2D().apply {
+            transform = Transform(position = Vec2(0f, 0f))
+            shape = RectangleShape2D().apply { size = Vec2(10f, 10f) }
+        })
+        a.addChild(CollisionShape2D().apply {
+            transform = Transform(position = Vec2(100f, 0f))
+            shape = RectangleShape2D().apply { size = Vec2(10f, 10f) }
+        })
+        val b = RecordingBody(Vec2(5f, 5f), position = Vec2(102f, 2f))
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        PhysicsSystem().step(tree)
+        assertEquals(1, b.bodyEnters.size, "exactly one enter, despite two shapes on A")
+    }
+
+    @Test
+    fun `disabled object is ignored`() {
+        val root = Node()
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f)).apply { disabled = true }
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        PhysicsSystem().step(tree)
+        assertEquals(0, a.bodyEnters.size)
+    }
+
+    @Test
+    fun `RectangleShape2D bounds reflect transform scale`() {
+        val shape = RectangleShape2D().apply { size = Vec2(10f, 20f) }
+        val b = shape.bounds(
+            world = Transform(position = Vec2(50f, 50f), scale = Vec2(2f, 2f), rotation = 0f),
+            localOffset = Vec2.ZERO,
+        )
+        assertEquals(Vec2(50f, 50f), b.origin)
+        assertEquals(Vec2(20f, 40f), b.size)
+    }
+
+    @Test
+    fun `CircleShape2D bounds form a square envelope`() {
+        val shape = CircleShape2D().apply { radius = 10f }
+        val b = shape.bounds(
+            world = Transform(position = Vec2(0f, 0f)),
+            localOffset = Vec2.ZERO,
+        )
+        assertEquals(20f, b.size.x)
+        assertEquals(20f, b.size.y)
+    }
+
+    @Test
+    fun `CollisionShape2D worldBounds returns null when disabled`() {
+        val s = CollisionShape2D().apply {
+            shape = RectangleShape2D().apply { size = Vec2(10f, 10f) }
+            disabled = true
+        }
+        assertEquals(null, s.worldBounds())
+    }
+
+    @Test
+    fun `Pair tracking ignores swap order`() {
+        val root = Node()
+        val a = RecordingBody(Vec2(10f, 10f), position = Vec2(0f, 0f))
+        val b = RecordingBody(Vec2(10f, 10f), position = Vec2(5f, 5f))
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+        val phys = PhysicsSystem()
+        phys.step(tree)
+        phys.step(tree) // second step: no double enter regardless of internal order
+        assertEquals(1, a.bodyEnters.size)
+        assertTrue(a.bodyExits.isEmpty())
+    }
+
+    @Test
+    fun `helper makeBody and makeArea sanity`() {
+        // Smoke test for the small helpers used by other tests in the module.
+        val body = makeBody(Vec2(4f, 4f), position = Vec2(1f, 1f))
+        val area = makeArea(Vec2(8f, 8f), position = Vec2(0f, 0f))
+        val root = Node().apply { addChild(body); addChild(area) }
+        val tree = SceneTree(root)
+        tree.start()
+        PhysicsSystem().step(tree) // overlap area+body, no crash
     }
 }

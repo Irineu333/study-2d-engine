@@ -354,5 +354,4 @@ private class FakeScriptInstance(
     override fun onPhysicsProcess(dt: Float) {}
     override fun onDraw(renderer: Renderer) {}
     override fun onExit() {}
-    override fun onCollide(other: Node) {}
 }

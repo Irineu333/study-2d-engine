@@ -31,7 +31,6 @@ private class FakeScriptInstance : ScriptInstance {
     override fun onPhysicsProcess(dt: Float) {}
     override fun onDraw(renderer: Renderer) {}
     override fun onExit() {}
-    override fun onCollide(other: Node) {}
 }
 
 private class FakeScriptHost(
@@ -215,13 +214,23 @@ class BundleLoaderTest {
                     "properties": {},
                     "children": [
                       {
-                        "type": "com.neoutils.engine.physics.BoxCollider",
+                        "type": "com.neoutils.engine.physics.StaticBody2D",
                         "name": "wall",
                         "properties": {
-                          "transform": { "position": {"x": 0.0, "y": 0.0}, "scale": {"x": 1.0, "y": 1.0}, "rotation": 0.0 },
-                          "size": { "x": 10.0, "y": 10.0 }
+                          "transform": { "position": {"x": 0.0, "y": 0.0}, "scale": {"x": 1.0, "y": 1.0}, "rotation": 0.0 }
                         },
-                        "children": []
+                        "children": [
+                          {
+                            "type": "com.neoutils.engine.physics.CollisionShape2D",
+                            "name": "shape",
+                            "properties": {
+                              "transform": { "position": {"x": 0.0, "y": 0.0}, "scale": {"x": 1.0, "y": 1.0}, "rotation": 0.0 },
+                              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 10.0, "y": 10.0 } },
+                              "disabled": false
+                            },
+                            "children": []
+                          }
+                        ]
                       }
                     ]
                   }
@@ -230,7 +239,9 @@ class BundleLoaderTest {
             )
             val scene = BundleLoader.fromPath(temp)
             assertEquals(1, scene.children.size)
-            assertTrue(scene.children[0] is com.neoutils.engine.physics.BoxCollider)
+            val wall = scene.children[0]
+            assertTrue(wall is com.neoutils.engine.physics.StaticBody2D)
+            assertTrue(wall.children[0] is com.neoutils.engine.physics.CollisionShape2D)
         } finally {
             temp.deleteRecursively()
         }

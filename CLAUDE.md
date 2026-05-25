@@ -14,7 +14,7 @@ Toda mudança deve respeitar os quatro invariantes abaixo. Eles vêm das decisõ
 
 1. **Scene graph estilo Godot, por herança.** Comportamento de gameplay é adicionado por subclasses de `Node` / `Node2D`. **Sem** `List<Component>` ou ECS. Cada Node tem sua identidade de tipo (`class Paddle : Node2D()`).
 2. **`:engine` não depende de Compose.** O módulo `:engine` não declara nenhum artefato `org.jetbrains.compose.*` ou `androidx.compose.*`, direta ou transitivamente. Quem precisa de Compose é o `:engine-compose`.
-3. **Colisão via `Collider`-como-Node + `PhysicsSystem` central.** `Collider` é um tipo de `Node`; o `PhysicsSystem.step(tree)` enumera todos os colliders ativos, testa pares e invoca `onCollide`. Broad phase é O(N²) intencionalmente.
+3. **Colisão via `CollisionObject2D` + `CollisionShape2D` + `PhysicsSystem` central.** Cada participante de colisão é uma subclasse de `CollisionObject2D` (`Area2D` para triggers, `StaticBody2D`/`CharacterBody2D` para corpos sólidos) com um ou mais `CollisionShape2D` filhos carregando um `Shape2D` polimórfico (`RectangleShape2D` ou `CircleShape2D`). O `PhysicsSystem.step(tree)` enumera todos os objects ativos, testa pares em broad phase O(N²) intencional, e dispara `onAreaEntered`/`onAreaExited`/`onBodyEntered`/`onBodyExited` exatamente uma vez por par-transição (enter no início da sobreposição, exit no fim — não há evento "still touching"). Os mesmos eventos são emitidos via signals built-in (`areaEntered`, `areaExited`, `bodyEntered`, `bodyExited`) em cada object.
 4. **`Renderer`, `Input` e `GameHost` são SPIs.** Skiko é o backend padrão (`:engine-skiko`); Compose é o segundo backend (`:engine-compose`). Jogos novos devem usar Skiko por default.
 5. **A árvore viva é dona de `SceneTree`, não de uma `Scene` que é Node.** `SceneTree` não é `Node` e não é `@Serializable`; a classe `Scene` não existe mais em `:engine`. Nodes alcançam a árvore via `node.tree` (set no attach, null no detach). `SceneTree` não é subclassável para customizar setup — para popular a árvore inicial, escreva um Node root com `onEnter`. `SceneLoader.load` e `BundleLoader` devolvem `Node` (root livre); o host envolve em `SceneTree(root = ...)` antes de `run(...)`.
 
@@ -83,9 +83,9 @@ Durante a execução:
 
 - `1` Transform orbit — pai rotacionando faz os filhos orbitarem (composição de rotação sobre posição, A1)
 - `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
-- `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central remove durante `onCollide` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2)
-- `4` Collision stress — 30 `BoxCollider`s colidindo em broad phase O(N²); valida o cache de `world()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS
-- `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `world()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados das `BoxCollider`s rotacionadas.
+- `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central (`Area2D`) remove durante `onAreaEntered` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2) e usa cores distintas para `Area2D` vs `PhysicsBody2D`.
+- `4` Collision stress — 30 `Area2D`s (uma por bolinha) colidindo em broad phase O(N²); valida o cache de `world()` com invalidação eager a cada frame; overlay no-screen mostra contagem e FPS. As bolinhas usam `onAreaEntered` para o swap elástico de velocidade — enter-only é suficiente porque o `separate()` empurra os pares para fora.
+- `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `world()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados dos `CollisionShape2D` rotacionados.
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 
@@ -161,11 +161,20 @@ def _draw(self, renderer):
 def _exit_tree(self):
     ...
 
-def _on_collide(self, other):           ← apenas relevante para BoxCollider e descendentes
+def _on_area_entered(self, area):       ← apenas para CollisionObject2D (Area2D, StaticBody2D, ...)
+    ...
+
+def _on_area_exited(self, area):
+    ...
+
+def _on_body_entered(self, body):
+    ...
+
+def _on_body_exited(self, body):
     ...
 ```
 
-- **`# extends <NodeType>`** na primeira linha não vazia. `<NodeType>` é resolvido contra o `NodeRegistry` (ex.: `Node2D`, `BoxCollider`). Falhar nesta linha é erro fatal.
+- **`# extends <NodeType>`** na primeira linha não vazia. `<NodeType>` é resolvido contra o `NodeRegistry` (ex.: `Node2D`, `Area2D`, `StaticBody2D`, `CharacterBody2D`, `CollisionShape2D`). Falhar nesta linha é erro fatal.
 - **Exports** são atribuições anotadas no top-level. Tipos suportados: `int`, `float`, `bool`, `str`, `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`, `Optional[T]` (ou `T | None`). Qualquer outro tipo é silenciosamente ignorado.
 - **Estado runtime** fica em `self._private` (convenção: atributos com prefixo `_` não são exports, são instâncias por-nó).
 - **Hooks fixos** (todos opcionais; ausência é no-op):
@@ -174,8 +183,12 @@ def _on_collide(self, other):           ← apenas relevante para BoxCollider e 
   - `_physics_process(self, dt)` — fixed-step (default 60Hz via `GameConfig.physicsHz`), `dt` constante; integração e detecção de colisão moram aqui.
   - `_draw(self, renderer)` — desenho do próprio nó (Godot-orthodox: o nó é seu próprio visual).
   - `_exit_tree(self)` — limpeza ao sair da live tree.
-  - `_on_collide(self, other)` — disparado pelo `PhysicsSystem` para `BoxCollider`s em contato.
-- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `BoxCollider`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`.
+  - `_on_area_entered(self, area)` — disparado pelo `PhysicsSystem` quando um `CollisionObject2D` deste nó começa a sobrepor um `Area2D`. One-shot por begin-of-overlap.
+  - `_on_area_exited(self, area)` — análogo, no fim da sobreposição.
+  - `_on_body_entered(self, body)` — disparado quando começa sobreposição com um `PhysicsBody2D` (Static ou Character).
+  - `_on_body_exited(self, body)` — análogo, no fim da sobreposição.
+  - **Built-in signals** em cada `CollisionObject2D`: `area_entered`, `area_exited`, `body_entered`, `body_exited`, todos `Signal`s do tipo apropriado. Conecte com `self.body_entered.connect(handler)` ou via `script_of(other_node).area_entered.connect(...)`.
+- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `CollisionObject2D`, `Area2D`, `PhysicsBody2D`, `StaticBody2D`, `CharacterBody2D`, `CollisionShape2D`, `Shape2D`, `RectangleShape2D`, `CircleShape2D`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`.
 - **Acessar/escrever transform local**: `Node2D` expõe `position`, `rotation`, `scale` como properties — `self.position = Vec2(...)`, `self.rotation = math.pi / 4`, `self.scale = Vec2(2.0, 2.0)`. Não escreva componente individual: `self.position.y = 5.0` lança `AttributeError` em runtime porque `Vec2.y` é `val` Kotlin (fail-fast intencional). O idioma correto é reconstruir o `Vec2`: `self.position = Vec2(self.position.x, 5.0)`. Para ler a transform composta (mundo), use `self.world(): Transform`; ex.: `wp = self.world().position`.
 - **Coordenadas surface ↔ mundo**: scripts que precisam converter input em pixels (mouse) para coordenadas do mundo (ou vice-versa) usam `Camera2D.screenToWorld(screenPosition, sceneSize)` e `Camera2D.worldToScreen(worldPosition, sceneSize)`. Ambos honram `bounds` + `aspectMode` e caem em identity quando `bounds.size <= 0`. Não usados em Pong/Demos/Tic hoje, mas é o caminho documentado para qualquer jogo novo com clique-no-mundo.
 - **Fail-fast**: qualquer erro (parse, `extends` desconhecido, exception num hook) propaga até o `Main.kt` e crasha o processo.
@@ -185,12 +198,12 @@ def _on_collide(self, other):           ← apenas relevante para BoxCollider e 
 Comunicação entre nós (gols, scoreboards, etc.) usa `Signal<T>`. Declare no top-level via a factory `signal(<type>)`:
 
 ```python
-# extends BoxCollider
+# extends CharacterBody2D
 
 scored: Signal = signal(str)          ← descoberto via AST; instanciado por-nó em attach
 
-def _on_collide(self, other):
-    if other.name == "rightGoal":
+def _on_area_entered(self, area):
+    if area.name == "rightGoal":
         self.scored.emit("Left")      ← emit dispara handlers em ordem de inscrição
 ```
 
