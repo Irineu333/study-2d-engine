@@ -13,9 +13,9 @@ The exact test MUST be implemented via the Separating Axis Theorem on the four c
 #### Scenario: Two rotated rectangles whose AABB envelopes overlap but whose OBBs do not are reported as not overlapping
 
 - **GIVEN** `RectangleShape2D` A with `size = Vec2(20f, 20f)` at `world = Transform(position = Vec2(0f, 0f), rotation = π/4)`
-- **AND** `RectangleShape2D` B with `size = Vec2(20f, 20f)` at `world = Transform(position = Vec2(22f, 0f), rotation = π/4)`
-- **AND** the AABB envelopes (~28.28 × 28.28 each, centered on each position) overlap
-- **AND** the actual rotated rectangles are tangent or separated
+- **AND** `RectangleShape2D` B with `size = Vec2(20f, 20f)` at `world = Transform(position = Vec2(15f, 15f), rotation = π/4)`
+- **AND** because the rectangle's local origin is the top-left corner, both rotated diamonds share an edge axis on which B is shifted by ~21.21 — beyond the side length of 20 — so the OBBs are separated
+- **AND** the AABB envelopes (~28.28 × 28.28 each) still overlap on the rectangle [0.86, 14.14] × [15, 28.28]
 - **WHEN** `overlap(A, aWorld, B, bWorld)` is computed
 - **THEN** the result is `false`
 
