@@ -72,17 +72,17 @@ object BundleLoader {
         name: String,
         types: List<KClass<out Node>> = emptyList(),
         scripting: ScriptHost? = null,
-    ): Scene
+    ): Node
 
     fun fromPath(
         bundleDir: File,
         types: List<KClass<out Node>> = emptyList(),
         scripting: ScriptHost? = null,
-    ): Scene
+    ): Node
 }
 ```
 
-`fromResources(name)` MUST resolver o bundle como um diretório lógico relativo à raiz do classpath JVM (ex.: `fromResources("pong")` carrega `pong/scene.json` via `ClassLoader.getResource`). `fromPath(bundleDir)` MUST resolver via filesystem. Ambas as funções MUST retornar uma `Scene` destacada (mesmo contrato de `SceneLoader.load`: `isLive == false`). O argumento `types` MUST aceitar tipos `Node` compilados em Kotlin que o jogo precisa expor para o `NodeRegistry` (factory derivada por reflection sobre construtor no-args). O argumento `scripting` MUST ser uma instância de `ScriptHost` quando o bundle referencia ao menos um script via campo `NodeEntry.script`; MAY ser `null` quando o bundle não referencia nenhum script. Internamente, ambas as funções MUST:
+`fromResources(name)` MUST resolver o bundle como um diretório lógico relativo à raiz do classpath JVM (ex.: `fromResources("pong")` carrega `pong/scene.json` via `ClassLoader.getResource`). `fromPath(bundleDir)` MUST resolver via filesystem. Ambas as funções MUST retornar o nó raiz destacado (mesmo contrato de `SceneLoader.load`: `isLive == false`, tipo do retorno `Node`), permitindo que o caller envolva o resultado em uma `SceneTree(root = result)` antes de entregar ao host. O argumento `types` MUST aceitar tipos `Node` compilados em Kotlin que o jogo precisa expor para o `NodeRegistry` (factory derivada por reflection sobre construtor no-args). O argumento `scripting` MUST ser uma instância de `ScriptHost` quando o bundle referencia ao menos um script via campo `NodeEntry.script`; MAY ser `null` quando o bundle não referencia nenhum script. Internamente, ambas as funções MUST:
 
 1. Ler `scene.json` via a `BundleSource` correspondente (classpath ou filesystem).
 2. Coletar o conjunto de paths de script referenciados na árvore (todo `NodeEntry.script` não nulo).
@@ -92,23 +92,32 @@ object BundleLoader {
 6. Para cada path validado, chamar `scripting.load(path, bundle)` para obter o `Map<String, Script>`.
 7. Instanciar a árvore via `SceneLoader.load(jsonText, scripts)` (ou equivalente), o qual cria Nodes nativos e atacha `ScriptInstance` aos Nodes cujo `script` foi declarado.
 
-A função MUST NOT consultar nenhum registro global de `ScriptHost`. O caller é responsável por construir e (opcionalmente) reutilizar a instância de `ScriptHost` entre múltiplas chamadas.
+A função MUST NOT consultar nenhum registro global de `ScriptHost`. O caller é responsável por construir e (opcionalmente) reutilizar a instância de `ScriptHost` entre múltiplas chamadas. O caller é também responsável por envolver o `Node` devolvido em uma `SceneTree` antes de entregá-lo ao `GameHost.run(...)`.
 
-#### Scenario: fromResources returns a detached scene from classpath bundle
+#### Scenario: fromResources returns a detached root from classpath bundle
 
 - **GIVEN** o classpath contém `pong/scene.json` na raiz dos recursos
 - **AND** o caller construiu um `ScriptHost` compatível com as extensões usadas no bundle
 - **WHEN** código chama `BundleLoader.fromResources("pong", scripting = host)`
-- **THEN** a função retorna uma `Scene` cuja `isLive == false`
+- **THEN** a função retorna um `Node` cujo `isLive == false`
+- **AND** o tipo declarado de retorno é `Node` (não `Scene`)
 - **AND** a árvore reflete o conteúdo de `pong/scene.json`
 
-#### Scenario: fromPath returns a detached scene from a directory
+#### Scenario: fromPath returns a detached root from a directory
 
 - **GIVEN** uma pasta `/tmp/foo/` com `scene.json` e `scripts/`
 - **AND** o caller construiu um `ScriptHost` compatível
 - **WHEN** código chama `BundleLoader.fromPath(File("/tmp/foo"), scripting = host)`
-- **THEN** a função retorna uma `Scene` cuja `isLive == false`
+- **THEN** a função retorna um `Node` cujo `isLive == false`
 - **AND** a árvore reflete o conteúdo de `/tmp/foo/scene.json`
+
+#### Scenario: Returned root can be wrapped in a SceneTree
+
+- **GIVEN** o resultado `root = BundleLoader.fromResources("pong", scripting = host)`
+- **WHEN** código executa `val tree = SceneTree(root = root); tree.start()`
+- **THEN** a `SceneTree` aceita o `root` sem erro de tipo
+- **AND** o `root.tree` passa a ser a `SceneTree` recém-criada após `start()`
+- **AND** `onEnter()` foi disparado em pre-order em todos os nós da árvore
 
 #### Scenario: Script-less bundle loads without a ScriptHost
 

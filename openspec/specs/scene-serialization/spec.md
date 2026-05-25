@@ -111,6 +111,8 @@ A engine SHALL prover um `NodeRegistry` que mantém um mapeamento **bidirecional
 - `registerEngineTypes()` — idempotente; registra todos os tipos `Node` concretos publicados por `:engine` usando seus FQN.
 - `clear()` — descarta todos os registros (apenas para uso em testes).
 
+Após esta change, `registerEngineTypes()` MUST registrar exatamente o seguinte conjunto de tipos: `Node`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `BoxCollider`. O identificador `com.neoutils.engine.scene.Scene` MUST NOT ser registrado por `registerEngineTypes()`, porque a classe `Scene` não existe mais em `:engine`. Tentativas de instanciar `com.neoutils.engine.scene.Scene` via `NodeRegistry.create(...)` MUST falhar com a mensagem padrão de tipo não registrado.
+
 Tipos com identificador terminando em `.kts` MUST ser tratados pelo registry como qualquer outro tipo — não há mais ramo especial. O `BundleLoader` (em `:engine-bundle`) MUST popular o registry com mapeamentos `script-path → (class, factory)` antes de chamar `SceneLoader.load`.
 
 #### Scenario: Registered type is instantiable by name
@@ -149,9 +151,16 @@ Tipos com identificador terminando em `.kts` MUST ser tratados pelo registry com
 - **THEN** a segunda chamada não lança exceção
 - **AND** o estado do registry é equivalente ao de uma única chamada
 
+#### Scenario: registerEngineTypes does not register Scene
+
+- **GIVEN** `NodeRegistry.clear()` foi chamado e depois `NodeRegistry.registerEngineTypes()`
+- **WHEN** código chama `NodeRegistry.create("com.neoutils.engine.scene.Scene")`
+- **THEN** uma exceção `UnknownNodeTypeException` é lançada cuja mensagem nomeia `com.neoutils.engine.scene.Scene`
+- **AND** a mensagem indica que o tipo não está registrado (não há tratamento especial)
+
 ### Requirement: SceneLoader round-trips a scene to JSON
 
-A engine SHALL prover um `SceneLoader` com duas operações: `save(scene: Scene): String` devolve a representação JSON da cena; `load(json: String): Scene` parseia JSON e devolve uma `Scene` destacada cujo árvore espelha o arquivo. O documento JSON MUST seguir esta forma:
+A engine SHALL prover um `SceneLoader` com duas operações: `save(root: Node): String` devolve a representação JSON da árvore enraizada em `root`; `load(json: String): Node` parseia JSON e devolve o nó raiz destacado cuja sub-árvore espelha o arquivo. O documento JSON MUST seguir esta forma:
 
 ```json
 {
@@ -166,13 +175,13 @@ A engine SHALL prover um `SceneLoader` com duas operações: `save(scene: Scene)
 }
 ```
 
-O campo `type` MUST ser **um identificador registrado em `NodeRegistry`** — seja um FQN (para tipos compilados) ou um path de script relativo ao bundle (para tipos de script). O `SceneLoader` MUST resolver o tipo exclusivamente por `NodeRegistry.create(type)`; ele MUST NOT discriminar `.kts` nem consultar qualquer SPI externa. Se o tipo não está registrado, o loader MUST lançar `UnknownNodeTypeException`.
+O campo `type` do `root` MUST ser **um identificador registrado em `NodeRegistry`** — qualquer subclasse concreta de `Node` registrada. O `SceneLoader` MUST resolver o tipo exclusivamente por `NodeRegistry.create(type)`; ele MUST NOT discriminar `.kts` nem consultar qualquer SPI externa; ele MUST NOT exigir que o root seja de um tipo específico (não há cast `as? Scene` ou equivalente). Se o tipo não está registrado, o loader MUST lançar `UnknownNodeTypeException`.
 
-A factory invocada produz a instância do nó, depois `name` é aplicado. Em seguida, se `script` é não-nulo, o callback `attachScript(node, scriptPath)` (fornecido pelo caller, tipicamente `BundleLoader`) MUST ser chamado e o `ScriptAttachment` resultante usado para roteamento; senão, considera-se um conjunto vazio de exports. Por fim, o `properties` bag é roteado: para cada chave, o loader decide se aplica via `@Inspect` setter do Node ou via `ScriptAttachment.applyExport`. O array `children` MUST preservar a ordem de `parent.children`. Carregar MUST instanciar cada nó, aplicar `name`, anexar o script (se houver), rotear `properties`, e em seguida anexar seus filhos em ordem via `addChild`. Carregar MUST NOT chamar `Scene.start()`.
+A factory invocada produz a instância do nó, depois `name` é aplicado. Em seguida, se `script` é não-nulo, o callback `attachScript(node, scriptPath)` (fornecido pelo caller, tipicamente `BundleLoader`) MUST ser chamado e o `ScriptAttachment` resultante usado para roteamento; senão, considera-se um conjunto vazio de exports. Por fim, o `properties` bag é roteado: para cada chave, o loader decide se aplica via `@Inspect` setter do Node ou via `ScriptAttachment.applyExport`. O array `children` MUST preservar a ordem de `parent.children`. Carregar MUST instanciar cada nó, aplicar `name`, anexar o script (se houver), rotear `properties`, e em seguida anexar seus filhos em ordem via `addChild`. Carregar MUST NOT chamar `SceneTree.start()` nem envolver o root em uma `SceneTree`; o caller decide quando criar a `SceneTree` e tornar a árvore viva.
 
 O campo `version` MUST ser exatamente `2`. Carregar um documento com `version != 2` MUST lançar exceção cuja mensagem nomeia a versão encontrada, a versão esperada (`2`), e a change que quebrou o formato (`godot-style-properties`). NÃO há leitor legacy para `version: 1`.
 
-Save/load do mesmo cena MUST ser idempotente: `save(load(save(scene)))` SHALL ser equivalente a `save(scene)` após canonicalização (whitespace-insensitive, key-ordered).
+Save/load do mesmo root MUST ser idempotente: `save(load(save(root)))` SHALL ser equivalente a `save(root)` após canonicalização (whitespace-insensitive, key-ordered).
 
 Quando `SceneLoader.save` serializa um nó, o campo `type` salvo MUST ser obtido por `NodeRegistry.identifierFor(node::class)`. Se o registry não conhece a classe, `save` MUST cair de volta para `node::class.qualifiedName` como último recurso. `save` MUST NOT consultar nenhuma SPI externa.
 
@@ -185,11 +194,25 @@ A ordem no JSON emitido MUST ser: primeiro todas as chaves de `@Inspect` (na ord
 
 #### Scenario: save produces well-formed JSON with version 2 and root
 
-- **WHEN** código chama `SceneLoader.save(scene)`
+- **WHEN** código chama `SceneLoader.save(root)` para qualquer root Node
 - **THEN** a string devolvida parseia como JSON
 - **AND** o objeto top-level tem campos `version` (inteiro **2**) e `root` (objeto)
 - **AND** `root` tem campos `type`, `name`, `properties`, `children`
 - **AND** `root` NÃO tem campo `props`
+
+#### Scenario: load returns the root node, not a Scene
+
+- **WHEN** código chama `SceneLoader.load(json)`
+- **THEN** o valor devolvido é declarado com tipo de retorno `Node`
+- **AND** nenhum cast `root as? Scene` é executado pelo loader
+- **AND** nenhuma exceção "Root node is not a Scene" pode ser produzida pelo loader
+
+#### Scenario: load accepts any concrete Node subtype as root
+
+- **GIVEN** um documento JSON `version: 2` com `root.type = "com.neoutils.engine.scene.Node"`
+- **WHEN** código chama `SceneLoader.load(json)`
+- **THEN** o resultado é uma instância de `Node` (não uma subclasse) e nenhuma exceção é lançada
+- **AND** o mesmo loader aceita `root.type = "com.neoutils.engine.scene.Node2D"`, `"com.neoutils.engine.scene.Camera2D"`, ou qualquer outro tipo registrado
 
 #### Scenario: load rejects version 1 with explicit message
 
@@ -199,39 +222,41 @@ A ordem no JSON emitido MUST ser: primeiro todas as chaves de `@Inspect` (na ord
 - **AND** a mensagem nomeia a versão encontrada (`1`) e a esperada (`2`)
 - **AND** a mensagem nomeia a change `godot-style-properties` como origem da quebra
 
-#### Scenario: load produces a detached scene
+#### Scenario: load returns a detached root
 
 - **WHEN** código chama `SceneLoader.load(json)`
-- **THEN** a `Scene` devolvida tem `isLive == false`
-- **AND** a cena não está registrada em nenhum `GameLoop`
+- **THEN** o root devolvido tem `isLive == false`
+- **AND** o root NÃO está registrado em nenhuma `SceneTree`
+- **AND** nenhum `onEnter` foi disparado em nenhum nó da árvore
 
 #### Scenario: load preserves tree shape and inspect properties
 
-- **GIVEN** um documento JSON `version: 2` descrevendo uma cena com três filhos em ordem específica, cada com propriedades `@Inspect` em `properties`
-- **WHEN** código chama `SceneLoader.load(json)` seguido de `Scene.start()`
+- **GIVEN** um documento JSON `version: 2` descrevendo uma árvore com três filhos em ordem específica, cada com propriedades `@Inspect` em `properties`
+- **WHEN** código chama `SceneLoader.load(json)` seguido de `SceneTree(root = result).start()`
 - **THEN** os filhos aparecem na mesma ordem
 - **AND** cada filho tem suas propriedades `@Inspect` com os valores do JSON
 
 #### Scenario: Round-trip is stable
 
-- **GIVEN** uma cena `scene`
-- **WHEN** código computa `json1 = SceneLoader.save(scene)` então `scene2 = SceneLoader.load(json1)` então `json2 = SceneLoader.save(scene2)`
+- **GIVEN** uma árvore `root`
+- **WHEN** código computa `json1 = SceneLoader.save(root)` então `root2 = SceneLoader.load(json1)` então `json2 = SceneLoader.save(root2)`
 - **THEN** `json1` e `json2` são documentos JSON equivalentes
 - **AND** os dois têm `"version": 2`
 - **AND** nenhum tem campo `props`
 
-#### Scenario: Loading does not invoke onEnter until start
+#### Scenario: Loading does not invoke onEnter until SceneTree start
 
 - **GIVEN** um tipo de nó cujo `onEnter` incrementa um contador
-- **WHEN** código chama `SceneLoader.load(json)` em uma cena contendo esse nó
+- **WHEN** código chama `SceneLoader.load(json)` em uma árvore contendo esse nó
 - **THEN** o contador NÃO foi incrementado
-- **AND** após chamada subsequente de `scene.start()`, o contador foi incrementado exatamente uma vez
+- **AND** após chamada subsequente de `SceneTree(root = result).start()`, o contador foi incrementado exatamente uma vez
 
 #### Scenario: SceneLoader does not discriminate .kts identifiers
 
 - **WHEN** o source de `SceneLoader.load` e `SceneLoader.save` é inspecionado
 - **THEN** não há checagem `endsWith(".kts")`
 - **AND** não há import de nenhuma SPI de scripting (`ScriptHost`, `ScriptHosts`)
+- **AND** não há referência ao símbolo `Scene` (a classe foi removida)
 
 #### Scenario: Script-typed entry resolves via NodeRegistry
 
@@ -248,15 +273,15 @@ A ordem no JSON emitido MUST ser: primeiro todas as chaves de `@Inspect` (na ord
 
 #### Scenario: save round-trips script-typed nodes by script path via identifierFor
 
-- **GIVEN** uma cena live cuja raiz é um nó cuja `KClass` foi registrada com identificador `"scripts/pong.nengine.kts"`
-- **WHEN** código chama `SceneLoader.save(scene)`
+- **GIVEN** uma árvore viva cuja raiz é um nó cuja `KClass` foi registrada com identificador `"scripts/pong.nengine.kts"`
+- **WHEN** código chama `SceneLoader.save(root)`
 - **THEN** o JSON devolvido tem `type = "scripts/pong.nengine.kts"` na raiz
 - **AND** NÃO o FQN runtime da classe gerada pelo script
 
 #### Scenario: save emits script exports inside properties
 
 - **GIVEN** um nó live com `@Inspect var size: Vec2` (valor `Vec2(16, 16)`) e um script anexado declarando `ballSize: float = 16.0` e `initialSpeed: float = 280.0`
-- **WHEN** código chama `SceneLoader.save(scene)`
+- **WHEN** código chama `SceneLoader.save(root)`
 - **THEN** o `properties` desse nó contém entradas para `size`, `ballSize` e `initialSpeed`
 - **AND** os valores correspondem aos atuais lidos via getter `@Inspect` e via `ScriptInstance.currentValue`
 - **AND** não existe campo `props` separado

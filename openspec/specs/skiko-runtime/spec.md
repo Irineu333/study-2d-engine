@@ -83,17 +83,17 @@ The `:engine-skiko` module SHALL provide a concrete `Input` implementation, `Ski
 
 ### Requirement: SkikoHost implements GameHost over SkiaLayer + JFrame
 
-The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `SkikoHost`, that hosts an `org.jetbrains.skiko.SkiaLayer` inside a Swing `JFrame`. The host's `run(scene, config)` MUST:
+The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `SkikoHost`, that hosts an `org.jetbrains.skiko.SkiaLayer` inside a Swing `JFrame`. The host's `run(tree, config)` MUST:
 
 1. Create a `JFrame` with `title = config.title`, `setSize(config.width, config.height)`, `setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE)`, and request focus.
 2. Add a `SkiaLayer` to the frame's content pane and set its `skikoView` to an object that, on each `onRender(canvas, width, height, nanoTime)` callback:
    a. Calls `input.beginTick()`.
    b. Updates `Debug.currentFps` via the host-owned `FpsCounter`.
-   c. Calls `scene.resize(width.toFloat(), height.toFloat())`.
+   c. Calls `tree.resize(width.toFloat(), height.toFloat())`.
    d. Binds `renderer` to `canvas`.
    e. Calls `loop.tick(dtNanos)`.
    f. Reads `Input.wasKeyPressed(config.toggleFpsKey)` and `Input.wasKeyPressed(config.toggleCollidersKey)` and toggles `Debug.showFps` / `Debug.colliderVisualization`.
-   g. Calls `renderDebugOverlay(renderer, scene)`.
+   g. Calls `renderDebugOverlay(renderer, tree)`.
    h. Unbinds the renderer.
    i. Calls `skiaLayer.needRedraw()` to drive the next frame.
 3. Register AWT `KeyListener`, `MouseListener`, and `MouseMotionListener` on the `JFrame` (or the `SkiaLayer`) that delegate to the `SkikoInput`.
@@ -103,10 +103,16 @@ The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `
 
 #### Scenario: SkikoHost.run opens a Skiko window and blocks
 
-- **WHEN** code calls `SkikoHost().run(scene, GameConfig("Pong", 800, 600))`
+- **WHEN** code calls `SkikoHost().run(SceneTree(root = pongRoot), GameConfig("Pong", 800, 600))`
 - **THEN** a desktop window opens with title `"Pong"` and size 800 by 600
 - **AND** the call does not return while the window remains open
 - **AND** when the user closes the window, the call returns
+
+#### Scenario: SkikoHost.run signature accepts SceneTree
+
+- **WHEN** the source of `SkikoHost.run` is inspected
+- **THEN** the parameter type is `SceneTree`, not `Scene`
+- **AND** no reference to the symbol `Scene` exists in the file
 
 #### Scenario: SkikoHost drives the loop via needRedraw
 
@@ -115,7 +121,7 @@ The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `
 
 #### Scenario: SkikoHost honors toggle keys via Input SPI
 
-- **WHEN** `SkikoHost().run(scene, GameConfig(toggleFpsKey = Key.F1, toggleCollidersKey = Key.F2))` is running and the user presses F1
+- **WHEN** `SkikoHost().run(tree, GameConfig(toggleFpsKey = Key.F1, toggleCollidersKey = Key.F2))` is running and the user presses F1
 - **THEN** `Debug.showFps` flips by the next rendered frame
 - **AND** no AWT `KeyListener` outside the engine is required for this behavior
 
