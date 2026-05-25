@@ -41,6 +41,7 @@ O cache é **estado runtime puro**: nunca persiste em `scene.json` (anotado com 
 :games:pong            ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
 :games:tictactoe       ← jogo Velha (humano vs humano), roda em Compose — sentinela do segundo backend
 :games:demos           ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
+:games:hello-world     ← exemplo code-only mínimo — único Label centralizado em Skiko, sem bundle nem scripting
 ```
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.
@@ -87,6 +88,14 @@ Durante a execução:
 - `5` Rotating box — 12 bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da cena); o quique das bolinhas acontece em coordenadas locais (paredes giram e transladam com a caixa), e rotação+posição do pai compõem na posição mundial de cada bolinha via `worldTransform()` — exercita o invariante de invalidação por mutação de ancestral (D5 do design.md) sob carga real de colisão e em frame não-estacionário. F2 mostra os AABBs envelopados das `BoxCollider`s rotacionadas.
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
+
+Para rodar Hello World:
+
+```sh
+./gradlew :games:hello-world:run
+```
+
+Janela 800×600 com `Hello, world!` centralizado; sem input — o texto se recentraliza ao redimensionar.
 
 ## Coding Conventions
 

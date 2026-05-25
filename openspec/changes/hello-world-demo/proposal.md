@@ -26,5 +26,5 @@ A engine ainda não tem um exemplo executável **mínimo e code-only** que sirva
 - **Código novo**: `games/hello-world/build.gradle.kts`, `games/hello-world/src/main/kotlin/com/neoutils/engine/games/helloworld/Main.kt` e `games/hello-world/src/main/kotlin/com/neoutils/engine/games/helloworld/CenteredLabel.kt`.
 - **Build**: `settings.gradle.kts` ganha `include(":games:hello-world")`.
 - **Docs**: `CLAUDE.md` lista o novo módulo e o comando `./gradlew :games:hello-world:run`.
-- **Engine core**: nenhuma mudança em `:engine`, `:engine-skiko`, `:engine-bundle*` ou `:engine-compose`.
+- **Engine core**: única mudança trivial em `:engine` — `Label` passa de `class` para `open class` para permitir a subclasse `CenteredLabel`. Nenhuma mudança em `:engine-skiko`, `:engine-bundle*` ou `:engine-compose`.
 - **Riscos**: baixo — é um sample isolado; quebrar este módulo não afeta `:games:pong`, `:games:tictactoe`, `:games:demos` nem a engine.

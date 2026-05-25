@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * `Text` node; the name mirrors Godot's `Label`.
  */
 @Serializable
-class Label : Node2D() {
+open class Label : Node2D() {
 
     @Inspect
     var text: String = ""
