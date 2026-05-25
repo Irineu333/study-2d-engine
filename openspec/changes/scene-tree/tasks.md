@@ -42,8 +42,8 @@
 
 ## 8. Skiko backend
 
-- [ ] 8.1 `SkikoHost.run(tree: SceneTree, config: GameConfig)`: mudar assinatura. Atualizar callback `skikoView.onRender` para chamar `tree.resize(...)`, `loop.tick(...)`, `renderDebugOverlay(renderer, tree)`.
-- [ ] 8.2 Conferir que `SkikoHost.kt` não importa nem referencia o símbolo `Scene` após a mudança.
+- [x] 8.1 `SkikoHost.run(tree: SceneTree, config: GameConfig)`: mudar assinatura. Atualizar callback `skikoView.onRender` para chamar `tree.resize(...)`, `loop.tick(...)`, `renderDebugOverlay(renderer, tree)`.
+- [x] 8.2 Conferir que `SkikoHost.kt` não importa nem referencia o símbolo `Scene` após a mudança.
 
 ## 9. Compose backend
 

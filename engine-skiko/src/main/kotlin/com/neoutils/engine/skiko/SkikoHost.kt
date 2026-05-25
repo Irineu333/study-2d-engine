@@ -8,7 +8,7 @@ import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.runtime.GameConfig
 import com.neoutils.engine.runtime.GameHost
-import com.neoutils.engine.scene.Scene
+import com.neoutils.engine.tree.SceneTree
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skiko.SkiaLayer
 import org.jetbrains.skiko.SkikoRenderDelegate
@@ -33,7 +33,7 @@ import javax.swing.SwingUtilities
  */
 class SkikoHost : GameHost {
 
-    override fun run(scene: Scene, config: GameConfig) {
+    override fun run(tree: SceneTree, config: GameConfig) {
         val latch = CountDownLatch(1)
 
         SwingUtilities.invokeLater {
@@ -46,7 +46,7 @@ class SkikoHost : GameHost {
             val input = SkikoInput()
             val renderer = SkikoRenderer()
             val physics = PhysicsSystem()
-            val loop = GameLoop(scene, renderer, input, physics, physicsHz = config.physicsHz)
+            val loop = GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)
             val fps = FpsCounter()
 
             val skiaLayer = SkiaLayer()
@@ -58,7 +58,7 @@ class SkikoHost : GameHost {
 
                 input.beginTick()
                 Debug.currentFps = fps.record(nanoTime)
-                scene.resize(width.toFloat(), height.toFloat())
+                tree.resize(width.toFloat(), height.toFloat())
                 renderer.bind(canvas)
                 try {
                     renderer.clear(Color.BLACK)
@@ -69,7 +69,7 @@ class SkikoHost : GameHost {
                     if (input.wasKeyPressed(config.toggleCollidersKey)) {
                         Debug.colliderVisualization = !Debug.colliderVisualization
                     }
-                    renderDebugOverlay(renderer, scene)
+                    renderDebugOverlay(renderer, tree)
                 } finally {
                     renderer.unbind()
                 }
@@ -99,7 +99,7 @@ class SkikoHost : GameHost {
 
             frame.addWindowListener(object : WindowAdapter() {
                 override fun windowClosed(e: WindowEvent) {
-                    scene.stop()
+                    tree.stop()
                     skiaLayer.dispose()
                     latch.countDown()
                 }
