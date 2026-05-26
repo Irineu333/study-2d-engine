@@ -13,10 +13,10 @@ import com.neoutils.engine.scene.Node
  */
 class DemoSwitcherRoot : Node() {
 
-    enum class Slot { Orbit, Scale, Spawner, Stress, RotatingBox, TumblingSwarm }
+    enum class Slot { SolarSystem, Scale, Spawner, Stress, RotatingBox, TumblingSwarm }
 
     private val factories: Map<Slot, () -> Node> = mapOf(
-        Slot.Orbit to ::TransformOrbitDemo,
+        Slot.SolarSystem to ::SolarSystemDemo,
         Slot.Scale to ::ScaleHierarchyDemo,
         Slot.Spawner to ::SpawnerDemo,
         Slot.Stress to ::CollisionStressDemo,
@@ -24,7 +24,7 @@ class DemoSwitcherRoot : Node() {
         Slot.TumblingSwarm to ::TumblingSwarmDemo,
     )
 
-    private var active: Slot = Slot.Orbit
+    private var active: Slot = Slot.SolarSystem
     private lateinit var activeNode: Node
     private val hud = HudOverlay { active }
 
@@ -56,7 +56,7 @@ class DemoSwitcherRoot : Node() {
         super.onProcess(dt)
         val input = tree?.input ?: return
         when {
-            input.wasKeyPressed(Key.DIGIT_1) -> select(Slot.Orbit)
+            input.wasKeyPressed(Key.DIGIT_1) -> select(Slot.SolarSystem)
             input.wasKeyPressed(Key.DIGIT_2) -> select(Slot.Scale)
             input.wasKeyPressed(Key.DIGIT_3) -> select(Slot.Spawner)
             input.wasKeyPressed(Key.DIGIT_4) -> select(Slot.Stress)
@@ -70,7 +70,7 @@ private class HudOverlay(private val slot: () -> DemoSwitcherRoot.Slot) : Node()
 
     override fun onDraw(renderer: Renderer) {
         val name = when (slot()) {
-            DemoSwitcherRoot.Slot.Orbit -> "1. Transform orbit (rotation -> position)"
+            DemoSwitcherRoot.Slot.SolarSystem -> "1. Solar system (nested transform composition)"
             DemoSwitcherRoot.Slot.Scale -> "2. Scale hierarchy (parent scale -> child size)"
             DemoSwitcherRoot.Slot.Spawner -> "3. Spawner (mutate during update/collide)"
             DemoSwitcherRoot.Slot.Stress -> "4. Collision stress (world-transform cache)"

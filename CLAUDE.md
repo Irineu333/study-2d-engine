@@ -81,7 +81,7 @@ Para rodar Demos:
 
 Durante a execução:
 
-- `1` Transform orbit — pai rotacionando faz os filhos orbitarem (composição de rotação sobre posição, A1)
+- `1` Solar system — Sol amarelo no centro com 8 planetas (Mercúrio→Netuno) e as luas conhecidas (Lua na Terra; Io, Europa, Ganimedes, Calisto em Júpiter; Titã em Saturno; Tritão em Netuno) orbitando seus pais. Saturno carrega um `SaturnRing` (anel achatado via scale não-uniforme). Exercita o invariante A1 — composição aninhada de transform — em até 4 níveis (Sol → órbita-planeta → planeta → órbita-lua → lua), validando que `world()` cacheia corretamente sob mutação simultânea de múltiplos ancestrais por frame.
 - `2` Scale hierarchy — pai com `scale` oscilando faz o filho crescer e encolher (composição de scale via `Shape.onRender`, A1)
 - `3` Spawner — clique do mouse adiciona bolinhas durante `onUpdate`; o trap central (`Area2D`) remove durante `onAreaEntered` (mutação durante traversal, A4); F2 mostra que o overlay de colliders sai do `GameHost` (A2) e usa cores distintas para `Area2D` vs `PhysicsBody2D`.
 - `4` Collision stress — 30 `CharacterBody2D`s (uma por bolinha) usando `moveAndCollide` para bouncing CCD-correto contra 4 `StaticBody2D` paredes (`-x`, `+x`, `-y`, `+y` da scene) e contra outras bolinhas. Sem tunneling estrutural mesmo em alta velocidade — TOI swept é exato no eixo motion; reflect na `collision.normal`. F2 mostra os AABBs das `CollisionShape2D` (vermelho para Bodies). Demonstra a API Godot-canônica `move_and_collide`. As paredes acompanham `tree.size` em tempo real durante resize da janela (via `BoundaryWalls`).
