@@ -67,7 +67,15 @@ The engine SHALL provide a top-level function `fun sweepOverlap(a: Shape2D, aWor
 
 When the pair is `RectangleShape2D` vs `RectangleShape2D` and at least one transform has `rotation != 0f`, the function MUST use a temporal SAT (Separating Axis Theorem with motion-projection per axis) on the four candidate axes (two normals per OBB). When the pair is `CircleShape2D` vs `RectangleShape2D` (in either order) with the rect rotated, the function MUST transform the problem into the rect's local frame (inverse-rotate circle position and motion), reuse the axis-aligned circle-vs-rect math, and rotate the resulting `point` and `normal` back into the original frame.
 
-For shapes returning `null`, the call MUST not panic — it MUST simply indicate "no swept contact found in `[0, 1]`". Callers (e.g. `CharacterBody2D.moveAndCollide`) interpret `null` as "advance the full motion".
+For shapes returning `null`, the call MUST not panic — it MUST simply indicate "no swept contact found in `[0, 1]`". Callers (e.g. `CharacterBody2D.moveAndCollide`, `RigidBody2D` solver) interpret `null` as "advance the full motion".
+
+`SweepResult.point` MUST be the **geometric contact point** at the moment of contact in the same frame as `aWorld`/`bWorld`, with these refinements per pair:
+
+- **Circle vs Circle**: the point lies on circle A's surface at the moment of contact along the contact normal.
+- **Circle vs Rectangle**: the point is the closest-point on the rectangle's surface to the circle center at the moment of contact (clamping circle-local coordinates inside the rect's local frame and rotating back when the rect is rotated).
+- **Rectangle vs Rectangle**: the point is the vertex of the swept (moving) rect that is most penetrated along `-normal` at the moment of contact; vertices tied within a small epsilon are averaged so face-vs-face contacts collapse to the face midpoint.
+
+`SweepResult.point` MUST NOT be the geometric center of either shape (which was an acceptable approximation in the prior contract but is insufficient for angular contact resolution).
 
 #### Scenario: Swept circle-vs-circle returns the analytic TOI
 
@@ -124,6 +132,20 @@ For shapes returning `null`, the call MUST not panic — it MUST simply indicate
 - **THEN** the function returns a non-null `SweepResult` with `toi == 0f`
 - **AND** `depenetration` is a non-zero vector along the SAT axis of least overlap (the minimum-translation vector pointing from B toward A)
 
+#### Scenario: SweepResult.point is on A's surface for circle-vs-circle, not at A's center
+
+- **GIVEN** circle A radius `5f` at `(0f, 0f)`, motion `(20f, 0f)`, circle B radius `5f` at `(12f, 0f)`
+- **WHEN** code calls `sweepOverlap(...)` and receives a non-null result
+- **THEN** `result.point` lies on A's surface at the contact moment (its position is consistent with `centroA_at_contact + n * radiusA`)
+- **AND** `result.point` is NOT equal to A's center at the contact moment (`(2f, 0f)`)
+
+#### Scenario: SweepResult.point is the leading corner for rotated rect-vs-rect
+
+- **GIVEN** rect A `size = (4f, 4f)` at `(0f, 0f)` with `rotation = π / 6` swept by motion `(20f, 0f)` against axis-aligned rect B in the path
+- **WHEN** code calls `sweepOverlap(...)` and receives a non-null result
+- **THEN** `result.point` corresponds to A's vertex with the smallest projection onto `n` (the leading corner — the vertex that penetrates first)
+- **AND** `result.point` is NOT A's center
+
 ### Requirement: Behavioral integration test harness validates multi-frame sweep correctness
 
 The engine test suite SHALL include a `BehavioralSweepTest` (or analogous) file in `engine/src/test/.../physics/` that exercises `CharacterBody2D.moveAndCollide` across **multiple frames** via a real `GameLoop` with a stub `Renderer` and stub `Input`. Each scenario MUST construct a scene, run N ticks at fixed `dt` (16.666 ms), record positions/velocities across frames, and assert **trajectory properties** rather than single-call outputs. The harness MUST cover at minimum:
@@ -156,27 +178,44 @@ The harness MUST NOT depend on `Skiko`, `Compose`, or any backend with display s
 
 ### Requirement: Demos module ships a rotated-sweep visualization scene
 
-The `:games:demos` module SHALL include a scene that exercises the rotated swept path of `CharacterBody2D.moveAndCollide` visually in runtime (currently `TumblingSwarmDemo`, selectable via the `DemoSwitcherRoot` digit key). The scene MUST host multiple `CharacterBody2D` squares with non-zero `transform.rotation` (so every pair sweep routes through the rotated path, not the axis-aligned fast paths), arranged inside walls built from `StaticBody2D`. Each square MUST integrate an independent `angularVelocity` into its `transform.rotation` every physics tick, so the sweep snapshot of rotation varies across frames and the rotated path is exercised under motion + spin.
+The `:games:demos` module SHALL include a scene that exercises rotated swept collision visually in runtime (currently `TumblingSwarmDemo`, selectable via the `DemoSwitcherRoot` digit key). The scene MUST host multiple bodies with non-zero `transform.rotation` (so every pair sweep routes through the rotated path, not the axis-aligned fast paths), arranged inside walls built from `StaticBody2D`.
 
-Contact response MUST apply a 2D rigid-body elastic impulse at the contact point that updates both linear and angular velocity from a single `j·n` application: `j = -(1+e)·(v_rel·n) / (1/mA + 1/mB + (rA × n)² / IA + (rB × n)² / IB)` with `e = 1`, `vAP = vA + ω × rA`, and `r = P − centro` for each body. The contact point `P` MUST be derived from the OBB geometry (not the OBB center) so that the angular impulse is non-zero on glancing hits: at minimum the **leading corner** of the rotated square in the `-n` direction (averaged over corners tied within a small epsilon, collapsing face-vs-face contacts to the face midpoint and zero spin). Wall hits MAY additionally apply a tangential Coulomb-friction impulse capped at `μ·|jn|` so sliding couples to spin (rolling against the arena). Pair hits MUST use a symmetric contact point (midpoint of the two bodies' leading offsets toward each other) so `rA` and `rB` are balanced and the angular impulse on the two bodies is symmetric rather than dominated by one side's lever arm.
+Starting with the `add-rigid-body-2d` change, the bodies in this demo MUST be `RigidBody2D` instances (not `CharacterBody2D`), and the demo MUST NOT carry inline impulse math (no `resolveSquareSquare`, no `resolveSquareWall`, no `leadingOffset` helper). Linear AND angular response (including Coulomb friction tangential impulse) MUST be produced by the engine's solver from each body's `mass`, `inertia`, `restitution`, and `friction` configuration. The squares MUST have `restitution = 1f` (perfectly elastic — preserves the visible KE of the original demo) and `friction > 0f` (preserves the rolling-on-walls behavior of the original demo). Initial `linearVelocity` and `angularVelocity` MUST be set directly on the body (not on private `vx`/`vy`/`angularVel` fields).
 
-#### Scenario: A rotated body's corner hit against a wall induces spin
+Similarly, `CollisionStressDemo` MUST host `RigidBody2D` balls. Each ball MUST set `restitution = 1f` and `friction = 0f` to preserve the visible elastic-bouncing behavior of the original demo. The demo MUST NOT call `moveAndCollide` or apply `vel.reflect(normal)` in `onPhysicsProcess` — the engine integrates and resolves.
 
-- **GIVEN** a `CharacterBody2D` square at rotation `π / 6` moving frontally into a `StaticBody2D` wall (so contact is along an OBB corner, not a flat face)
-- **WHEN** the demo's physics tick processes the collision
-- **THEN** the body's `angularVelocity` after the collision differs from before by a non-zero amount (the lever arm of the contact corner relative to the body's center is non-zero, so the impulse produces angular change)
+#### Scenario: Tumbling squares are RigidBody2D after the change
 
-#### Scenario: A rotated body sliding along a wall picks up rolling
+- **WHEN** the `:games:demos` source tree is inspected after the `add-rigid-body-2d` change
+- **THEN** `TumblingSquare` extends `RigidBody2D`, not `CharacterBody2D`
+- **AND** `TumblingSwarmDemo.kt` no longer contains a `resolveSquareSquare`, `resolveSquareWall`, or `leadingOffset` helper
+- **AND** `TumblingSquare.onPhysicsProcess` either does not exist or contains no contact-resolution math
 
-- **GIVEN** a `CharacterBody2D` square in tangential motion along a wall (velocity component parallel to the wall is non-zero at the contact)
-- **WHEN** the demo's contact response applies the Coulomb-friction tangential impulse
-- **THEN** the body's `angularVelocity` after the contact has changed in a sense consistent with rolling (sliding direction transfers to spin), bounded by the `μ·|jn|` cap
+#### Scenario: Stress balls are RigidBody2D with restitution 1
 
-#### Scenario: Pair contact between two squares conserves angular momentum locally
+- **WHEN** the `:games:demos` source tree is inspected after the `add-rigid-body-2d` change
+- **THEN** `Ball` extends `RigidBody2D`, not `CharacterBody2D`
+- **AND** `Ball`'s constructor or `init` sets `restitution = 1f` and `friction = 0f`
+- **AND** `Ball.onPhysicsProcess` either does not exist or does not call `moveAndCollide`
 
-- **GIVEN** two `CharacterBody2D` squares colliding in a glancing offset hit (the contact normal is not aligned with the line between centers)
-- **WHEN** the demo's pair contact response applies the elastic impulse with the symmetric leading-midpoint contact point
-- **THEN** the angular impulse magnitudes applied to the two bodies are of comparable order (one body's lever arm does not dominate the other by an unbounded factor), and the per-collision update preserves total linear + angular momentum and total kinetic energy within float precision
+#### Scenario: A rotated body's corner hit against a wall induces spin (engine-resolved)
+
+- **GIVEN** a `RigidBody2D` square at rotation `π / 6` moving frontally into a `StaticBody2D` wall (so contact is along an OBB corner, not a flat face)
+- **WHEN** the engine's physics tick processes the collision
+- **THEN** the body's `angularVelocity` after the collision differs from before by a non-zero amount (lever arm of the contact corner relative to the body's center is non-zero; the impulse produces angular change)
+
+#### Scenario: A rotated body sliding along a wall picks up rolling (engine-resolved)
+
+- **GIVEN** a `RigidBody2D` square with `friction > 0f` in tangential motion along a wall (velocity component parallel to the wall is non-zero at the contact)
+- **WHEN** the engine's solver applies the Coulomb-friction tangential impulse
+- **THEN** the body's `angularVelocity` after the contact has changed in a sense consistent with rolling (sliding direction transfers to spin), bounded by the `μ * |jn|` cap
+
+#### Scenario: Pair contact between two RigidBody2D squares conserves angular momentum locally
+
+- **GIVEN** two `RigidBody2D` squares with `restitution = 1f`, `friction = 0f`, colliding in a glancing offset hit (the contact normal is not aligned with the line between centers)
+- **WHEN** the engine's solver applies the elastic impulse with the real contact point from `SweepResult.point`
+- **THEN** the angular impulse magnitudes applied to the two bodies are of comparable order (one body's lever arm does not dominate the other by an unbounded factor)
+- **AND** the per-collision update preserves total linear + angular momentum and total kinetic energy within float precision (verifiable via `tree.totalLinearMomentum()`, `tree.totalAngularMomentum()`, `tree.totalKineticEnergy()`)
 
 ### Requirement: Area2D exposes persistent overlap queries
 
