@@ -75,6 +75,8 @@ Para rodar Velha:
 ./gradlew :games:tictactoe:run
 ```
 
+Velha carrega via `BundleLoader.fromResources("tictactoe", scripting = python)` (em `:games:tictactoe/src/main/resources/tictactoe/`, com `scene.json` na raiz e `scripts/board.py`) — mesma pipeline do Pong; aqui ela serve como prova viva de que `ComposeHost` consome o resultado de `BundleLoader` sem ajuste algum no backend. O root é um `Node` plain com `script = "scripts/board.py"` e quatro filhos: um `Camera2D` (`bounds = 600×600`), quatro `Line2D` formando a grade 3×3, e um `Label` `status`. Toda lógica de gameplay (estado das 9 células, hit-test, vitória/empate, ghost, linha vencedora) mora em `board.py` (`# extends Node`); o único Kotlin que sobrou no módulo é `Main.kt`, que instancia `PythonScriptHost.create()`, chama o `BundleLoader`, envolve o root em `SceneTree(root = ...)` e entrega ao `ComposeHost`.
+
 Durante o jogo:
 
 - Clique esquerdo numa célula vazia faz a jogada do jogador atual (X começa, depois alterna O)
@@ -200,7 +202,7 @@ def _on_body_exited(self, body):
   - `_on_body_entered(self, body)` — disparado quando começa sobreposição com um `PhysicsBody2D` (Static ou Character).
   - `_on_body_exited(self, body)` — análogo, no fim da sobreposição.
   - **Built-in signals** em cada `CollisionObject2D`: `area_entered`, `area_exited`, `body_entered`, `body_exited`, todos `Signal`s do tipo apropriado. Conecte com `self.body_entered.connect(handler)` ou via `script_of(other_node).area_entered.connect(...)`.
-- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `CollisionObject2D`, `Area2D`, `PhysicsBody2D`, `StaticBody2D`, `CharacterBody2D`, `CollisionShape2D`, `Shape2D`, `RectangleShape2D`, `CircleShape2D`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`.
+- **Bindings implícitos no Context**: `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `MouseButton`, `CollisionObject2D`, `Area2D`, `PhysicsBody2D`, `StaticBody2D`, `CharacterBody2D`, `CollisionShape2D`, `Shape2D`, `RectangleShape2D`, `CircleShape2D`, `Node2D`, `Camera2D`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `Label`, `Signal`, `signal`. `MouseButton` expõe `MouseButton.Left`, `MouseButton.Right`, `MouseButton.Middle` — para mouse discreto use `tree.input.wasMouseClicked(MouseButton.Left)` (e converta `pointerPosition` para mundo via `tree.screenToWorld(...)` antes de hit-testar).
 - **Acessar/escrever transform local**: `Node2D` expõe `position`, `rotation`, `scale` como properties — `self.position = Vec2(...)`, `self.rotation = math.pi / 4`, `self.scale = Vec2(2.0, 2.0)`. Não escreva componente individual: `self.position.y = 5.0` lança `AttributeError` em runtime porque `Vec2.y` é `val` Kotlin (fail-fast intencional). O idioma correto é reconstruir o `Vec2`: `self.position = Vec2(self.position.x, 5.0)`. Para ler a transform composta (mundo), use `self.world(): Transform`; ex.: `wp = self.world().position`.
 - **Coordenadas surface ↔ mundo**: scripts que precisam converter input em pixels (mouse) para coordenadas do mundo (ou vice-versa) usam `Camera2D.screenToWorld(screenPosition, sceneSize)` e `Camera2D.worldToScreen(worldPosition, sceneSize)`. Ambos honram `bounds` + `aspectMode` e caem em identity quando `bounds.size <= 0`. Não usados em Pong/Demos/Tic hoje, mas é o caminho documentado para qualquer jogo novo com clique-no-mundo.
 - **Fail-fast**: qualquer erro (parse, `extends` desconhecido, exception num hook) propaga até o `Main.kt` e crasha o processo.

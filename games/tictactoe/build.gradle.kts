@@ -10,6 +10,8 @@ plugins {
 dependencies {
     implementation(projects.engine)
     implementation(projects.engineCompose)
+    implementation(projects.engineBundle)
+    implementation(projects.engineBundlePython)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)

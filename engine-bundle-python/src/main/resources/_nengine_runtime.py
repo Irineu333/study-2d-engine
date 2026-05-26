@@ -19,6 +19,7 @@ def _nengine_load_module(source, path):
         'Transform': Transform,
         'NodeRef': NodeRef,
         'Key': Key,
+        'MouseButton': MouseButton,
         'CollisionObject2D': CollisionObject2D,
         'Area2D': Area2D,
         'PhysicsBody2D': PhysicsBody2D,

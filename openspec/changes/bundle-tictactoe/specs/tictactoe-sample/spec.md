@@ -4,9 +4,9 @@
 
 The project SHALL provide a `:games:tictactoe` module that depends on `:engine`, `:engine-compose`, `:engine-bundle`, and `:engine-bundle-python`, and contains a `main()` entry point that:
 
-1. Installs the Python `ScriptHost` via `PythonScriptHost.install()`.
-2. Loads the bundle via `BundleLoader.fromResources("tictactoe")`.
-3. Runs the resulting `Scene` through `ComposeHost`.
+1. Constructs a `PythonScriptHost` via `PythonScriptHost.create()`.
+2. Loads the bundle via `BundleLoader.fromResources("tictactoe", scripting = python)`, which returns the detached root `Node`.
+3. Wraps the root in `SceneTree(root = ...)` and passes the resulting `SceneTree` to `ComposeHost().run(tree, config)`.
 
 The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUST NOT depend on any other game module.
 
@@ -19,8 +19,8 @@ The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUS
 #### Scenario: Main.kt is a thin wiring entry point
 
 - **WHEN** `games/tictactoe/src/main/kotlin/.../Main.kt` is inspected
-- **THEN** `main()` calls `PythonScriptHost.install()`, then `BundleLoader.fromResources("tictactoe")`, then passes the resulting `Scene` to `ComposeHost().run(...)`
-- **AND** `main()` does not import any game-specific class (no `Board`, `TicTacToeScene`, `StatusText`, `Mark`)
+- **THEN** `main()` calls `PythonScriptHost.create()`, then `BundleLoader.fromResources("tictactoe", scripting = python)`, then wraps the result in `SceneTree(root = ...)` and passes the tree to `ComposeHost().run(...)`
+- **AND** `main()` does not import any game-specific class (no `Board`, `TicTacToeRoot`, `StatusText`, `Mark`)
 
 #### Scenario: Build depends on bundle modules
 
@@ -32,12 +32,12 @@ The module MUST be runnable via `./gradlew :games:tictactoe:run`. The module MUS
 
 The Tic-tac-toe scene SHALL be loaded from `src/main/resources/tictactoe/scene.json`, with the orchestrator logic in `src/main/resources/tictactoe/scripts/board.py`. The scene MUST include:
 
-- A root of type `com.neoutils.engine.scene.Scene` whose `script` is `scripts/board.py`.
+- A root of type `com.neoutils.engine.scene.Node` whose `script` is `scripts/board.py`.
 - A `Camera2D` child with `current: true` and `bounds = Rect(Vec2.ZERO, Vec2(600f, 600f))`.
 - Four `Line2D` children forming the grid (two vertical, two horizontal) declared with absolute coordinates.
 - A `Label` child named `status` holding the current status text.
 
-The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeScene` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`.
+The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`.
 
 #### Scenario: Bundle directory layout
 
@@ -45,10 +45,10 @@ The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTa
 - **THEN** the directory contains `scene.json` at its root
 - **AND** the directory contains `scripts/board.py`
 
-#### Scenario: Scene root is engine Scene with script
+#### Scenario: Scene root is a Node with script attached
 
 - **WHEN** `scene.json` is inspected
-- **THEN** the `root.type` is `"com.neoutils.engine.scene.Scene"`
+- **THEN** the `root.type` is `"com.neoutils.engine.scene.Node"`
 - **AND** the `root.script` is `"scripts/board.py"`
 
 #### Scenario: Grid is declarative via Line2D nodes
@@ -65,17 +65,17 @@ The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTa
 #### Scenario: No game-specific Kotlin types exist
 
 - **WHEN** `games/tictactoe/src/main/kotlin/` is inspected after this change
-- **THEN** no file named `Board.kt`, `Mark.kt`, `StatusText.kt`, or `TicTacToeScene.kt` exists
+- **THEN** no file named `Board.kt`, `Mark.kt`, `StatusText.kt`, or `TicTacToeRoot.kt` exists
 - **AND** the only `.kt` file present is `Main.kt`
 
 ### Requirement: Game state and rendering live in board.py
 
 The Python script `board.py` SHALL be the single source of truth for game state: the 9-cell array, current player, winner, draw flag, winning line. Cell hit-testing, move placement, win detection, and reset SHALL all live in `board.py`. The visual rendering of marks (X / O) and the winning line SHALL be issued from `board.py._draw(self, renderer)` using `renderer.drawLine` and `renderer.drawCircle`. The status `Label` SHALL be updated by `board.py` (writing to its `text` field via `NodeRef` resolution).
 
-#### Scenario: board.py extends Scene
+#### Scenario: board.py extends Node
 
 - **WHEN** `scripts/board.py` is inspected
-- **THEN** the first non-empty line is `# extends Scene`
+- **THEN** the first non-empty line is `# extends Node`
 
 #### Scenario: board.py owns game state
 
@@ -112,7 +112,7 @@ The game SHALL start with player `X` to move. After a legal move, the turn SHALL
 
 ### Requirement: Click input drives moves with hit-testing
 
-The script `board.py` SHALL detect a left mouse click whose pointer position falls inside an empty cell during an ongoing partida and place the current player's mark in that cell. Clicks outside any cell, or inside an already-occupied cell, MUST NOT mutate the board. Detection MUST be done by reading `scene.input.pointerPosition` and `scene.input.wasMouseClicked(MouseButton.Left)` from inside `_process(self, dt)`.
+The script `board.py` SHALL detect a left mouse click whose pointer position falls inside an empty cell during an ongoing partida and place the current player's mark in that cell. Clicks outside any cell, or inside an already-occupied cell, MUST NOT mutate the board. Detection MUST be done by reading `tree.input.pointerPosition` (projected to world coordinates via `tree.screenToWorld(...)`) and `tree.input.wasMouseClicked(MouseButton.Left)` from inside `_process(self, dt)`.
 
 #### Scenario: Click in empty cell places the current mark
 
@@ -221,3 +221,9 @@ The script `board.py` SHALL render a faded representation of the current player'
 **Reason:** The previous responsive layout — recomputing `board.cellSize` and `board.origin` on `onResize(width, height)` — is removed. The bundle declares `Camera2D.bounds = Rect(Vec2.ZERO, Vec2(600f, 600f))` and the game uses fixed cell layout in world coordinates. If the host window is resized, Compose lets the world appear letterboxed; the game itself does not recompute layout. This matches the bundle-driven model where the scene's world coordinates are declared upfront and not host-dependent.
 
 **Migration:** Window can be resized but game stays 600×600 in world. If responsive layout is needed in a future change, it would be a separate capability (`responsive-layout` or similar) and applied to multiple games.
+
+### Requirement: Tic-tac-toe uses Godot-style lifecycle names
+
+**Reason:** With game logic moved to `board.py`, the Kotlin-side hook overrides (`onProcess`, `onDraw`, `onEnter`, `onExit`) are no longer defined by the game module — they live in the engine `Node` base class and are dispatched to the Python script via the script host. This requirement was a transitional rename clause and is obsolete once the game has no game-specific Kotlin Nodes.
+
+**Migration:** Python hooks `_process(self, dt)`, `_draw(self, renderer)`, `_ready(self)`, `_exit_tree(self)` cover the same lifecycle; the engine routes them. Surface-size reads are done via `self.tree.size` / `self.tree.viewport` from the script, never from a removed `rootScene()` helper.

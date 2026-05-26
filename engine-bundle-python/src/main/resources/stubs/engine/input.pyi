@@ -1,6 +1,14 @@
-"""Stubs for engine input types: Key enum and Input interface."""
+"""Stubs for engine input types: Key enum, MouseButton enum, and Input interface."""
 
 from engine.math import Vec2
+
+
+class MouseButton:
+    """Mouse button constants. Each constant is an instance of MouseButton accessible as a class attribute."""
+
+    Left: "MouseButton"
+    Right: "MouseButton"
+    Middle: "MouseButton"
 
 
 class Key:
@@ -48,4 +56,12 @@ class Input:
 
     def was_key_pressed(self, key: Key) -> bool:
         """True only on the first frame the key transitions to pressed. Kotlin: wasKeyPressed(key)"""
+        ...
+
+    def is_mouse_down(self, button: MouseButton) -> bool:
+        """True while the mouse button is held. Kotlin: isMouseDown(button)"""
+        ...
+
+    def was_mouse_clicked(self, button: MouseButton) -> bool:
+        """True only on the first frame the button transitions from up to down. Kotlin: wasMouseClicked(button)"""
         ...

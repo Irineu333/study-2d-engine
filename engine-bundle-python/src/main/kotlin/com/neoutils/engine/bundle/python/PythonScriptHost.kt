@@ -2,6 +2,7 @@ package com.neoutils.engine.bundle.python
 
 import com.neoutils.engine.bundle.script.*
 import com.neoutils.engine.input.Key
+import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
@@ -32,6 +33,7 @@ import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Source
 import org.graalvm.polyglot.Value
 import org.graalvm.polyglot.proxy.ProxyExecutable
+import org.graalvm.polyglot.proxy.ProxyObject
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
@@ -133,6 +135,15 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
             discoverSignals(node)
         })
         bindings.putMember("Key", Key::class.java)
+        // Enum constants are not reachable via the raw Class binding (Polyglot
+        // surfaces it as a foreign object whose attributes are *instance*
+        // methods, not static fields). Expose each value through a ProxyObject
+        // so `MouseButton.Left` resolves to the actual `MouseButton.Left`
+        // enum instance for `input.wasMouseClicked(...)`.
+        bindings.putMember(
+            "MouseButton",
+            ProxyObject.fromMap(MouseButton.entries.associateBy { it.name }),
+        )
         bindings.putMember("CollisionObject2D", CollisionObject2D::class.java)
         bindings.putMember("Area2D", Area2D::class.java)
         bindings.putMember("PhysicsBody2D", PhysicsBody2D::class.java)
