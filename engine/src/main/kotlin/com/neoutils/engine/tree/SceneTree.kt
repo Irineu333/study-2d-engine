@@ -7,6 +7,7 @@ import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Node
+import com.neoutils.engine.scene.Node2D
 
 /**
  * Live owner of the scene graph. Holds the driver/host/query concerns that used
@@ -111,7 +112,7 @@ class SceneTree(val root: Node) {
         if (!root.isLive) return
         val view = currentCamera()?.computeViewTransform(size)
         if (view != null) {
-            renderer.pushTransform(view.first, view.second)
+            renderer.pushTransform(view.first, 0f, view.second)
             try {
                 runTraversal(rendering = true) { traverseDraw(root, renderer) }
             } finally {
@@ -201,7 +202,18 @@ class SceneTree(val root: Node) {
     }
 
     private fun traverseDraw(node: Node, renderer: Renderer) {
-        node.onDraw(renderer)
-        for (child in node.children) traverseDraw(child, renderer)
+        if (node is Node2D) {
+            val t = node.transform
+            renderer.pushTransform(t.position, t.rotation, t.scale)
+            try {
+                node.onDraw(renderer)
+                for (child in node.children) traverseDraw(child, renderer)
+            } finally {
+                renderer.popTransform()
+            }
+        } else {
+            node.onDraw(renderer)
+            for (child in node.children) traverseDraw(child, renderer)
+        }
     }
 }

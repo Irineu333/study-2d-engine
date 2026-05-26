@@ -9,7 +9,9 @@ def _ready(self):
 
 
 def _draw(self, renderer):
-    renderer.drawText(str(self._value), self.world().position, self.textSize, self.color)
+    # Drawn in local space; SceneTree.render pushes our world transform
+    # around _draw so the text lands at our world position.
+    renderer.drawText(str(self._value), Vec2(0.0, 0.0), self.textSize, self.color)
 
 
 def increment(self):

@@ -1,13 +1,16 @@
 package com.neoutils.engine.scene
 
+import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 
 /**
- * Single-line text drawn at the node's world position. Replaces the legacy
- * `Text` node; the name mirrors Godot's `Label`.
+ * Single-line text drawn at the node's local origin. `SceneTree.render`
+ * applies the world transform via `Renderer.pushTransform` around this
+ * `onDraw`. Alignment math (via `Renderer.measureText`) remains relative
+ * to the local origin.
  */
 @Serializable
 open class Label : Node2D() {
@@ -22,7 +25,7 @@ open class Label : Node2D() {
     var color: Color = Color.WHITE
 
     override fun onDraw(renderer: Renderer) {
-        renderer.drawText(text, world().position, size, color)
+        renderer.drawText(text, Vec2.ZERO, size, color)
         super.onDraw(renderer)
     }
 }

@@ -133,6 +133,9 @@ class Ball(
                 name = "art"
                 radius = BALL_SIZE / 2f
                 this.color = color
+                // Body's AABB lives at local (0,0)..(BALL_SIZE,BALL_SIZE);
+                // center the visual circle inside that box.
+                transform = Transform(position = Vec2(BALL_SIZE / 2f, BALL_SIZE / 2f))
             }
         )
     }

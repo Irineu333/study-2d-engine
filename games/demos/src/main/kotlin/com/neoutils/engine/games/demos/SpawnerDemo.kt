@@ -166,6 +166,9 @@ class SpawnerBall : Area2D() {
                     name = "art"
                     radius = SIZE / 2f
                     color = Color(0.3f, 0.85f, 0.95f)
+                    // Body's AABB lives at local (0,0)..(SIZE,SIZE); center the
+                    // visual circle inside that box.
+                    transform = Transform(position = Vec2(SIZE / 2f, SIZE / 2f))
                 }
             )
         }

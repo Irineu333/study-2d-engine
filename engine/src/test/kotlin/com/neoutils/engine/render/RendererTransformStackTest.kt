@@ -12,8 +12,8 @@ class RendererTransformStackTest {
     @Test
     fun `push and pop balanced track depth`() {
         val r = FakeRenderer()
-        r.pushTransform(Vec2(10f, 20f), Vec2.ONE)
-        r.pushTransform(Vec2.ZERO, Vec2(2f, 2f))
+        r.pushTransform(Vec2(10f, 20f), 0f, Vec2.ONE)
+        r.pushTransform(Vec2.ZERO, 0f, Vec2(2f, 2f))
         r.popTransform()
         r.popTransform()
         assertEquals(0, r.depth)
@@ -29,7 +29,7 @@ class RendererTransformStackTest {
     @Test
     fun `nested pop after extra push still throws when over-popped`() {
         val r = FakeRenderer()
-        r.pushTransform(Vec2.ZERO, Vec2.ONE)
+        r.pushTransform(Vec2.ZERO, 0f, Vec2.ONE)
         r.popTransform()
         assertFailsWith<IllegalStateException> { r.popTransform() }
     }
@@ -37,23 +37,26 @@ class RendererTransformStackTest {
     @Test
     fun `top reflects last push`() {
         val r = FakeRenderer()
-        r.pushTransform(Vec2(5f, 5f), Vec2(2f, 2f))
-        r.pushTransform(Vec2(1f, 1f), Vec2(0.5f, 0.5f))
+        r.pushTransform(Vec2(5f, 5f), 0f, Vec2(2f, 2f))
+        r.pushTransform(Vec2(1f, 1f), 1.5f, Vec2(0.5f, 0.5f))
         val top = r.top()
         assertTrue(top != null)
-        assertEquals(Vec2(1f, 1f), top.first)
-        assertEquals(Vec2(0.5f, 0.5f), top.second)
+        assertEquals(Vec2(1f, 1f), top.translation)
+        assertEquals(1.5f, top.rotation)
+        assertEquals(Vec2(0.5f, 0.5f), top.scale)
     }
 }
+
+private data class StackFrame(val translation: Vec2, val rotation: Float, val scale: Vec2)
 
 /** Minimal `Renderer` recording transform-stack ops; draw methods are no-ops. */
 private class FakeRenderer : Renderer {
 
-    private val stack: ArrayDeque<Pair<Vec2, Vec2>> = ArrayDeque()
+    private val stack: ArrayDeque<StackFrame> = ArrayDeque()
     val events: MutableList<String> = mutableListOf()
 
     val depth: Int get() = stack.size
-    fun top(): Pair<Vec2, Vec2>? = stack.lastOrNull()
+    fun top(): StackFrame? = stack.lastOrNull()
 
     override fun clear(color: Color) {}
     override fun drawRect(rect: Rect, color: Color, filled: Boolean) {}
@@ -63,8 +66,8 @@ private class FakeRenderer : Renderer {
     override fun measureText(text: String, size: Float): Vec2 = Vec2.ZERO
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
 
-    override fun pushTransform(translation: Vec2, scale: Vec2) {
-        stack.addLast(translation to scale)
+    override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {
+        stack.addLast(StackFrame(translation, rotation, scale))
         events += "push"
     }
 

@@ -32,7 +32,7 @@ fun renderDebugOverlay(renderer: Renderer, tree: SceneTree) {
     if (Debug.colliderVisualization) {
         val view = tree.currentCamera()?.computeViewTransform(tree.size)
         if (view != null) {
-            renderer.pushTransform(view.first, view.second)
+            renderer.pushTransform(view.first, 0f, view.second)
             try {
                 drawCollisionShapes(renderer, tree)
             } finally {

@@ -32,8 +32,9 @@ def _physics_process(self, dt):
 
 
 def _draw(self, renderer):
-    wp = self.world().position
-    renderer.drawRect(Rect(wp, self.size), Color(1.0, 1.0, 1.0, 1.0), True)
+    # Drawn in local space; SceneTree.render pushes our world transform
+    # around _draw so the rect lands at our world position.
+    renderer.drawRect(Rect(Vec2(0.0, 0.0), self.size), Color(1.0, 1.0, 1.0, 1.0), True)
 
 
 def _compute_human(self, dt):

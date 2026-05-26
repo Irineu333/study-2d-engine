@@ -213,20 +213,18 @@ class TumblingSquare(
     }
 
     override fun onDraw(renderer: Renderer) {
-        val world = world()
-        val c = cos(world.rotation)
-        val s = sin(world.rotation)
+        // Local-space polygon; SceneTree.render pushes our world transform
+        // (position + rotation) so vertices rotate with the body.
         val h = SQUARE_SIZE / 2f
-        val locals = listOf(
-            Vec2(-h, -h),
-            Vec2(h, -h),
-            Vec2(h, h),
-            Vec2(-h, h),
+        renderer.drawPolygon(
+            listOf(
+                Vec2(-h, -h),
+                Vec2(h, -h),
+                Vec2(h, h),
+                Vec2(-h, h),
+            ),
+            fillColor,
         )
-        val worldPts = locals.map { v ->
-            Vec2(v.x * c - v.y * s + world.position.x, v.x * s + v.y * c + world.position.y)
-        }
-        renderer.drawPolygon(worldPts, fillColor)
     }
 }
 

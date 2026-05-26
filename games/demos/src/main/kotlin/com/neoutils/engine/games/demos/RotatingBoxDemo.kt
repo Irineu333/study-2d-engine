@@ -144,26 +144,19 @@ class RotatingBox : Node2D() {
     }
 
     override fun onDraw(renderer: Renderer) {
-        val world = world()
-        val c = cos(world.rotation)
-        val s = sin(world.rotation)
-        val cx = world.position.x
-        val cy = world.position.y
-        val locals = arrayOf(
+        // Local-space outline; SceneTree.render pushes our world transform
+        // (position + rotation) so the square rotates with the wrapper.
+        val corners = arrayOf(
             Vec2(-HALF_BOX, -HALF_BOX),
             Vec2(HALF_BOX, -HALF_BOX),
             Vec2(HALF_BOX, HALF_BOX),
             Vec2(-HALF_BOX, HALF_BOX),
         )
-        val worldCorners = Array(4) { i ->
-            val v = locals[i]
-            Vec2(v.x * c - v.y * s + cx, v.x * s + v.y * c + cy)
-        }
         val outline = Color(1f, 1f, 1f, 0.7f)
         for (i in 0 until 4) {
             renderer.drawLine(
-                from = worldCorners[i],
-                to = worldCorners[(i + 1) % 4],
+                from = corners[i],
+                to = corners[(i + 1) % 4],
                 thickness = 2f,
                 color = outline,
             )
@@ -204,21 +197,12 @@ class BoxedBall(
         )
     }
 
-    // Custom render so the circle center honors the wrapper's rotation. The
-    // built-in `Circle2D` would place the circle at `world.position + (size/2)`
-    // in world axes — a known limitation that visually shifts the ball when
-    // the parent rotates, leaking through the box outline.
+    // Local-space draw. Body's AABB lives at local (0,0)..(BALL_SIZE,BALL_SIZE),
+    // so the visual center sits at (BALL_SIZE/2, BALL_SIZE/2); the engine push
+    // composes the wrapper's rotation around it.
     override fun onDraw(renderer: Renderer) {
-        val world = world()
-        val c = cos(world.rotation)
-        val s = sin(world.rotation)
-        val ox = BALL_SIZE / 2f
-        val oy = BALL_SIZE / 2f
         renderer.drawCircle(
-            center = Vec2(
-                world.position.x + (ox * c - oy * s),
-                world.position.y + (ox * s + oy * c),
-            ),
+            center = Vec2(BALL_SIZE / 2f, BALL_SIZE / 2f),
             radius = BALL_SIZE / 2f,
             color = currentColor,
             filled = true,

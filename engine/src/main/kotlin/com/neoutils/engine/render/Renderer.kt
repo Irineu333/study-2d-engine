@@ -27,17 +27,22 @@ interface Renderer {
 
     /**
      * Pushes a new entry onto a LIFO transform stack composing
-     * `translate(translation) ∘ scale(scale)` over the current top. All
-     * subsequent `draw*` calls render under the resulting cumulative transform
-     * until the matching [popTransform]. Pushes nest (deeper pushes compose
-     * on top of shallower ones).
+     * `translate(translation) ∘ rotate(rotation) ∘ scale(scale)` over the
+     * current top. All subsequent `draw*` calls render under the resulting
+     * cumulative transform until the matching [popTransform]. Pushes nest
+     * (deeper pushes compose on top of shallower ones).
+     *
+     * [rotation] is in radians and is applied around the **new** origin
+     * established by the preceding translation (i.e. `(0, 0)` in the
+     * translated frame). A local point `(x, y)` drawn after the push appears
+     * at `translation + R(rotation) · (scale.x · x, scale.y · y)`.
      *
      * The stack starts as identity at every backend-defined frame boundary
      * (e.g. each `SkikoRenderer.bind` or each new `DrawScope` invocation).
      * Every `pushTransform` issued during a frame MUST be matched by a
      * `popTransform` before the frame boundary ends.
      */
-    fun pushTransform(translation: Vec2, scale: Vec2)
+    fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2)
 
     /**
      * Pops the top entry of the transform stack, restoring whatever transform

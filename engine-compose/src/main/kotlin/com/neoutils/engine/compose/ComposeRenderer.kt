@@ -105,12 +105,14 @@ class ComposeRenderer(
         s.drawPath(path, color = color.toUi(), style = Fill)
     }
 
-    override fun pushTransform(translation: Vec2, scale: Vec2) {
+    override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {
         val s = required()
         s.drawContext.canvas.save()
         s.drawContext.transform.translate(translation.x, translation.y)
         // Pivot must be (0, 0); the default pivot is the surface center, which
-        // would shift draws by the surface's half-size on every scale.
+        // would shift draws by the surface's half-size on every scale/rotate.
+        // Compose's `rotate` builder expects degrees; engine `Transform.rotation` is radians.
+        s.drawContext.transform.rotate(rotation * 180f / kotlin.math.PI.toFloat(), Offset.Zero)
         s.drawContext.transform.scale(scale.x, scale.y, Offset.Zero)
         transformDepth++
     }

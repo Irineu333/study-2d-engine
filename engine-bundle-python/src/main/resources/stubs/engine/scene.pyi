@@ -118,21 +118,25 @@ class Label(Node2D):
 
 
 class ColorRect(Node2D):
-    """Axis-aligned filled rectangle anchored at the node's world position."""
+    """Filled rectangle anchored at the node's local origin. ``SceneTree.render``
+    applies the world transform via ``Renderer.pushTransform`` around ``onDraw``."""
 
     size: Vec2
     color: Color
 
 
 class Circle2D(Node2D):
-    """Filled circle whose center is ``world().position + (radius, radius)``."""
+    """Filled circle centered at the node's local origin. ``SceneTree.render``
+    applies the world transform via ``Renderer.pushTransform`` around ``onDraw``."""
 
     radius: float
     color: Color
 
 
 class Line2D(Node2D):
-    """Polyline drawn by chaining consecutive ``points`` offset by ``world().position``."""
+    """Polyline drawn by chaining consecutive ``points`` in **local space**.
+    ``SceneTree.render`` applies the world transform via ``Renderer.pushTransform``
+    around ``onDraw``."""
 
     points: List[Vec2]
     thickness: float
@@ -140,7 +144,8 @@ class Line2D(Node2D):
 
 
 class Polygon2D(Node2D):
-    """Filled polygon defined by ``points`` offset by ``world().position``."""
+    """Filled polygon defined by ``points`` in **local space**. ``SceneTree.render``
+    applies the world transform via ``Renderer.pushTransform`` around ``onDraw``."""
 
     points: List[Vec2]
     color: Color

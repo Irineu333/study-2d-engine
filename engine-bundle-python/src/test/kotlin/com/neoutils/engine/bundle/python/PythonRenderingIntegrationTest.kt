@@ -31,7 +31,7 @@ private class RecordingRenderer : Renderer {
     }
     override fun measureText(text: String, size: Float): Vec2 = Vec2(0f, 0f)
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
-    override fun pushTransform(translation: Vec2, scale: Vec2) {}
+    override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {}
     override fun popTransform() {}
 }
 

@@ -29,8 +29,8 @@ def _physics_process(self, dt):
 
 
 def _draw(self, renderer):
-    wp = self.world().position
-    center = Vec2(wp.x + self.ballSize / 2.0, wp.y + self.ballSize / 2.0)
+    # Drawn in local space; SceneTree.render pushes our world transform.
+    center = Vec2(self.ballSize / 2.0, self.ballSize / 2.0)
     renderer.drawCircle(center, self.ballSize / 2.0, Color(1.0, 1.0, 1.0, 1.0), True, 1.0)
 
 

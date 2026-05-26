@@ -111,10 +111,12 @@ class SkikoRenderer : Renderer {
         c.drawPath(builder.snapshot(), configurePaint(color, filled = true, thickness = 1f))
     }
 
-    override fun pushTransform(translation: Vec2, scale: Vec2) {
+    override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {
         val c = required()
         c.save()
         c.translate(translation.x, translation.y)
+        // Skia's `Canvas.rotate` expects degrees; engine `Transform.rotation` is radians.
+        c.rotate((rotation * 180f / kotlin.math.PI.toFloat()))
         c.scale(scale.x, scale.y)
         transformDepth++
     }

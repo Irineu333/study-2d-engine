@@ -41,22 +41,24 @@ class TransformOrbitDemo : Node2D() {
             transform = Transform(position = Vec2(400f, 300f))
         }
         val rotator = Rotator().apply { name = "Rotator" }
+        // Circle2D draws at its local origin (Vec2.ZERO), so the local
+        // position IS the visual center — no half-radius offset needed.
         val center = Circle2D().apply {
             radius = 6f
             color = Color.WHITE
-            transform = Transform(position = Vec2(-6f, -6f))
+            transform = Transform(position = Vec2.ZERO)
             name = "Center"
         }
         val orbiterA = Circle2D().apply {
             radius = 10f
             color = Color(0.95f, 0.4f, 0.2f)
-            transform = Transform(position = Vec2(RADIUS - 10f, -10f))
+            transform = Transform(position = Vec2(RADIUS, 0f))
             name = "OrbiterA"
         }
         val orbiterB = Circle2D().apply {
             radius = 10f
             color = Color(0.2f, 0.6f, 0.95f)
-            transform = Transform(position = Vec2(-RADIUS - 10f, -10f))
+            transform = Transform(position = Vec2(-RADIUS, 0f))
             name = "OrbiterB"
         }
         addChild(pivot)

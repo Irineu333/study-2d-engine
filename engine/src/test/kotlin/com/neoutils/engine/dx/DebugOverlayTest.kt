@@ -211,7 +211,7 @@ private sealed class Call {
     data class Line(val from: Vec2, val to: Vec2, val thickness: Float, val color: Color) : Call()
     data class Circle(val center: Vec2, val radius: Float, val color: Color, val filled: Boolean, val thickness: Float) : Call()
     data class Clear(val color: Color) : Call()
-    data class Push(val translation: Vec2, val scale: Vec2) : Call()
+    data class Push(val translation: Vec2, val rotation: Float, val scale: Vec2) : Call()
     object Pop : Call()
 }
 
@@ -232,6 +232,8 @@ private class RecordingRenderer : Renderer {
     }
     override fun measureText(text: String, size: Float): Vec2 = Vec2(text.length * size * 0.5f, size)
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
-    override fun pushTransform(translation: Vec2, scale: Vec2) { calls += Call.Push(translation, scale) }
+    override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {
+        calls += Call.Push(translation, rotation, scale)
+    }
     override fun popTransform() { calls += Call.Pop }
 }

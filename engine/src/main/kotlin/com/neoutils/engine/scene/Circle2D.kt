@@ -7,9 +7,10 @@ import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 
 /**
- * Filled circle. Center is `world().position + (radius, radius)` so the
- * bounding box left edge sits on the node's world position; the rendered
- * radius scales with the world transform's `scale.x`.
+ * Filled circle centered at the node's local origin. `SceneTree.render`
+ * applies the node's world transform (position, rotation, scale) via
+ * `Renderer.pushTransform` around this `onDraw`, so the rendered position
+ * and radius scale follow the ancestor chain automatically.
  */
 @Serializable
 open class Circle2D : Node2D() {
@@ -21,11 +22,9 @@ open class Circle2D : Node2D() {
     var color: Color = Color.WHITE
 
     override fun onDraw(renderer: Renderer) {
-        val world = world()
-        val effective = radius * world.scale.x
         renderer.drawCircle(
-            center = Vec2(world.position.x + radius, world.position.y + radius),
-            radius = effective,
+            center = Vec2.ZERO,
+            radius = radius,
             color = color,
             filled = true,
         )

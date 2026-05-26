@@ -8,11 +8,10 @@ import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 
 /**
- * Axis-aligned filled rectangle anchored at the node's world position.
- * `size` is composed with `world().scale`; rotation is part of the
- * composed transform but is not applied to the drawing yet (same limitation
- * as the legacy `Shape`; the visual rotation will land when `Renderer`
- * grows a `withTransform` helper).
+ * Filled rectangle anchored at the node's local origin with the given
+ * [size]. `SceneTree.render` applies the node's world transform (position,
+ * rotation, scale) via `Renderer.pushTransform` around this `onDraw`, so
+ * ancestor rotation and scale now reach the rect visually.
  */
 @Serializable
 open class ColorRect : Node2D() {
@@ -24,10 +23,7 @@ open class ColorRect : Node2D() {
     var color: Color = Color.WHITE
 
     override fun onDraw(renderer: Renderer) {
-        val world = world()
-        val w = size.x * world.scale.x
-        val h = size.y * world.scale.y
-        renderer.drawRect(Rect(world.position, Vec2(w, h)), color, filled = true)
+        renderer.drawRect(Rect(Vec2.ZERO, size), color, filled = true)
         super.onDraw(renderer)
     }
 }
