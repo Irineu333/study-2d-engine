@@ -9,5 +9,5 @@ enum class Key {
     SPACE, ESCAPE, ENTER, TAB, BACKSPACE,
     SHIFT_LEFT, SHIFT_RIGHT, CTRL_LEFT, CTRL_RIGHT,
     ALT_LEFT, ALT_RIGHT,
-    F1, F2,
+    F1, F2, F3,
 }

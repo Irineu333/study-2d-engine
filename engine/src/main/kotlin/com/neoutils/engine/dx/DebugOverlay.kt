@@ -50,6 +50,9 @@ fun renderDebugOverlay(renderer: Renderer, tree: SceneTree) {
             color = Color.WHITE,
         )
     }
+    if (Debug.showMomentumOverlay) {
+        MomentumOverlay.renderOverlay(renderer, tree.size.x, tree.size.y)
+    }
 }
 
 private fun drawCollisionShapes(renderer: Renderer, tree: SceneTree) {

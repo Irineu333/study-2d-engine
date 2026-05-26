@@ -1,8 +1,10 @@
 package com.neoutils.engine.physics
 
 import com.neoutils.engine.dx.Log
+import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
+import kotlin.math.max
 
 /**
  * Naive broad-phase (O(N²)) over every live [CollisionObject2D] in the tree.
@@ -36,7 +38,35 @@ class PhysicsSystem {
 
     private val previousOverlapping: MutableSet<UnorderedPair<CollisionObject2D>> = HashSet()
 
-    fun step(tree: SceneTree) {
+    /**
+     * Global gravity applied to every [RigidBody2D] each integration step,
+     * scaled per-body by [RigidBody2D.gravityScale]. Default `Vec2.ZERO`
+     * (zero-gravity sandbox). Setting non-zero gravity (e.g. `Vec2(0f, 980f)`)
+     * makes bodies fall.
+     */
+    var gravity: Vec2 = Vec2.ZERO
+
+    /**
+     * One physics tick. Order within the tick:
+     *
+     * 1. **Integrate forces** on every live [RigidBody2D]: add `gravity *
+     *    gravityScale + appliedForce/mass` and angular `appliedTorque/inertia`
+     *    to velocities, apply linear/angular damping, clear accumulators.
+     * 2. **Advance + resolve contacts** (TOI loop, up to R=4 iterations per
+     *    body) — sweep each [RigidBody2D] against same-parent
+     *    [PhysicsBody2D]s, apply bilateral impulse at each contact.
+     * 3. **Integrate angular**: `rotation += angularVelocity * dt`.
+     * 4. **Dispatch enter/exit** for the new overlapping set (existing
+     *    behavior, unchanged).
+     *
+     * Stages 1-3 produce no signals — only motion. Stage 4 sees post-resolution
+     * positions, so `_on_body_entered` reports the contact after impulse.
+     */
+    fun step(tree: SceneTree, dt: Float) {
+        integrate(tree, dt)
+        advanceAndResolve(tree, dt)
+        integrateAngular(tree, dt)
+
         // Drop any pair whose endpoint is no longer live before testing the
         // new state, so detached objects never receive `_on_*_exited`.
         previousOverlapping.removeAll { !it.a.isLive || !it.b.isLive }
@@ -164,6 +194,216 @@ class PhysicsSystem {
         }
     }
 
+    private fun integrate(tree: SceneTree, dt: Float) {
+        forEachRigidBody(tree) { r ->
+            val gravContrib = gravity * r.gravityScale
+            val forceContrib = if (r.mass != 0f) r.appliedForce * (1f / r.mass) else Vec2.ZERO
+            r.linearVelocity = r.linearVelocity + (gravContrib + forceContrib) * dt
+            val inertia = r.effectiveInertia
+            r.angularVelocity += if (inertia != 0f) r.appliedTorque / inertia * dt else 0f
+            r.linearVelocity = r.linearVelocity * max(0f, 1f - r.linearDamping * dt)
+            r.angularVelocity *= max(0f, 1f - r.angularDamping * dt)
+            r.clearAccumulators()
+        }
+    }
+
+    /**
+     * For every live [RigidBody2D], sweep its active shapes against every
+     * other same-parent [PhysicsBody2D] up to [TOI_ITERATIONS] times, resolve
+     * each contact with the impulse solver, and advance the body. Cross-body
+     * deduplication is solver-owned (the impulse mutates both sides in one
+     * call; the other side's own loop sees `v_rel·n >= 0` and skips).
+     */
+    private fun advanceAndResolve(tree: SceneTree, dt: Float) {
+        val rigids = collectRigidBodies(tree)
+        for (r in rigids) {
+            if (!r.isLive) continue
+            val parent = r.parent ?: continue
+            r.inEngineWrite = true
+            try {
+                var dtRemaining = dt
+                var iter = 0
+                while (iter < TOI_ITERATIONS && dtRemaining > 0f) {
+                    iter++
+                    val motion = r.linearVelocity * dtRemaining
+                    if (motion.x == 0f && motion.y == 0f) break
+                    val hit = sweepBestHit(r, motion, parent) ?: run {
+                        r.position = r.position + motion
+                        break
+                    }
+                    val (other, sweepResult) = hit
+                    val toi = sweepResult.toi
+                    r.position = r.position + motion * toi + sweepResult.depenetration
+                    resolveImpulse(
+                        r = r,
+                        other = other,
+                        normal = sweepResult.normal,
+                        contactPoint = sweepResult.point,
+                    )
+                    val frac = 1f - toi
+                    if (frac <= 0f) break
+                    dtRemaining *= frac
+                    // Tiny residual motion guard
+                    val vMagSq = r.linearVelocity.x * r.linearVelocity.x + r.linearVelocity.y * r.linearVelocity.y
+                    if (vMagSq * dtRemaining * dtRemaining < MIN_MOTION_SQ) break
+                }
+            } finally {
+                r.inEngineWrite = false
+            }
+        }
+    }
+
+    private fun integrateAngular(tree: SceneTree, dt: Float) {
+        forEachRigidBody(tree) { r ->
+            if (r.angularVelocity != 0f) {
+                r.inEngineWrite = true
+                try {
+                    r.rotation = r.rotation + r.angularVelocity * dt
+                } finally {
+                    r.inEngineWrite = false
+                }
+            }
+        }
+    }
+
+    private fun sweepBestHit(
+        r: RigidBody2D,
+        motion: Vec2,
+        parent: Node,
+    ): Pair<PhysicsBody2D, SweepResult>? {
+        val ownShapes = r.collectActiveShapes()
+        if (ownShapes.isEmpty()) return null
+        var bestHit: SweepResult? = null
+        var bestOther: PhysicsBody2D? = null
+        val tree = r.tree ?: return null
+        for (target in collectObjects(tree)) {
+            if (target === r) continue
+            if (target !is PhysicsBody2D) continue
+            if (target.disabled) continue
+            if (target.parent !== parent) continue
+            val targetShapes = target.collectActiveShapes()
+            if (targetShapes.isEmpty()) continue
+            for ((aShape, _) in ownShapes) {
+                val aShapeRes = aShape.shape ?: continue
+                val aTransformInParent = r.transform.compose(aShape.transform)
+                for ((bShape, _) in targetShapes) {
+                    val bShapeRes = bShape.shape ?: continue
+                    val bTransformInParent = target.transform.compose(bShape.transform)
+                    val res = sweepOverlap(
+                        aShapeRes, aTransformInParent, motion,
+                        bShapeRes, bTransformInParent,
+                    ) ?: continue
+                    if (bestHit == null || res.toi < bestHit.toi) {
+                        bestHit = res
+                        bestOther = target
+                    }
+                }
+            }
+        }
+        return if (bestHit != null && bestOther != null) bestOther to bestHit else null
+    }
+
+    /**
+     * Bilateral impulse resolution at contact `contactPoint` along `normal`
+     * (pointing from `other` toward `r`). Both `r` and `other` (when Rigid)
+     * are mutated in this single call; the "reciprocal" pass is implicit.
+     * `StaticBody2D` and `CharacterBody2D` are treated as infinite-mass
+     * obstacles (their velocity is unaffected).
+     *
+     * Combine rules: `e = max(eA, eB)`, `μ = sqrt(μA * μB)` (Box2D-style).
+     * Applies Coulomb friction after the normal impulse, capped at `μ·|jn|`.
+     */
+    private fun resolveImpulse(
+        r: RigidBody2D,
+        other: PhysicsBody2D,
+        normal: Vec2,
+        contactPoint: Vec2,
+    ) {
+        val otherRigid = other as? RigidBody2D
+        val centroA = r.position
+        val rA = contactPoint - centroA
+        val centroB = otherRigid?.position ?: other.position
+        val rB = contactPoint - centroB
+
+        val vA = r.linearVelocity + perp(r.angularVelocity, rA)
+        val vB = if (otherRigid != null) {
+            otherRigid.linearVelocity + perp(otherRigid.angularVelocity, rB)
+        } else {
+            Vec2.ZERO
+        }
+        val vRel = vA - vB
+        val vRelN = vRel.x * normal.x + vRel.y * normal.y
+        if (vRelN >= 0f) return // already separating
+
+        val invMA = 1f / r.mass
+        val invIA = 1f / r.effectiveInertia
+        val invMB = if (otherRigid != null) 1f / otherRigid.mass else 0f
+        val invIB = if (otherRigid != null) 1f / otherRigid.effectiveInertia else 0f
+
+        val eA = r.restitution
+        val eB = other.restitution
+        val muA = r.friction
+        val muB = other.friction
+        val eCombined = max(eA, eB)
+        val muCombined = kotlin.math.sqrt(muA * muB)
+
+        val rAcrossN = rA.x * normal.y - rA.y * normal.x
+        val rBcrossN = rB.x * normal.y - rB.y * normal.x
+        val denomN = invMA + invMB + rAcrossN * rAcrossN * invIA + rBcrossN * rBcrossN * invIB
+        if (denomN == 0f) return
+
+        val jn = -(1f + eCombined) * vRelN / denomN
+
+        r.linearVelocity = r.linearVelocity + normal * (jn * invMA)
+        r.angularVelocity += rAcrossN * jn * invIA
+        if (otherRigid != null) {
+            otherRigid.linearVelocity = otherRigid.linearVelocity - normal * (jn * invMB)
+            otherRigid.angularVelocity -= rBcrossN * jn * invIB
+        }
+
+        // Tangential friction (Coulomb)
+        val vTangX = vRel.x - vRelN * normal.x
+        val vTangY = vRel.y - vRelN * normal.y
+        val vTangMag = kotlin.math.sqrt(vTangX * vTangX + vTangY * vTangY)
+        if (vTangMag < FRICTION_EPS) return
+
+        val tx = vTangX / vTangMag
+        val ty = vTangY / vTangMag
+        val rAcrossT = rA.x * ty - rA.y * tx
+        val rBcrossT = rB.x * ty - rB.y * tx
+        val denomT = invMA + invMB + rAcrossT * rAcrossT * invIA + rBcrossT * rBcrossT * invIB
+        if (denomT == 0f) return
+
+        val jtBrake = vTangMag / denomT
+        val jt = kotlin.math.min(jtBrake, muCombined * kotlin.math.abs(jn))
+
+        r.linearVelocity = r.linearVelocity + Vec2(-tx, -ty) * (jt * invMA)
+        r.angularVelocity += rAcrossT * -jt * invIA
+        if (otherRigid != null) {
+            otherRigid.linearVelocity = otherRigid.linearVelocity - Vec2(-tx, -ty) * (jt * invMB)
+            otherRigid.angularVelocity -= rBcrossT * -jt * invIB
+        }
+    }
+
+    /** `cross(ω, r) = (-ω·r.y, ω·r.x)` — the linear velocity at point `r` from angular `ω`. */
+    private fun perp(omega: Float, r: Vec2): Vec2 = Vec2(-omega * r.y, omega * r.x)
+
+    private fun forEachRigidBody(tree: SceneTree, block: (RigidBody2D) -> Unit) {
+        forEachRigidBodyImpl(tree.root, block)
+    }
+
+    private fun forEachRigidBodyImpl(node: Node, block: (RigidBody2D) -> Unit) {
+        if (!node.isLive) return
+        if (node is RigidBody2D && !node.disabled) block(node)
+        for (child in node.children) forEachRigidBodyImpl(child, block)
+    }
+
+    private fun collectRigidBodies(tree: SceneTree): List<RigidBody2D> {
+        val out = mutableListOf<RigidBody2D>()
+        forEachRigidBody(tree) { out += it }
+        return out
+    }
+
     /**
      * Snapshot of every [CollisionObject2D] that is currently overlapping
      * [obj] (post-dispatch of the last [step]). Used by
@@ -186,6 +426,9 @@ class PhysicsSystem {
     companion object {
         private const val TAG = "PhysicsSystem"
         private const val MAX_RESOLUTION_ITERATIONS = 8
+        private const val TOI_ITERATIONS = 4
+        private const val MIN_MOTION_SQ = 1e-10f
+        private const val FRICTION_EPS = 1e-4f
     }
 }
 

@@ -2,9 +2,10 @@ package com.neoutils.engine.games.demos
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.PhysicsBody2D
 import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.RigidBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Circle2D
@@ -92,13 +93,7 @@ class Ball(
     initPos: Vec2,
     initVx: Float,
     initVy: Float,
-) : CharacterBody2D() {
-
-    @Transient
-    internal var vx: Float = initVx
-
-    @Transient
-    internal var vy: Float = initVy
+) : RigidBody2D() {
 
     @Transient
     private val baseColor: Color = color
@@ -108,8 +103,17 @@ class Ball(
 
     init {
         transform = Transform(position = initPos)
+        // Elastic, frictionless: visually equivalent to the previous
+        // CharacterBody2D + reflect-on-normal behaviour, but the engine
+        // solver now handles ball-vs-ball momentum transfer correctly.
+        restitution = 1f
+        friction = 0f
+        linearVelocity = Vec2(initVx, initVy)
         addChild(
             CollisionShape2D().apply {
+                // Center the rect on the body's position so the rigid-body
+                // solver's center of mass matches the visual.
+                transform = Transform(position = Vec2(-BALL_SIZE / 2f, -BALL_SIZE / 2f))
                 shape = RectangleShape2D().apply { size = Vec2(BALL_SIZE, BALL_SIZE) }
             }
         )
@@ -118,27 +122,14 @@ class Ball(
                 name = "art"
                 radius = BALL_SIZE / 2f
                 this.color = color
-                // Body's AABB lives at local (0,0)..(BALL_SIZE,BALL_SIZE);
-                // center the visual circle inside that box.
-                transform = Transform(position = Vec2(BALL_SIZE / 2f, BALL_SIZE / 2f))
             }
         )
+        bodyEntered.connect { other -> onContactFlash(other) }
     }
 
-    override fun onPhysicsProcess(dt: Float) {
-        // CCD-correct kinematic move: sweep against every body until contact,
-        // reflect velocity on the contact normal, then optionally slide the
-        // remainder. For pure bouncing the residual is discarded — the next
-        // frame starts fresh from the post-reflect velocity.
-        val collision = moveAndCollide(Vec2(vx, vy) * dt) ?: return
-        val reflected = Vec2(vx, vy).reflect(collision.normal)
-        vx = reflected.x
-        vy = reflected.y
-
-        // Cosmetic flash: both sides flash white when ball-vs-ball.
+    private fun onContactFlash(other: PhysicsBody2D) {
         setArtColor(Color.WHITE)
         flashTimer = 0.15f
-        val other = collision.collider
         if (other is Ball) {
             other.setArtColor(Color.WHITE)
             other.flashTimer = 0.15f

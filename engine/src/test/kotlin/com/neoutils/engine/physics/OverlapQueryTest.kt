@@ -25,7 +25,7 @@ private fun mount(root: Node): SceneTree {
     val system = PhysicsSystem()
     tree.physicsSystem = system
     tree.start()
-    system.step(tree)
+    system.step(tree, 1f / 60f)
     return tree
 }
 

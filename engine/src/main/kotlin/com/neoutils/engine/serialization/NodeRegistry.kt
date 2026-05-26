@@ -3,6 +3,7 @@ package com.neoutils.engine.serialization
 import com.neoutils.engine.physics.Area2D
 import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.RigidBody2D
 import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Circle2D
@@ -74,6 +75,8 @@ object NodeRegistry {
         register(Area2D::class) { Area2D() }
         register(StaticBody2D::class) { StaticBody2D() }
         register(CharacterBody2D::class) { CharacterBody2D() }
+        register(RigidBody2D::class) { RigidBody2D() }
+        register("engine.RigidBody2D", RigidBody2D::class) { RigidBody2D() }
         register(CollisionShape2D::class) { CollisionShape2D() }
         register(Timer::class) { Timer() }
         register("engine.Timer", Timer::class) { Timer() }

@@ -35,6 +35,7 @@ from engine.physics import (
     PhysicsBody2D as PhysicsBody2D,
     StaticBody2D as StaticBody2D,
     CharacterBody2D as CharacterBody2D,
+    RigidBody2D as RigidBody2D,
 )
 from engine.serialization import (
     NodeRef as NodeRef,
@@ -71,6 +72,7 @@ __all__ = [
     "PhysicsBody2D",
     "StaticBody2D",
     "CharacterBody2D",
+    "RigidBody2D",
     "NodeRef",
     "Signal",
     "Disposable",

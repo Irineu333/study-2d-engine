@@ -1,6 +1,8 @@
 package com.neoutils.engine.loop
 
+import com.neoutils.engine.dx.Debug
 import com.neoutils.engine.dx.Log
+import com.neoutils.engine.dx.MomentumOverlay
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
@@ -56,7 +58,8 @@ class GameLoop(
             tree.applyPending()
             tree.physicsProcess(physicsDt)
             tree.applyPending()
-            physics.step(tree)
+            physics.step(tree, physicsDt)
+            if (Debug.showMomentumOverlay) MomentumOverlay.recordSample(tree)
             accumulator -= physicsDt
             steps++
         }

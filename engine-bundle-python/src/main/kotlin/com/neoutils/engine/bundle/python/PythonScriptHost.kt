@@ -7,6 +7,7 @@ import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.Area2D
 import com.neoutils.engine.physics.CharacterBody2D
+import com.neoutils.engine.physics.RigidBody2D
 import com.neoutils.engine.physics.CircleShape2D
 import com.neoutils.engine.physics.CollisionObject2D
 import com.neoutils.engine.physics.CollisionShape2D
@@ -137,6 +138,7 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
         bindings.putMember("PhysicsBody2D", PhysicsBody2D::class.java)
         bindings.putMember("StaticBody2D", StaticBody2D::class.java)
         bindings.putMember("CharacterBody2D", CharacterBody2D::class.java)
+        bindings.putMember("RigidBody2D", RigidBody2D::class.java)
         bindings.putMember("CollisionShape2D", CollisionShape2D::class.java)
         bindings.putMember("Shape2D", Shape2D::class.java)
         bindings.putMember("RectangleShape2D", RectangleShape2D::class.java)

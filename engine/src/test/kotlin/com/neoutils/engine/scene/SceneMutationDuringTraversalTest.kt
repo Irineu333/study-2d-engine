@@ -99,7 +99,7 @@ class SceneMutationDuringTraversalTest {
         tree.start()
         log.clear()
 
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         tree.applyPending()
 
         assertTrue(spawned.isLive)
@@ -124,7 +124,7 @@ class SceneMutationDuringTraversalTest {
         tree.start()
         log.clear()
 
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         tree.applyPending()
 
         assertFalse(victim.isLive)

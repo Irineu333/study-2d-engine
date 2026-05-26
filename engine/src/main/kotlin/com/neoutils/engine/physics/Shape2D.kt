@@ -348,7 +348,19 @@ private fun sweepRectRect(
             penTop -> Vec2(0f, -1f)
             else -> Vec2(0f, 1f)
         }
-        val point = Vec2(ax0 + aw / 2f, ay0 + ah / 2f)
+        // Contact face midpoint: the midpoint of the segment where the two
+        // OBBs overlap perpendicular to the chosen separation axis.
+        val point = if (normal.x != 0f) {
+            val faceX = if (normal.x < 0f) bx0 else bx0 + bw
+            val ovTop = max(ay0, by0)
+            val ovBottom = min(ay0 + ah, by0 + bh)
+            Vec2(faceX, (ovTop + ovBottom) * 0.5f)
+        } else {
+            val faceY = if (normal.y < 0f) by0 else by0 + bh
+            val ovLeft = max(ax0, bx0)
+            val ovRight = min(ax0 + aw, bx0 + bw)
+            Vec2((ovLeft + ovRight) * 0.5f, faceY)
+        }
         val depen = Vec2(normal.x * minPen, normal.y * minPen)
         return SweepResult(toi = 0f, point = point, normal = normal, depenetration = depen)
     }
@@ -373,7 +385,23 @@ private fun sweepRectRect(
     } else {
         Vec2(0f, if (motion.y > 0f) -1f else 1f)
     }
-    val point = Vec2(ax0 + motion.x * toi + aw / 2f, ay0 + motion.y * toi + ah / 2f)
+    val aHitX = ax0 + motion.x * toi
+    val aHitY = ay0 + motion.y * toi
+    // Contact face midpoint: clamp A's leading face span against B's face span
+    // along the tangential axis, then take the segment midpoint. For face-vs-
+    // face contact this collapses to the midpoint of the overlapping segment;
+    // for vertex-vs-face it lies on the corner of A that first crosses.
+    val point = if (normal.x != 0f) {
+        val faceX = if (normal.x < 0f) bx0 else bx0 + bw
+        val ovTop = max(aHitY, by0)
+        val ovBottom = min(aHitY + ah, by0 + bh)
+        Vec2(faceX, (ovTop + ovBottom) * 0.5f)
+    } else {
+        val faceY = if (normal.y < 0f) by0 else by0 + bh
+        val ovLeft = max(aHitX, bx0)
+        val ovRight = min(aHitX + aw, bx0 + bw)
+        Vec2((ovLeft + ovRight) * 0.5f, faceY)
+    }
     return SweepResult(toi = toi, point = point, normal = normal)
 }
 
@@ -621,11 +649,10 @@ private fun sweepRotatedRectRotatedRect(
         val sign = if (cA >= cB) 1f else -1f
         val normal = axis * sign
         val depen = normal * minStaticOverlap
-        val midPoint = Vec2(
-            (aWorld.position.x + bWorld.position.x) * 0.5f,
-            (aWorld.position.y + bWorld.position.y) * 0.5f,
-        )
-        return SweepResult(toi = 0f, point = midPoint, normal = normal, depenetration = depen)
+        // Starting-overlap point: leading corners of A along -normal, averaged
+        // when tied (face-vs-face yields the face midpoint).
+        val point = leadingCornerPoint(cornersA, Vec2.ZERO, normal)
+        return SweepResult(toi = 0f, point = point, normal = normal, depenetration = depen)
     }
 
     // Tangent-leaving guard (same rationale as axis-aligned sweepRectRect):
@@ -643,16 +670,41 @@ private fun sweepRotatedRectRotatedRect(
     val sign = if (cAAtContact >= cB) 1f else -1f
     val normal = axis * sign
 
-    // Contact point: A's OBB center at the contact moment. The OBB center is
-    // the average of its 4 corners in world space — equivalent to the AABB-
-    // envelope center for any rotation (rectangle symmetry).
-    var aCenterX = 0f; var aCenterY = 0f
-    for (c in cornersA) { aCenterX += c.x; aCenterY += c.y }
-    aCenterX /= 4f; aCenterY /= 4f
-    val point = Vec2(aCenterX + motion.x * tEnter, aCenterY + motion.y * tEnter)
+    // Contact point: A's leading corner along -normal at the contact moment,
+    // with face-vs-face ties collapsing to the face midpoint. The leading
+    // corner is the vertex of A whose projection onto `normal` is smallest
+    // (most penetrated into B).
+    val point = leadingCornerPoint(cornersA, motion * tEnter, normal)
 
     return SweepResult(toi = tEnter, point = point, normal = normal)
 }
+
+/**
+ * Picks the vertex (or face midpoint) of an OBB that "leads" into a contact —
+ * the corner with the smallest projection on the contact `normal`. Two corners
+ * within [LEADING_VERTEX_EPS] of the same projection are averaged so a face-
+ * vs-face contact collapses to the face midpoint (yielding `r × n = 0` and
+ * zero induced spin from a head-on hit).
+ */
+private fun leadingCornerPoint(corners: Array<Vec2>, displacement: Vec2, normal: Vec2): Vec2 {
+    var minProj = Float.POSITIVE_INFINITY
+    for (c in corners) {
+        val p = (c.x + displacement.x) * normal.x + (c.y + displacement.y) * normal.y
+        if (p < minProj) minProj = p
+    }
+    var sumX = 0f; var sumY = 0f; var count = 0
+    for (c in corners) {
+        val cx = c.x + displacement.x
+        val cy = c.y + displacement.y
+        val p = cx * normal.x + cy * normal.y
+        if (p - minProj <= LEADING_VERTEX_EPS) {
+            sumX += cx; sumY += cy; count++
+        }
+    }
+    return Vec2(sumX / count, sumY / count)
+}
+
+private const val LEADING_VERTEX_EPS = 1e-3f
 
 /**
  * Swept circle-vs-rotated-rect via frame transform. The circle is rotation-

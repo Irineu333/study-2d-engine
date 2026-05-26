@@ -69,6 +69,10 @@ class SkikoHost : GameHost {
                     if (input.wasKeyPressed(config.toggleCollidersKey)) {
                         Debug.colliderVisualization = !Debug.colliderVisualization
                     }
+                    if (input.wasKeyPressed(config.toggleMomentumOverlayKey)) {
+                        Debug.showMomentumOverlay = !Debug.showMomentumOverlay
+                        if (Debug.showMomentumOverlay) com.neoutils.engine.dx.MomentumOverlay.reset()
+                    }
                     renderDebugOverlay(renderer, tree)
                 } finally {
                     renderer.unbind()

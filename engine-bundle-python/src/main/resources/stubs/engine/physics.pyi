@@ -87,8 +87,16 @@ class Area2D(CollisionObject2D):
 
 
 class PhysicsBody2D(CollisionObject2D):
-    """Abstract base for solid bodies. Use :class:`StaticBody2D` or
-    :class:`CharacterBody2D`."""
+    """Abstract base for solid bodies. Use :class:`StaticBody2D`,
+    :class:`CharacterBody2D`, or :class:`RigidBody2D`.
+
+    ``friction`` and ``restitution`` are exposed on every PhysicsBody2D so that
+    a :class:`RigidBody2D`'s impulse solver can combine them with the body it
+    collides with.
+    """
+
+    friction: float
+    restitution: float
 
 
 class StaticBody2D(PhysicsBody2D):
@@ -113,3 +121,41 @@ class CharacterBody2D(PhysicsBody2D):
     velocity: Vec2
 
     def __init__(self) -> None: ...
+
+
+class RigidBody2D(PhysicsBody2D):
+    """Dynamic body integrated by the engine. The engine owns ``position``,
+    ``linear_velocity``, and ``angular_velocity``; scripts influence motion
+    via ``apply_force`` / ``apply_impulse`` / ``apply_torque`` or by direct
+    read/write of the velocity properties::
+
+        # extends RigidBody2D
+
+        mass: float = 1.0
+        restitution: float = 1.0
+        friction: float = 0.0
+
+        def _physics_process(self, dt):
+            self.apply_central_impulse(Vec2(100.0, 0.0))
+
+    Writing ``self.linear_velocity.x = X`` raises :class:`AttributeError`
+    (Vec2.x is immutable); construct a new Vec2 instead.
+    """
+
+    mass: float
+    inertia: float
+    gravity_scale: float
+    linear_damping: float
+    angular_damping: float
+    linear_velocity: Vec2
+    angular_velocity: float
+
+    def __init__(self) -> None: ...
+
+    def apply_force(self, force: Vec2) -> None: ...
+    def apply_impulse(self, impulse: Vec2) -> None: ...
+    def apply_central_force(self, force: Vec2) -> None: ...
+    def apply_central_impulse(self, impulse: Vec2) -> None: ...
+    def apply_force_at(self, force: Vec2, world_point: Vec2) -> None: ...
+    def apply_impulse_at(self, impulse: Vec2, world_point: Vec2) -> None: ...
+    def apply_torque(self, torque: float) -> None: ...

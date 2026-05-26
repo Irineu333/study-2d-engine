@@ -11,10 +11,12 @@ open class Node2D : Node() {
 
     /**
      * Local transform. Assigning a new value invalidates the world-transform
-     * cache on this node and all Node2D descendants.
+     * cache on this node and all Node2D descendants. `open` so subclasses
+     * (e.g. `RigidBody2D`) can intercept writes for diagnostics; overrides
+     * SHOULD chain to `super.transform = value` to preserve cache invalidation.
      */
     @Inspect
-    var transform: Transform = Transform()
+    open var transform: Transform = Transform()
         set(value) {
             field = value
             invalidateWorldTransformRecursive()

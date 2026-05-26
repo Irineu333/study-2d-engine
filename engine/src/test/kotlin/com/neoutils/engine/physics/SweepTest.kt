@@ -229,6 +229,53 @@ class SweepTest {
         assertNull(sweepOverlap(a, aWorld, Vec2(-14.14f, -14.14f), b, bWorld))
     }
 
+    // --- add-rigid-body-2d: geometric contact point ---
+
+    @Test
+    fun `point lies on circle A surface for circle-vs-circle hit`() {
+        // A at (0,0) r=5, motion (20,0), B at (12,0) r=5. Toi=0.1 → A at (2,0).
+        // Contact point on A's surface in direction of B = (7, 0).
+        val a = circle(5f); val b = circle(5f)
+        val aWorld = Transform(position = Vec2(0f, 0f))
+        val bWorld = Transform(position = Vec2(12f, 0f))
+        val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
+        assertNotNull(res)
+        assertEquals(7f, res.point.x, EPS)
+        assertEquals(0f, res.point.y, EPS)
+    }
+
+    @Test
+    fun `point is on rect face for axis-aligned rect-vs-rect`() {
+        // A at (0,0) size 4x4 swept right by (20,0) into B at (10,0) size 4x4.
+        // Contact face is B's left face (x=10); overlap on y is [0,4] → mid y=2.
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val aWorld = Transform(position = Vec2(0f, 0f))
+        val bWorld = Transform(position = Vec2(10f, 0f))
+        val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
+        assertNotNull(res)
+        assertEquals(10f, res.point.x, EPS)
+        assertEquals(2f, res.point.y, EPS)
+    }
+
+    @Test
+    fun `point is leading corner for rotated rect-vs-rect`() {
+        // A 4x4 at (0,0) rotated 45° swept by (20,0) into axis-aligned B 4x4 at (10,0).
+        // A's corners after rotation around (0,0): (0,0), (2.83,2.83), (-2.83,2.83), (0,5.66).
+        // Wait — obbCorners places origin at top-left. After 45° rotation around (0,0),
+        // the 4 corners of a 4x4 rect with TL=(0,0) become: (0,0), (2.83,2.83), (-2.83,2.83), (0,5.66).
+        // Leading corner (smallest projection on normal ≈ (-1,0)) → max x value at contact.
+        val a = rect(Vec2(4f, 4f)); val b = rect(Vec2(4f, 4f))
+        val aWorld = Transform(position = Vec2(0f, 0f), rotation = (PI / 4.0).toFloat())
+        val bWorld = Transform(position = Vec2(10f, 0f))
+        val res = sweepOverlap(a, aWorld, Vec2(20f, 0f), b, bWorld)
+        assertNotNull(res)
+        // Result point should NOT be A's center (its OBB center, which is ~ (0, 2.83) before motion).
+        // It should be on the leading corner of A in the -normal direction.
+        // Since normal points toward A (i.e. -x), -normal = +x. Leading corner is the
+        // rightmost corner of A at contact — close to B's left face x=10.
+        assertTrue(res.point.x > 5f, "leading corner should be near B's face, got ${res.point.x}")
+    }
+
     @Test
     fun `swept rotated starting overlap reports TOI 0 with MTV depenetration`() {
         // Deep overlap: B's origin at (2,0) rotated 45°, while A also rotated

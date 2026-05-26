@@ -8,5 +8,6 @@ data class GameConfig(
     val height: Int = 600,
     val toggleFpsKey: Key = Key.F1,
     val toggleCollidersKey: Key = Key.F2,
+    val toggleMomentumOverlayKey: Key = Key.F3,
     val physicsHz: Int = 60,
 )

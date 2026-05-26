@@ -8,6 +8,7 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bundle-tictactoe`  | Migra `:games:tictactoe` para o pipeline bundle (`scene.json` + Python), apagando os Nodes Kotlin do jogo. Prova viva de que `BundleLoader` + `PythonScriptHost` rodam idênticos no backend Compose. |
 | `game-snake`        | Jogo Snake como `:games:snake`. Validador de gameplay discreto/grid-based, mutação dinâmica do scene graph via script, wraparound em `Camera2D.bounds`, e da ponte Kotlin Signal → Python (consome `Timer.timeout`). |
+| `add-rigid-body-2d` | `RigidBody2D` como terceiro `PhysicsBody2D`, integrado pela engine: integrator + impulse solver (linear+angular+Coulomb), gravity global, diagnósticos `Σp`/`ΣL`/`ΣKE` com overlay F3, migrando demos 4/6 pro novo path. |
 
 ## Planned
 

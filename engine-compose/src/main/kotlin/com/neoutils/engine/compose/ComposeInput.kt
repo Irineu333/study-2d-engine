@@ -96,5 +96,6 @@ private fun UiKey.toEngineKey(): Key? = when (this) {
     UiKey.AltRight -> Key.ALT_RIGHT
     UiKey.F1 -> Key.F1
     UiKey.F2 -> Key.F2
+    UiKey.F3 -> Key.F3
     else -> null
 }

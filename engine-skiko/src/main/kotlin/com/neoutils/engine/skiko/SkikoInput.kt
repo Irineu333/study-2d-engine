@@ -104,5 +104,6 @@ internal fun Int.awtVkToEngineKey(): Key? = when (this) {
     KeyEvent.VK_ALT -> Key.ALT_LEFT
     KeyEvent.VK_F1 -> Key.F1
     KeyEvent.VK_F2 -> Key.F2
+    KeyEvent.VK_F3 -> Key.F3
     else -> null
 }

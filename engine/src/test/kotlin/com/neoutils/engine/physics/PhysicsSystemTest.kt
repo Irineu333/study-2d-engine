@@ -78,7 +78,7 @@ class PhysicsSystemTest {
         root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         assertEquals(0, a.bodyEnters.size)
         assertEquals(0, b.bodyEnters.size)
     }
@@ -91,7 +91,7 @@ class PhysicsSystemTest {
         root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         assertEquals(listOf<PhysicsBody2D>(b), a.bodyEnters)
         assertEquals(listOf<PhysicsBody2D>(a), b.bodyEnters)
     }
@@ -104,7 +104,7 @@ class PhysicsSystemTest {
         root.addChild(area); root.addChild(body)
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         assertEquals(listOf<PhysicsBody2D>(body), area.bodyEnters)
         assertEquals(listOf<Area2D>(area), body.areaEnters)
     }
@@ -118,8 +118,8 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
         val phys = PhysicsSystem()
-        phys.step(tree)
-        phys.step(tree)
+        phys.step(tree, 1f / 60f)
+        phys.step(tree, 1f / 60f)
         assertEquals(1, a.bodyEnters.size)
         assertEquals(1, b.bodyEnters.size)
     }
@@ -133,9 +133,9 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
         val phys = PhysicsSystem()
-        phys.step(tree)
+        phys.step(tree, 1f / 60f)
         b.transform = Transform(position = Vec2(100f, 100f))
-        phys.step(tree)
+        phys.step(tree, 1f / 60f)
         assertEquals(1, a.bodyExits.size)
         assertEquals(b, a.bodyExits.single())
     }
@@ -149,9 +149,9 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
         val phys = PhysicsSystem()
-        phys.step(tree)
+        phys.step(tree, 1f / 60f)
         root.removeChild(b)
-        phys.step(tree)
+        phys.step(tree, 1f / 60f)
         assertEquals(0, a.bodyExits.size)
     }
 
@@ -171,7 +171,7 @@ class PhysicsSystemTest {
         root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         assertEquals(0, b.bodyEnters.size)
     }
 
@@ -191,7 +191,7 @@ class PhysicsSystemTest {
         root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         assertEquals(1, b.bodyEnters.size, "exactly one enter, despite two shapes on A")
     }
 
@@ -203,7 +203,7 @@ class PhysicsSystemTest {
         root.addChild(a); root.addChild(b)
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
         assertEquals(0, a.bodyEnters.size)
     }
 
@@ -247,8 +247,8 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
         val phys = PhysicsSystem()
-        phys.step(tree)
-        phys.step(tree) // second step: no double enter regardless of internal order
+        phys.step(tree, 1f / 60f)
+        phys.step(tree, 1f / 60f) // second step: no double enter regardless of internal order
         assertEquals(1, a.bodyEnters.size)
         assertTrue(a.bodyExits.isEmpty())
     }
@@ -274,7 +274,7 @@ class PhysicsSystemTest {
         val tree = SceneTree(root)
         tree.start()
 
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
 
         // First overlap detected and dispatched.
         assertEquals(listOf<PhysicsBody2D>(b), a.bodyEnters)
@@ -313,7 +313,7 @@ class PhysicsSystemTest {
             if (level == LogLevel.Warn && tag == "PhysicsSystem") warnings += message
         }
 
-        PhysicsSystem().step(tree)
+        PhysicsSystem().step(tree, 1f / 60f)
 
         assertTrue(
             warnings.any { it.contains("MAX_RESOLUTION_ITERATIONS") },
@@ -350,7 +350,7 @@ class PhysicsSystemTest {
         val root = Node().apply { addChild(body); addChild(area) }
         val tree = SceneTree(root)
         tree.start()
-        PhysicsSystem().step(tree) // overlap area+body, no crash
+        PhysicsSystem().step(tree, 1f / 60f) // overlap area+body, no crash
     }
 
     @Test
@@ -364,13 +364,13 @@ class PhysicsSystemTest {
         tree.physicsSystem = system
         tree.start()
         // Initial step: no overlap.
-        system.step(tree)
+        system.step(tree, 1f / 60f)
         assertEquals(0, sensor.bodyEnters.size)
         // moveAndCollide skips areas — body passes through.
         val result = character.moveAndCollide(Vec2(25f, 0f))
         assertEquals(null, result)
         // Next step detects the discrete overlap and dispatches body_entered.
-        system.step(tree)
+        system.step(tree, 1f / 60f)
         assertEquals(1, sensor.bodyEnters.size)
     }
 }
