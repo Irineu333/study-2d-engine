@@ -51,6 +51,7 @@ O cache é **estado runtime puro**: nunca persiste em `scene.json` (anotado com 
 :games:tictactoe       ← jogo Velha (humano vs humano), roda em **Skiko** com scripting Lua — sentinela do segundo backend de scripting
 :games:demos           ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
 :games:hello-world     ← exemplo code-only mínimo — único Label centralizado em Skiko, sem bundle nem scripting
+:games:snake           ← jogo Snake executável (grid-based, tick-based), roda em Skiko com scripting Python — primeiro validador de gameplay discreto e mutação dinâmica de scene graph
 ```
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.
@@ -101,6 +102,21 @@ Durante a execução:
 - `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
 - `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`)
 - `F3` liga/desliga overlay de momento (`Σp`, `ΣL`, `ΣKE` + sparklines), configurável via `GameConfig.toggleMomentumOverlayKey`
+
+Para rodar Snake:
+
+```sh
+./gradlew :games:snake:run
+```
+
+Snake carrega via `BundleLoader.fromResources("snake", scripting = python)` (em `:games:snake/src/main/resources/snake/`, com `scene.json` na raiz e `scripts/{snake,food,score,gameover}.py`) — mesma pipeline do Pong, e é o primeiro jogo do repo com **gameplay discreto/tick-based**. O `scene.json` declara um `Camera2D` com `bounds = 400×400` (campo lógico = grid 20×20 células de 20px), um `Node2D` `Snake` com `script = "scripts/snake.py"` e um filho `Timer` `MoveTimer` (`waitTime = 0.125`, `processCallback = PHYSICS`, `autostart = true`), um `ColorRect` `Food`, e dois `Label`s (`ScoreLabel`, `GameOverLabel`). A `Snake` mantém uma lista interna de células e, a cada `MoveTimer.timeout`, adiciona um `ColorRect` filho na cabeça e remove o da cauda — exercício canônico de mutação dinâmica do scene graph dirigida por script. Wraparound usa `bounds.size` como contrato lógico via módulo em Python.
+
+Durante o jogo:
+
+- Setas movem a cobra (direção corrente lida em `_process` via `wasKeyPressed`); reversão 180° é ignorada; mudanças entre ticks colapsam para a última seta válida (buffer de 1-slot aplicado no início do próximo `_tick`)
+- `Enter` reinicia o jogo após `gameOver` (`reset()` remove segmentos, recria a cabeça de comprimento 3 no centro, emite `restart`, religa o `MoveTimer`)
+- `F1` liga/desliga overlay de FPS (tratado pelo `GameHost`, configurável via `GameConfig.toggleFpsKey`)
+- `F2` liga/desliga visualização de colliders (idem, via `GameConfig.toggleCollidersKey`; Snake não usa colliders, então a tecla é no-op visual)
 
 Para rodar Hello World:
 

@@ -1,0 +1,100 @@
+{
+  "version": 2,
+  "root": {
+    "type": "com.neoutils.engine.scene.Node2D",
+    "name": "SnakeScene",
+    "properties": {
+      "transform": {
+        "position": { "x": 0.0, "y": 0.0 },
+        "scale": { "x": 1.0, "y": 1.0 },
+        "rotation": 0.0
+      }
+    },
+    "children": [
+      {
+        "type": "com.neoutils.engine.scene.Camera2D",
+        "name": "Camera2D",
+        "properties": {
+          "bounds": { "origin": { "x": 0.0, "y": 0.0 }, "size": { "x": 400.0, "y": 400.0 } },
+          "current": true,
+          "aspectMode": "FIT"
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.scene.Node2D",
+        "name": "Snake",
+        "script": "scripts/snake.py",
+        "properties": {
+          "transform": {
+            "position": { "x": 0.0, "y": 0.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "cellSize": 20.0,
+          "startCell": { "x": 10.0, "y": 10.0 }
+        },
+        "children": [
+          {
+            "type": "com.neoutils.engine.scene.Timer",
+            "name": "MoveTimer",
+            "properties": {
+              "waitTime": 0.125,
+              "autostart": true,
+              "oneShot": false,
+              "processCallback": "PHYSICS"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "com.neoutils.engine.scene.ColorRect",
+        "name": "Food",
+        "script": "scripts/food.py",
+        "properties": {
+          "transform": {
+            "position": { "x": 200.0, "y": 200.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "size": { "x": 20.0, "y": 20.0 },
+          "color": { "r": 1.0, "g": 0.3, "b": 0.3, "a": 1.0 }
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.scene.Label",
+        "name": "ScoreLabel",
+        "script": "scripts/score.py",
+        "properties": {
+          "transform": {
+            "position": { "x": 10.0, "y": 22.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "text": "Score: 0",
+          "size": 16.0,
+          "color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 }
+        },
+        "children": []
+      },
+      {
+        "type": "com.neoutils.engine.scene.Label",
+        "name": "GameOverLabel",
+        "script": "scripts/gameover.py",
+        "properties": {
+          "transform": {
+            "position": { "x": 110.0, "y": 200.0 },
+            "scale": { "x": 1.0, "y": 1.0 },
+            "rotation": 0.0
+          },
+          "text": "GAME OVER — press Enter",
+          "size": 20.0,
+          "color": { "r": 1.0, "g": 0.5, "b": 0.5, "a": 0.0 }
+        },
+        "children": []
+      }
+    ]
+  }
+}
