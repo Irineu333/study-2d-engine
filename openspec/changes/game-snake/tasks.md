@@ -66,3 +66,9 @@
 - [x] 10.1 Em `:games:snake/src/test/kotlin/`, teste que `BundleLoader.fromResources("snake", scripting = python)` carrega sem erros e produz a árvore esperada (Camera2D, Snake+Timer, Food, labels).
 - [x] 10.2 Teste smoke: dado `Snake` com setup inicial, simular 5 ticks (chamar `_tick` via reflection do script — ou simular `MoveTimer.timeout.emit()`) e validar que a cobra avançou 5 células à direita (com wrap).
 - [x] 10.3 `openspec verify game-snake` sem gaps. (`openspec validate game-snake` → "Change 'game-snake' is valid")
+
+## 11. Fixes descobertos durante apply (não previstos)
+
+Snake é o primeiro script Python a acessar constantes de `Key` em runtime (`Key.ARROW_UP`, `Key.ENTER`); Pong/TTT só usavam `Key` como anotação de tipo. Isso destapou um gap no binding do `PythonScriptHost` que precisou ser corrigido para o jogo rodar.
+
+- [x] 11.1 Rebindar `Key` como `ProxyObject.fromMap(Key.entries.associateBy { it.name })` em `engine-bundle-python/.../PythonScriptHost.kt`, espelhando o tratamento já existente para `MouseButton`. O binding anterior (`Key::class.java`) só expõe métodos de instância — constantes de enum (`Key.ARROW_UP` etc.) não eram resolvidas via Polyglot, crashando o `_process` da Snake na primeira leitura de input.

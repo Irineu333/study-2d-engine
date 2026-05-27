@@ -134,12 +134,15 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
             val node = args[0].asHostObject<Node>()
             discoverSignals(node)
         })
-        bindings.putMember("Key", Key::class.java)
         // Enum constants are not reachable via the raw Class binding (Polyglot
         // surfaces it as a foreign object whose attributes are *instance*
         // methods, not static fields). Expose each value through a ProxyObject
-        // so `MouseButton.Left` resolves to the actual `MouseButton.Left`
-        // enum instance for `input.wasMouseClicked(...)`.
+        // so `MouseButton.Left` and `Key.ARROW_UP` resolve to the actual enum
+        // instance for `input.wasMouseClicked(...)` / `input.wasKeyPressed(...)`.
+        bindings.putMember(
+            "Key",
+            ProxyObject.fromMap(Key.entries.associateBy { it.name }),
+        )
         bindings.putMember(
             "MouseButton",
             ProxyObject.fromMap(MouseButton.entries.associateBy { it.name }),
