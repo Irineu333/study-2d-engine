@@ -97,8 +97,8 @@ class SkikoHost : GameHost {
                 override fun mouseReleased(e: MouseEvent) = input.onAwtMouseButton(e, pressed = false)
             })
             skiaLayer.addMouseMotionListener(object : MouseMotionAdapter() {
-                override fun mouseMoved(e: MouseEvent) = input.onAwtMouseMoved(e)
-                override fun mouseDragged(e: MouseEvent) = input.onAwtMouseMoved(e)
+                override fun mouseMoved(e: MouseEvent) = input.onAwtMouseMoved(e, skiaLayer.contentScale)
+                override fun mouseDragged(e: MouseEvent) = input.onAwtMouseMoved(e, skiaLayer.contentScale)
             })
 
             frame.addWindowListener(object : WindowAdapter() {

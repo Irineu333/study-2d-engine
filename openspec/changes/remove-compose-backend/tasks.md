@@ -48,3 +48,12 @@
 - [x] 7.6 `grep -rn "compose" engine/src engine-bundle/src engine-bundle-python/src engine-bundle-lua/src engine-skiko/src games/ --include="*.kt" --include="*.kts"` retorna zero matches fora de strings de teste/docs históricos legítimos.
 - [ ] 7.7 `grep -rn "ComposeHost\|engine-compose\|engineCompose" .` (excluindo `.claude/worktrees/`, `build/`, `openspec/changes/archive/`) retorna zero matches.
 - [x] 7.8 `find engine-compose -type f 2>/dev/null | wc -l` retorna `0`.
+
+## 8. Follow-up: HiDPI hit-test fix (descoberto pós-migração)
+
+Bug exposto pela migração de TTT para `SkikoHost`: hit-test do mouse deslocava do tabuleiro ao mover a janela entre monitores de escalas diferentes. `SkikoInput` armazenava `pointerPosition` em pixels lógicos AWT enquanto `tree.size` recebia pixels físicos do `SkikoRenderDelegate.onRender` (= `layer.size × contentScale`); em monitores HiDPI o `Camera2D.screenToWorld` projetava o ponto errado. Bug pré-existia em `:engine-skiko` mas só ficou visível com TTT (único jogo Skiko com hit-test em coords de mundo).
+
+- [x] 8.1 `SkikoInput.onAwtMouseMoved` passa a receber `contentScale: Float` e multiplica `event.x/y` antes de armazenar `pointerPosition`. `SkikoHost` passa `skiaLayer.contentScale` em cada `mouseMoved`/`mouseDragged`.
+- [x] 8.2 `Input.pointerPosition` ganha KDoc documentando o contrato implícito ("mesmo espaço que `tree.size`", hoje pixels físicos) e apontando para a change futura `surface-units-spec`.
+- [x] 8.3 `ROADMAP.md` ganha entry em Planned para `surface-units-spec` — change que vai inverter o contrato (unidades lógicas, HiDPI absorvido no backend via `canvas.scale(contentScale)`) e parar de vazar `contentScale` da Skiko para `:engine`.
+- [x] 8.4 Validação manual: TTT roda em monitor HiDPI e o hit-test acompanha o tabuleiro mesmo ao arrastar entre monitores de escalas diferentes.

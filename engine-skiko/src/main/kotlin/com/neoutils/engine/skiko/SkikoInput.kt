@@ -43,8 +43,14 @@ class SkikoInput : Input {
         }
     }
 
-    fun onAwtMouseMoved(event: MouseEvent) {
-        pointerPosition = Vec2(event.x.toFloat(), event.y.toFloat())
+    fun onAwtMouseMoved(event: MouseEvent, contentScale: Float) {
+        // AWT MouseEvent.x/y are in component-local *logical* pixels, but the
+        // engine sizes `tree.size` from the Skiko render buffer in *physical*
+        // pixels (layer.size * contentScale). Without this multiplication,
+        // hit-tests via `Camera2D.screenToWorld` go off by `contentScale` on
+        // HiDPI monitors and the displacement appears when dragging the window
+        // between monitors with different scales.
+        pointerPosition = Vec2(event.x * contentScale, event.y * contentScale)
     }
 
     fun onAwtMouseButton(event: MouseEvent, pressed: Boolean) {
