@@ -1,47 +1,5 @@
 ---@meta
 
----@class Vec2
----@field x number
----@field y number
-local Vec2 = {}
-
----@class Color
----@field r number
----@field g number
----@field b number
----@field a number
-local Color = {}
-
----@class Rect
----@field origin Vec2
----@field size Vec2
-local Rect = {}
----@param point Vec2
----@return boolean
-function Rect:contains(point) end
-
----@class Transform
----@field position Vec2
----@field scale Vec2
----@field rotation number
-local Transform = {}
-
----@class NodeRef
----@field path string
-local NodeRef = {}
----@param from any
----@return any|nil
-function NodeRef:resolve(from) end
-
----@class Key
-local Key = {}
-
----@class MouseButton
----@field Left MouseButton
----@field Right MouseButton
----@field Middle MouseButton
-local MouseButton = {}
-
 ---@class Signal
 local Signal = {}
 ---@param handler fun(value: any)
@@ -106,3 +64,5 @@ function Renderer:drawText(text, position, size, color) end
 ---@param size number
 ---@return Vec2
 function Renderer:measureText(text, size) end
+
+return Signal
