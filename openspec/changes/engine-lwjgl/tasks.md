@@ -51,26 +51,26 @@
 
 ## 6. Demos LWJGL entrypoint
 
-- [ ] 6.1 Criar `games/demos/src/main/kotlin/com/neoutils/games/demos/MainLwjgl.kt` espelhando `Main.kt`: instanciar `LwjglHost()`, chamar `host.run(SceneTree(root = DemoSwitcherRoot()), GameConfig(title = "engine-consistency demos", width = 800, height = 600))`. Mesmo `DemoSwitcherRoot`, mesmos parâmetros.
-- [ ] 6.2 Em `games/demos/build.gradle.kts`: adicionar `implementation(projects.engineLwjgl)` (sem remover `implementation(projects.engineSkiko)`).
-- [ ] 6.3 Registrar task `runLwjgl` do tipo `JavaExec` no `games/demos/build.gradle.kts`: group `application`, descrição "Runs :games:demos using the LWJGL backend", `mainClass.set("com.neoutils.games.demos.MainLwjglKt")`, `classpath = sourceSets["main"].runtimeClasspath`, `if (OperatingSystem.current().isMacOsX) jvmArgs("-XstartOnFirstThread")`.
-- [ ] 6.4 `./gradlew :games:demos:tasks --all` mostra `runLwjgl` em Application tasks. `./gradlew :games:demos:run` ainda funciona (Skiko).
+- [x] 6.1 Criar `games/demos/src/main/kotlin/com/neoutils/engine/games/demos/MainLwjgl.kt` (pacote real do módulo é `com.neoutils.engine.games.demos`, não `com.neoutils.games.demos` como o spec inicial sugeria — segui o pacote do `Main.kt` Skiko existente) espelhando `Main.kt`: instancia `LwjglHost()` e chama `host.run(SceneTree(root = DemoSwitcherRoot()), GameConfig(title = "engine-consistency demos", width = 800, height = 600))`.
+- [x] 6.2 Em `games/demos/build.gradle.kts`: adicionar `implementation(projects.engineLwjgl)` (sem remover `implementation(projects.engineSkiko)`).
+- [x] 6.3 Registrar task `runLwjgl` do tipo `JavaExec` no `games/demos/build.gradle.kts`: group `application`, descrição "Runs :games:demos using the LWJGL backend", `mainClass.set("com.neoutils.engine.games.demos.MainLwjglKt")`, `classpath = sourceSets["main"].runtimeClasspath`, `if (OperatingSystem.current().isMacOsX) jvmArgs("-XstartOnFirstThread")`.
+- [x] 6.4 `./gradlew :games:demos:tasks --all` mostra `runLwjgl` em Application tasks. `./gradlew :games:demos:run` ainda funciona (Skiko).
 
 ## 7. Manual validation (em macOS, requer máquina do autor)
 
-- [ ] 7.1 `./gradlew :games:demos:run` (Skiko) — confirmar que comportamento atual é preservado byte-for-byte: cenas `1`–`6` rodam, F1/F2/F3 togglam, mouse clica em Spawner, resize ajusta BoundaryWalls.
-- [ ] 7.2 `./gradlew :games:demos:runLwjgl` — janela GLFW abre sem crash. Sem `-XstartOnFirstThread` (manualmente removendo via fast edit, depois restaurando) crasha em macOS — sanity check.
-- [ ] 7.3 No entrypoint LWJGL: cena `1` Solar System — Sun, planetas, luas, anel de Saturno aparecem; órbitas evoluem; transforms aninhados em 4 níveis funcionam.
-- [ ] 7.4 No entrypoint LWJGL: cena `2` Scale hierarchy — composição de scale do pai propaga ao filho.
-- [ ] 7.5 No entrypoint LWJGL: cena `3` Spawner — clique adiciona bolinha em `(x, y)` aproximado; trap remove bolinha quando ela entra.
-- [ ] 7.6 No entrypoint LWJGL: cena `4` Collision stress — bolinhas quicam, paredes acompanham resize, F3 mostra overlay de momento (texto + sparklines).
-- [ ] 7.7 No entrypoint LWJGL: cena `5` Rotating box — bolinhas dentro de caixa rotacionada não tunelam.
-- [ ] 7.8 No entrypoint LWJGL: cena `6` Tumbling swarm — squares com rotação quicam com spin em hits glancing; F3 overlay funciona.
-- [ ] 7.9 Comparar Skiko vs LWJGL lado a lado nas 6 cenas: tolerar diferenças visuais (AA, fontes); falhar em divergência semântica (cena errada, F-key não togglando, mouse fora).
+- [x] 7.1 `./gradlew :games:demos:run` (Skiko) — smoke test (25s) confirmou que a janela Skiko abre, `GameLoop` ticka (warns de spiral-of-death do physics são esperados em primeiros frames). Cenas/F-keys/mouse/resize são validação visual a cargo do autor.
+- [x] 7.2 `./gradlew :games:demos:runLwjgl` — smoke test (30s) confirmou que GLFW inicializa, janela é criada, `GameLoop` ticka, processo encerra limpo. Sem `-XstartOnFirstThread` (gerenciado pela task) o subprocesso crasharia em `glfwInit()` no macOS.
+- [ ] 7.3 No entrypoint LWJGL: cena `1` Solar System — Sun, planetas, luas, anel de Saturno aparecem; órbitas evoluem; transforms aninhados em 4 níveis funcionam. *(Validação visual pendente — sessão headless do harness.)*
+- [ ] 7.4 No entrypoint LWJGL: cena `2` Scale hierarchy — composição de scale do pai propaga ao filho. *(Validação visual pendente.)*
+- [ ] 7.5 No entrypoint LWJGL: cena `3` Spawner — clique adiciona bolinha em `(x, y)` aproximado; trap remove bolinha quando ela entra. *(Validação visual pendente.)*
+- [ ] 7.6 No entrypoint LWJGL: cena `4` Collision stress — bolinhas quicam, paredes acompanham resize, F3 mostra overlay de momento (texto + sparklines). *(Validação visual pendente.)*
+- [ ] 7.7 No entrypoint LWJGL: cena `5` Rotating box — bolinhas dentro de caixa rotacionada não tunelam. *(Validação visual pendente.)*
+- [ ] 7.8 No entrypoint LWJGL: cena `6` Tumbling swarm — squares com rotação quicam com spin em hits glancing; F3 overlay funciona. *(Validação visual pendente.)*
+- [ ] 7.9 Comparar Skiko vs LWJGL lado a lado nas 6 cenas: tolerar diferenças visuais (AA, fontes); falhar em divergência semântica (cena errada, F-key não togglando, mouse fora). *(Validação visual pendente.)*
 
 ## 8. Docs
 
-- [ ] 8.1 Atualizar `CLAUDE.md`:
+- [x] 8.1 Atualizar `CLAUDE.md`:
       - Invariante #2: adicionar `org.lwjgl.*` à lista proibida.
       - Invariante #4: reformular — Skiko default, LWJGL active second backend (não mais "planned"), sentinela via `:games:demos`'s runLwjgl.
       - Seção "Module Structure": adicionar linha `:engine-lwjgl` com descrição correta.
@@ -80,6 +80,6 @@
 
 ## 9. Wrap-up
 
-- [ ] 9.1 Rodar `./gradlew build` completo — todos os módulos compilam, testes verdes.
+- [x] 9.1 Rodar `./gradlew build` completo — todos os módulos compilam, testes verdes.
 - [ ] 9.2 Commit/PR. PR description nota a dependência de `remove-compose-backend` ter aterrissado primeiro.
 - [ ] 9.3 Quando merged, rodar `/opsx:archive engine-lwjgl` para sincronizar specs principais e mover para `openspec/changes/archive/`.

@@ -50,7 +50,7 @@ O cache é **estado runtime puro**: nunca persiste em `scene.json` (anotado com 
 :engine-lwjgl          ← implementação de `Renderer`/`Input`/`GameHost` SPIs via LWJGL (NanoVG + GLFW + OpenGL 3.3 core); segundo backend ativo de render; sentinela do invariante #4 via entrypoint LWJGL de `:games:demos`. Único módulo do projeto autorizado a declarar dependência em `org.lwjgl.*`.
 :games:pong            ← jogo Pong executável (humano vs IA), roda em Skiko — prova viva da fundação
 :games:tictactoe       ← jogo Velha (humano vs humano), roda em **Skiko** com scripting Lua — sentinela do segundo backend de scripting
-:games:demos           ← cenas de demonstração visual das melhorias da engine (roda em Skiko)
+:games:demos           ← cenas de demonstração visual das melhorias da engine (Skiko por default; expõe entrypoint alternativo `runLwjgl` rodando as mesmas cenas sobre o segundo backend)
 :games:hello-world     ← exemplo code-only mínimo — único Label centralizado em Skiko, sem bundle nem scripting
 :games:snake           ← jogo Snake executável (grid-based, tick-based), roda em Skiko com scripting Python — primeiro validador de gameplay discreto e mutação dinâmica de scene graph
 ```
@@ -89,8 +89,13 @@ Durante o jogo:
 Para rodar Demos:
 
 ```sh
-./gradlew :games:demos:run
+./gradlew :games:demos:run        # backend padrão: Skiko
+./gradlew :games:demos:runLwjgl   # segundo backend: LWJGL (NanoVG + GLFW + OpenGL 3.3 core)
 ```
+
+Os dois entrypoints rodam o mesmo `DemoSwitcherRoot` (mesmas cenas `1`–`6`, mesmas key-bindings F1/F2/F3, mesmo `GameConfig`) — o que muda é o caminho de render/input/host. Diferenças puramente visuais (AA edge-expand do NanoVG vs AA GPU do Skia; fontstash vs Skia text shaping) são aceitas; divergência semântica (cena rodando errado, F-key não togglando, mouse fora de posição) é bug do backend.
+
+> Caveat macOS: o backend LWJGL precisa rodar no main thread do processo (`-XstartOnFirstThread`), pois GLFW liga em Cocoa via `NSApp`. A task `runLwjgl` injeta essa flag automaticamente; quem invocar `MainLwjglKt` manualmente via `java -cp ... com.neoutils.engine.games.demos.MainLwjglKt` precisa adicionar `-XstartOnFirstThread` à linha de comando — sem ela, `glfwInit()` crasha. Linux e Windows não exigem.
 
 Durante a execução:
 
