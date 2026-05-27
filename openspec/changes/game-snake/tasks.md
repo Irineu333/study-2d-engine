@@ -52,14 +52,14 @@
 
 ## 9. Verificação funcional manual
 
-- [ ] 9.1 `./gradlew :games:snake:run` abre janela e o jogo começa imediatamente (autostart=true).
-- [ ] 9.2 Cobra se move para direita por padrão; setas mudam direção.
-- [ ] 9.3 ← imediatamente após direção direita é ignorado.
-- [ ] 9.4 Cobra come comida; comprimento aumenta; comida reposiciona; score sobe.
-- [ ] 9.5 Cobra atravessa borda direita → reaparece na esquerda (e simétricos para 3 outras bordas).
-- [ ] 9.6 Cobra colide consigo mesma → `GameOverLabel` aparece, movimento para.
-- [ ] 9.7 Enter após game over → cobra renasce no centro com comprimento 3, score zera, label some, jogo segue.
-- [ ] 9.8 F1 alterna overlay de FPS.
+- [x] 9.1 `./gradlew :games:snake:run` abre janela e o jogo começa imediatamente (autostart=true).
+- [x] 9.2 Cobra se move para direita por padrão; setas mudam direção.
+- [x] 9.3 ← imediatamente após direção direita é ignorado.
+- [x] 9.4 Cobra come comida; comprimento aumenta; comida reposiciona; score sobe.
+- [x] 9.5 Cobra atravessa borda direita → reaparece na esquerda (e simétricos para 3 outras bordas).
+- [x] 9.6 Cobra colide consigo mesma → `GameOverLabel` aparece, movimento para.
+- [x] 9.7 Enter após game over → cobra renasce no centro com comprimento 3, score zera, label some, jogo segue.
+- [x] 9.8 F1 alterna overlay de FPS.
 
 ## 10. Verificação automatizada
 
