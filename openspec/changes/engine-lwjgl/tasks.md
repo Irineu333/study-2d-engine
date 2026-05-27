@@ -60,13 +60,13 @@
 
 - [x] 7.1 `./gradlew :games:demos:run` (Skiko) — smoke test (25s) confirmou que a janela Skiko abre, `GameLoop` ticka (warns de spiral-of-death do physics são esperados em primeiros frames). Cenas/F-keys/mouse/resize são validação visual a cargo do autor.
 - [x] 7.2 `./gradlew :games:demos:runLwjgl` — smoke test (30s) confirmou que GLFW inicializa, janela é criada, `GameLoop` ticka, processo encerra limpo. Sem `-XstartOnFirstThread` (gerenciado pela task) o subprocesso crasharia em `glfwInit()` no macOS.
-- [ ] 7.3 No entrypoint LWJGL: cena `1` Solar System — Sun, planetas, luas, anel de Saturno aparecem; órbitas evoluem; transforms aninhados em 4 níveis funcionam. *(Validação visual pendente — sessão headless do harness.)*
-- [ ] 7.4 No entrypoint LWJGL: cena `2` Scale hierarchy — composição de scale do pai propaga ao filho. *(Validação visual pendente.)*
-- [ ] 7.5 No entrypoint LWJGL: cena `3` Spawner — clique adiciona bolinha em `(x, y)` aproximado; trap remove bolinha quando ela entra. *(Validação visual pendente.)*
-- [ ] 7.6 No entrypoint LWJGL: cena `4` Collision stress — bolinhas quicam, paredes acompanham resize, F3 mostra overlay de momento (texto + sparklines). *(Validação visual pendente.)*
-- [ ] 7.7 No entrypoint LWJGL: cena `5` Rotating box — bolinhas dentro de caixa rotacionada não tunelam. *(Validação visual pendente.)*
-- [ ] 7.8 No entrypoint LWJGL: cena `6` Tumbling swarm — squares com rotação quicam com spin em hits glancing; F3 overlay funciona. *(Validação visual pendente.)*
-- [ ] 7.9 Comparar Skiko vs LWJGL lado a lado nas 6 cenas: tolerar diferenças visuais (AA, fontes); falhar em divergência semântica (cena errada, F-key não togglando, mouse fora). *(Validação visual pendente.)*
+- [x] 7.3 No entrypoint LWJGL: cena `1` Solar System — Sun, planetas, luas, anel de Saturno aparecem; órbitas evoluem; transforms aninhados em 4 níveis funcionam. *(Validado pelo autor.)*
+- [x] 7.4 No entrypoint LWJGL: cena `2` Scale hierarchy — composição de scale do pai propaga ao filho. *(Validado pelo autor.)*
+- [x] 7.5 No entrypoint LWJGL: cena `3` Spawner — clique adiciona bolinha em `(x, y)` aproximado; trap remove bolinha quando ela entra. *(Validado pelo autor.)*
+- [x] 7.6 No entrypoint LWJGL: cena `4` Collision stress — bolinhas quicam, paredes acompanham resize, F3 mostra overlay de momento (texto + sparklines). *(Validado pelo autor.)*
+- [x] 7.7 No entrypoint LWJGL: cena `5` Rotating box — bolinhas dentro de caixa rotacionada não tunelam. *(Validado pelo autor.)*
+- [x] 7.8 No entrypoint LWJGL: cena `6` Tumbling swarm — squares com rotação quicam com spin em hits glancing; F3 overlay funciona. *(Validado pelo autor.)*
+- [x] 7.9 Comparar Skiko vs LWJGL lado a lado nas 6 cenas: tolerar diferenças visuais (AA, fontes); falhar em divergência semântica (cena errada, F-key não togglando, mouse fora). *(Validado pelo autor: diferença leve de text shaping aceita; FPS difere — Skiko ~60 capado por compositor AWT, LWJGL ~300 porque `glfwSwapInterval(1)` é frequentemente ignorado em macOS GL 3.3 core, conforme risco já documentado no design; sem divergência semântica.)*
 
 ## 8. Docs
 
