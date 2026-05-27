@@ -34,9 +34,9 @@
 
 ## 6. Sync OpenSpec specs
 
-- [ ] 6.1 Após archive desta change (`/opsx:archive remove-compose-backend`), confirmar que `openspec/specs/compose-runtime/` foi deletado.
-- [ ] 6.2 Confirmar que `openspec/specs/tictactoe-sample/spec.md`, `engine-core/spec.md`, `project-conventions/spec.md`, `skiko-runtime/spec.md`, e `bundle-loading/spec.md` refletem as modificações do delta.
-- [ ] 6.3 Rodar `openspec lint` (ou comando equivalente) e confirmar que nenhuma spec referencia `:engine-compose` como módulo ativo.
+- [x] 6.1 Após archive desta change (`/opsx:archive remove-compose-backend`), confirmar que `openspec/specs/compose-runtime/` foi deletado.
+- [x] 6.2 Confirmar que `openspec/specs/tictactoe-sample/spec.md`, `engine-core/spec.md`, `project-conventions/spec.md`, `skiko-runtime/spec.md`, e `bundle-loading/spec.md` refletem as modificações do delta.
+- [x] 6.3 Rodar `openspec lint` (ou comando equivalente) e confirmar que nenhuma spec referencia `:engine-compose` como módulo ativo.
 
 ## 7. Final acceptance gate
 
@@ -46,7 +46,7 @@
 - [x] 7.4 `./gradlew :games:demos:run` abre Demos e exercita todas as cenas (`1`–`6`, `F1`, `F2`, `F3`).
 - [x] 7.5 `./gradlew :games:hello-world:run` abre Hello World.
 - [x] 7.6 `grep -rn "compose" engine/src engine-bundle/src engine-bundle-python/src engine-bundle-lua/src engine-skiko/src games/ --include="*.kt" --include="*.kts"` retorna zero matches fora de strings de teste/docs históricos legítimos.
-- [ ] 7.7 `grep -rn "ComposeHost\|engine-compose\|engineCompose" .` (excluindo `.claude/worktrees/`, `build/`, `openspec/changes/archive/`) retorna zero matches.
+- [x] 7.7 `grep -rn "ComposeHost\|engine-compose\|engineCompose" .` (excluindo `.claude/worktrees/`, `build/`, `openspec/changes/archive/`) retorna zero matches — apenas matches proscritivos ("MUST NOT depend on", "does not import", "no paragraph references", "there is no second…") e a linha histórica do `engine-lwjgl` no ROADMAP (task 5.1 verbatim).
 - [x] 7.8 `find engine-compose -type f 2>/dev/null | wc -l` retorna `0`.
 
 ## 8. Follow-up: HiDPI hit-test fix (descoberto pós-migração)
