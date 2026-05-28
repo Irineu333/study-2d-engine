@@ -104,7 +104,7 @@ O módulo `:engine-lwjgl` SHALL prover uma classe `LwjglHost` que implementa a i
 7. Instanciar `LwjglRenderer`, chamar `renderer.init()` (que cria o NanoVG context, registra a fonte default).
 8. Instanciar `PhysicsSystem`, `GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)`, `FpsCounter`.
 9. `glfwShowWindow(window)`.
-10. Loop principal `while (!glfwWindowShouldClose(window))`: chamar `glfwPollEvents()`, `input.beginTick()`, atualizar `lastNanos`/`pendingDt`/`Debug.currentFps`, ler `glfwGetWindowSize`/`glfwGetFramebufferSize` para calcular `pixelRatio`, chamar `tree.resize(winW, winH)`, chamar `glViewport(0, 0, fbW, fbH)`, chamar `renderer.bind(winW, winH, pixelRatio)`, dentro de `try { ... } finally { renderer.unbind() }` chamar `renderer.clear`, `loop.tick`, observar `config.toggleFpsKey`/`config.toggleCollidersKey`/`config.toggleMomentumOverlayKey` togglando `Debug.showFps`/`Debug.colliderVisualization`/`Debug.showMomentumOverlay` (resetando `MomentumOverlay` quando habilitar), e chamar `renderDebugOverlay(renderer, tree)`. Depois do `try/finally`, `glfwSwapBuffers(window)`.
+10. Loop principal `while (!glfwWindowShouldClose(window))`: chamar `glfwPollEvents()`, `input.beginTick()`, atualizar `lastNanos`/`pendingDt`/`FpsCounter` (cujo valor alimenta `DebugOverlayLayer.FpsLabel` via canal compartilhado), ler `glfwGetWindowSize`/`glfwGetFramebufferSize` para calcular `pixelRatio`, chamar `tree.resize(winW, winH)`, observar `config.toggleFpsKey`/`config.toggleCollidersKey`/`config.toggleMomentumOverlayKey` flippando `tree.debug.showFps`/`tree.debug.showColliders`/`tree.debug.showMomentum`, chamar `glViewport(0, 0, fbW, fbH)`, chamar `renderer.bind(winW, winH, pixelRatio)`, dentro de `try { ... } finally { renderer.unbind() }` chamar `renderer.clear` + `loop.tick(dtNanos)` — e nada mais. O host NÃO deve chamar `renderDebugOverlay(renderer, tree)` nem qualquer outro helper de desenho após `loop.tick`. Depois do `try/finally`, `glfwSwapBuffers(window)`.
 11. Após o loop sair: `tree.stop()`, `renderer.shutdown()`, `Callbacks.glfwFreeCallbacks(window)`, `glfwDestroyWindow(window)`, e em `finally` externo: `glfwTerminate()` + `GLFWErrorCallback.set(null)?.free()`.
 
 `run` MUST ser blocking — retorna somente quando o usuário fecha a janela ou código chama `glfwSetWindowShouldClose(window, true)`. `LwjglHost.run` MUST ser chamado a partir do main thread do processo; em macOS, o processo precisa ter sido iniciado com `-XstartOnFirstThread` (responsabilidade do `build.gradle.kts` que dispara a task `runLwjgl`).
@@ -120,25 +120,31 @@ O módulo `:engine-lwjgl` SHALL prover uma classe `LwjglHost` que implementa a i
 - **THEN** the call does not return while the window remains open
 - **AND** the call returns after the user closes the window
 
-#### Scenario: F1 toggles Debug.showFps via the host
+#### Scenario: F1 toggles tree.debug.showFps via the host
 
-- **GIVEN** `Debug.showFps == false`
+- **GIVEN** `tree.debug.showFps == false`
 - **WHEN** the user presses the key configured as `config.toggleFpsKey` (default `Key.F1`)
-- **THEN** by the next frame `Debug.showFps == true`
-- **AND** the FPS overlay is drawn via `renderDebugOverlay`
+- **THEN** by the next frame `tree.debug.showFps == true`
+- **AND** the FPS overlay is drawn via the `DebugOverlayLayer`'s `FpsLabel`, not via a host-side helper
 
-#### Scenario: F2 toggles Debug.colliderVisualization via the host
+#### Scenario: F2 toggles tree.debug.showColliders via the host
 
-- **GIVEN** `Debug.colliderVisualization == false`
+- **GIVEN** `tree.debug.showColliders == false`
 - **WHEN** the user presses the key configured as `config.toggleCollidersKey` (default `Key.F2`)
-- **THEN** by the next frame `Debug.colliderVisualization == true`
+- **THEN** by the next frame `tree.debug.showColliders == true`
 
-#### Scenario: F3 toggles Debug.showMomentumOverlay and resets MomentumOverlay when enabling
+#### Scenario: F3 toggles tree.debug.showMomentum via the host
 
-- **GIVEN** `Debug.showMomentumOverlay == false`
+- **GIVEN** `tree.debug.showMomentum == false`
 - **WHEN** the user presses the key configured as `config.toggleMomentumOverlayKey`
-- **THEN** by the next frame `Debug.showMomentumOverlay == true`
-- **AND** `com.neoutils.engine.dx.MomentumOverlay.reset()` was called as part of the toggle
+- **THEN** by the next frame `tree.debug.showMomentum == true`
+- **AND** the `MomentumOverlay` node inside `DebugOverlayLayer` resets its sparkline buffers as part of becoming visible
+
+#### Scenario: LwjglHost does not draw debug overlays directly
+
+- **WHEN** the source of `LwjglHost.kt` (and any helper it transitively calls during its render loop body) is grep'd for `renderer.drawText`, `renderer.drawRect`, `renderer.drawLine`, `renderer.drawCircle`, `renderer.drawPolygon`, or any private `renderDebugOverlay(...)` helper
+- **THEN** the only draw calls are issued from inside `loop.tick(...)` → `tree.render(renderer)` → walks of the scene graph
+- **AND** the host's main loop body itself contains zero `renderer.draw*` calls before or after `loop.tick`
 
 #### Scenario: Window close terminates the loop and disposes resources
 

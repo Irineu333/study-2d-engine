@@ -46,9 +46,9 @@ The Tic-tac-toe scene SHALL be loaded from `src/main/resources/tictactoe/scene.j
 - A root of type `com.neoutils.engine.scene.Node` whose `script` is `scripts/board.lua`.
 - A `Camera2D` child with `current: true` and `bounds = Rect(Vec2.ZERO, Vec2(600f, 600f))`.
 - Four `Line2D` children forming the grid (two vertical, two horizontal) declared with absolute coordinates.
-- A `Label` child named `status` holding the current status text.
+- A **`CanvasLayer`** child named `Hud` containing a `Label` named `status` holding the current status text. `status` lives in screen-space, with `transform.position` authored in screen pixels (e.g. centered horizontally near the top edge).
 
-The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`. The previous Python script `scripts/board.py` MUST NOT exist anywhere under `games/tictactoe/src/main/resources/tictactoe/scripts/`. The bundle (scene.json + scripts/) MUST NOT change as part of the Compose→Skiko host migration — the proof point is that the same bundle runs identically in the new host.
+The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTacToeRoot` MUST NOT exist anywhere under `games/tictactoe/src/main/kotlin/`. The previous Python script `scripts/board.py` MUST NOT exist anywhere under `games/tictactoe/src/main/resources/tictactoe/scripts/`. After the `ui-foundation` migration the bundle MAY differ from previous versions only by the documented diff (wrapping the `status` Label in a `CanvasLayer` named `Hud`).
 
 #### Scenario: Bundle directory layout
 
@@ -69,10 +69,12 @@ The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTa
 - **THEN** the root has at least four children of type `com.neoutils.engine.scene.Line2D` forming a 3×3 grid
 - **AND** the script `board.lua` does NOT define the grid lines itself
 
-#### Scenario: Status text is declarative Label
+#### Scenario: Status text is declarative Label inside CanvasLayer
 
 - **WHEN** `scene.json` is inspected
-- **THEN** the root has a child of type `com.neoutils.engine.scene.Label` named `status`
+- **THEN** the root has a child of type `com.neoutils.engine.scene.CanvasLayer` named `Hud`
+- **AND** that `CanvasLayer` has a child of type `com.neoutils.engine.scene.Label` named `status`
+- **AND** `status.text` is updated by `board.lua` (writing through `NodeRef` resolution or `findChild` lookup; the new path traverses through `Hud`)
 
 #### Scenario: No game-specific Kotlin types exist
 
@@ -80,11 +82,10 @@ The previously-existing Kotlin classes `Board`, `Mark`, `StatusText`, and `TicTa
 - **THEN** no file named `Board.kt`, `Mark.kt`, `StatusText.kt`, or `TicTacToeRoot.kt` exists
 - **AND** the only `.kt` file present is `Main.kt`
 
-#### Scenario: Bundle survives host migration unchanged
+#### Scenario: Status renders in screen-space regardless of Camera2D
 
-- **WHEN** the bundle files at `games/tictactoe/src/main/resources/tictactoe/` are compared against the previous Compose-hosted version
-- **THEN** `scene.json` is byte-equal
-- **AND** `scripts/board.lua` is byte-equal
+- **WHEN** the game runs and the `Camera2D` projects its `bounds = Rect(Vec2.ZERO, Vec2(600f, 600f))` onto a surface that may not match 600×600 (e.g. window resized)
+- **THEN** the `status` Label renders at constant screen-pixel coordinates inside the `Hud` `CanvasLayer`, NOT scaled or letterboxed by the camera projection
 
 ### Requirement: Game state and rendering live in board.lua
 

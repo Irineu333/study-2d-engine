@@ -43,14 +43,16 @@ O projeto SHALL prover um módulo `:games:pong` que depende de `:engine`, `:engi
 
 ### Requirement: Pong scene composition
 
-The Pong scene SHALL contain the following node tree: two `Paddle` nodes (left labeled "left", right labeled "right"), a `Ball` node, four wall/goal `Collider` nodes (top, bottom, left goal, right goal), and a HUD subtree with two `Score` text nodes and an optional center-line decoration. Each `Paddle` MUST carry a child `BoxCollider` whose `size` mirrors the paddle's `size`. The `Ball` MUST itself extend `BoxCollider` (the ball **is** its collider, not a node that contains one) — no anonymous `BoxCollider` subclass MAY be used in the Pong codebase. The wall and paddle-child colliders SHALL be plain `com.neoutils.engine.physics.BoxCollider` instances; Pong MUST NOT declare empty `BoxCollider` subclasses (e.g. `Wall`, `PaddleCollider`) in scripts or Kotlin source.
+The Pong scene SHALL contain the following node tree: two `Paddle` nodes (left labeled "left", right labeled "right"), a `Ball` node, four wall/goal `Collider` nodes (top, bottom, left goal, right goal), an optional center-line decoration in the world, and a **HUD `CanvasLayer`** subtree containing two `Score` text nodes (left, right). Each `Paddle` MUST carry a child `BoxCollider` whose `size` mirrors the paddle's `size`. The `Ball` MUST itself extend `BoxCollider` (the ball **is** its collider, not a node that contains one) — no anonymous `BoxCollider` subclass MAY be used in the Pong codebase. The wall and paddle-child colliders SHALL be plain `com.neoutils.engine.physics.BoxCollider` instances; Pong MUST NOT declare empty `BoxCollider` subclasses (e.g. `Wall`, `PaddleCollider`) in scripts or Kotlin source.
 
-The scene file SHALL author every node position in the 800×600 world coordinate system declared by the `Camera2D`. Specifically the paddles SHALL be placed at fixed `transform.position` values that center them vertically and offset them horizontally by `PADDLE_MARGIN` from each goal; the top wall SHALL sit at `Vec2(0, 0)` with full play-field width; the bottom wall SHALL sit at `Vec2(0, 600 - WALL_THICKNESS)`; the goals SHALL bracket the play field at `x = -GOAL_THICKNESS` and `x = 800`; the score labels SHALL sit at fixed positions near the top center of the world; the ball SHALL be authored with `fieldCenter = Vec2(400, 300)`. The Pong `pong_scene.py` script SHALL NOT contain a `_layout(width, height)` function or any equivalent runtime reposition routine — the world is fixed and the camera handles surface mapping. The script MAY retain a `_ready` for signal wiring (e.g. connecting the ball's `scored` signal to the scoreboards) and nothing else.
+The scene file SHALL author every gameplay node position in the 800×600 world coordinate system declared by the `Camera2D`: paddles at fixed `transform.position` values that center them vertically and offset them horizontally by `PADDLE_MARGIN` from each goal; the top wall at `Vec2(0, 0)` with full play-field width; the bottom wall at `Vec2(0, 600 - WALL_THICKNESS)`; the goals bracketing the play field at `x = -GOAL_THICKNESS` and `x = 800`; the ball authored with `fieldCenter = Vec2(400, 300)`. **Score labels SHALL NOT live in world-space** — they live inside the HUD `CanvasLayer` with positions expressed in screen pixels (left score near top-left, right score near top-right). The center-line decoration, if present, MAY remain in world-space.
+
+The Pong `pong_scene.py` script SHALL NOT contain a `_layout(width, height)` function or any equivalent runtime reposition routine — the world is fixed and the camera handles surface mapping. The script MAY retain a `_ready` for signal wiring (e.g. connecting the ball's `scored` signal to the scoreboards) and nothing else.
 
 #### Scenario: Scene contains the expected nodes after construction
 
 - **WHEN** a new `PongScene` is instantiated
-- **THEN** its tree contains exactly: two paddles, one ball, four boundary colliders, two score texts
+- **THEN** its tree contains exactly: two paddles, one ball, four boundary colliders, plus one `CanvasLayer` (HUD) holding two score `Label`s
 
 #### Scenario: Ball is a BoxCollider directly
 
@@ -74,11 +76,18 @@ The scene file SHALL author every node position in the 800×600 world coordinate
 - **WHEN** the `:games:pong/src/main/resources/scripts/` directory and `:games:pong/src/main/kotlin` source tree are searched
 - **THEN** no file declares an empty subclass of `BoxCollider` (i.e. a class whose body is empty or only contains property defaults with no overrides)
 
-#### Scenario: All Pong nodes have fixed world-space positions in scene.json
+#### Scenario: Gameplay nodes have fixed world-space positions in scene.json
 
 - **WHEN** `pong/scene.json` is inspected
-- **THEN** every node (paddles, walls, goals, ball, scores, center line) carries a `transform.position` value in the 800×600 world coordinate system
-- **AND** no node's position is `Vec2(0, 0)` placeholder waiting to be filled by a script
+- **THEN** every gameplay node (paddles, walls, goals, ball, center line) carries a `transform.position` value in the 800×600 world coordinate system
+- **AND** no gameplay node's position is `Vec2(0, 0)` placeholder waiting to be filled by a script
+
+#### Scenario: Score labels live inside a CanvasLayer
+
+- **WHEN** `pong/scene.json` is inspected
+- **THEN** the two score labels (left and right) are children of a `CanvasLayer` node, NOT direct children of the world root
+- **AND** their `transform.position` values are screen-pixel coordinates (e.g. top-left at `Vec2(20, 20)`, top-right computed relative to the surface)
+- **AND** the labels render at constant screen positions regardless of any Camera2D zoom or pan applied to the world
 
 #### Scenario: pong_scene.py does not reposition nodes at runtime
 

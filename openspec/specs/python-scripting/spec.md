@@ -292,7 +292,7 @@ Métodos Python ausentes MUST resultar em no-op no `ScriptInstance` (não exceç
 
 ### Requirement: Engine types are pre-bound in the Polyglot Context
 
-`PythonScriptHost` MUST registrar bindings no Polyglot Context para que scripts referenciem tipos da engine sem `import`. Os bindings MUST incluir, no mínimo: `Vec2`, `Rect`, `Color`, `Transform`, `Key`, `MouseButton`, `NodeRef`, `Signal`, `Node2D`, `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `CollisionObject2D`, `Area2D`, `PhysicsBody2D`, `StaticBody2D`, `CharacterBody2D`, `RigidBody2D`, `CollisionShape2D`, `Shape2D`, `RectangleShape2D`, `CircleShape2D`. Os bindings de física antigos (`BoxCollider`, `Collider`) MUST NOT estar presentes. Adicionalmente, MUST expor uma factory function `signal(typeHint=None)` que constrói uma instância `Signal` (typeHint é apenas documentação, ignorada runtime). Os bindings MUST estar disponíveis dentro do top-level dos scripts (para AnnAssign `points: Polygon2D = ...` ou declarações `my_signal: Signal = signal(str)`) e dentro dos hooks (para uso em runtime).
+`PythonScriptHost` MUST registrar bindings no Polyglot Context para que scripts referenciem tipos da engine sem `import`. Os bindings MUST incluir, no mínimo: `Vec2`, `Rect`, `Color`, `Transform`, `Key`, `MouseButton`, `NodeRef`, `Signal`, `Node2D`, `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `CanvasLayer`, `Panel`, `Button`, `CollisionObject2D`, `Area2D`, `PhysicsBody2D`, `StaticBody2D`, `CharacterBody2D`, `RigidBody2D`, `CollisionShape2D`, `Shape2D`, `RectangleShape2D`, `CircleShape2D`. Os bindings de física antigos (`BoxCollider`, `Collider`) MUST NOT estar presentes. Adicionalmente, MUST expor uma factory function `signal(typeHint=None)` que constrói uma instância `Signal` (typeHint é apenas documentação, ignorada runtime). Os bindings MUST estar disponíveis dentro do top-level dos scripts (para AnnAssign `points: Polygon2D = ...` ou declarações `my_signal: Signal = signal(str)`) e dentro dos hooks (para uso em runtime).
 
 #### Scenario: Binding RigidBody2D is exposed in the Context
 
@@ -332,6 +332,18 @@ Métodos Python ausentes MUST resultar em no-op no `ScriptInstance` (não exceç
 
 - **WHEN** um script faz `ColorRect()`, `Circle2D()`, `Line2D()`, `Polygon2D()`, `Label()` em algum hook
 - **THEN** cada chamada retorna uma instância válida do tipo Kotlin correspondente
+
+#### Scenario: UI nodes CanvasLayer, Panel, Button are bound
+
+- **WHEN** um script faz `cl = CanvasLayer(); p = Panel(); b = Button()` em algum hook (ou referencia esses tipos em annotated assignment top-level)
+- **THEN** cada chamada retorna uma instância válida do tipo Kotlin correspondente
+- **AND** o script pode escrever `# extends Button` para anexar a um Button declarado em `scene.json`
+
+#### Scenario: Button.pressed signal is connectable from Python
+
+- **GIVEN** um script Python com `# extends Button` e `def _ready(self): self.pressed.connect(self._on_pressed)`
+- **WHEN** o `Button` é clicado e a UI hit-test consome o clique
+- **THEN** `self._on_pressed` é invocado exatamente uma vez por click cycle
 
 #### Scenario: Vec2 is usable without import
 
@@ -382,7 +394,7 @@ Python scripts attached to `Node2D` (or any subclass) SHALL access local transfo
 
 ### Requirement: PyI stubs are published as module resources
 
-`:engine-bundle-python` SHALL publicar arquivos `.pyi` (PEP 561 stubs) em `src/main/resources/stubs/engine/` cobrindo no mínimo: `Node`, `Node2D`, `BoxCollider`, `Renderer`, `Input`, `Vec2`, `Color`, `Rect`, `NodeRef`, `Key`. Os stubs MUST refletir a API Kotlin pública de cada um desses tipos, incluindo as três properties ergonômicas de `Node2D` (`position: Vec2`, `rotation: float`, `scale: Vec2`) e a função `world(self) -> Transform`. Os stubs MUST NÃO declarar `worldPosition` em nenhum tipo. A docstring de `Vec2` no stub MUST documentar que a classe é imutável (atribuição de componente individual via `v.y = ...` lança `AttributeError`).
+`:engine-bundle-python` SHALL publicar arquivos `.pyi` (PEP 561 stubs) em `src/main/resources/stubs/engine/` cobrindo no mínimo: `Node`, `Node2D`, `Camera2D`, `Label`, `ColorRect`, `Circle2D`, `Line2D`, `Polygon2D`, `CanvasLayer`, `Panel`, `Button`, `CollisionObject2D`, `Area2D`, `StaticBody2D`, `CharacterBody2D`, `RigidBody2D`, `CollisionShape2D`, `RectangleShape2D`, `CircleShape2D`, `Renderer`, `Input`, `Vec2`, `Color`, `Rect`, `Transform`, `NodeRef`, `Key`, `MouseButton`, `Signal`, `Timer`, `TimerMode`. Os stubs MUST refletir a API Kotlin pública de cada um desses tipos, incluindo as três properties ergonômicas de `Node2D` (`position: Vec2`, `rotation: float`, `scale: Vec2`) e a função `world(self) -> Transform`. Os stubs MUST NÃO declarar `worldPosition` em nenhum tipo. A docstring de `Vec2` no stub MUST documentar que a classe é imutável (atribuição de componente individual via `v.y = ...` lança `AttributeError`). `Button` no stub MUST declarar o atributo `pressed: Signal` (signal built-in instanciado por instância).
 
 #### Scenario: Stubs resource directory exists
 
@@ -403,6 +415,12 @@ Python scripts attached to `Node2D` (or any subclass) SHALL access local transfo
 - **THEN** declara `position: Vec2`, `rotation: float`, `scale: Vec2` como atributos públicos mutáveis
 - **AND** declara `def world(self) -> Transform: ...`
 - **AND** NÃO declara `worldTransform` nem `worldPosition`
+
+#### Scenario: UI stubs are present
+
+- **WHEN** os stubs em `stubs/engine/` são inspecionados
+- **THEN** `CanvasLayer`, `Panel`, `Button` aparecem declarados com seus campos públicos (`layer`, `size`, `color`, `border`, `text`, `normalColor`, `hoverColor`, `pressedColor`, `disabledColor`, `disabled`)
+- **AND** `Button` declara `pressed: Signal` como atributo de instância
 
 #### Scenario: Vec2 stub documents immutability
 
