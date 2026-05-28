@@ -8,7 +8,6 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `engine-lwjgl`      | Segundo backend ativo de render via LWJGL (NanoVG + GLFW + OpenGL 3.3 core); sentinela do invariante #4 através do entrypoint `runLwjgl` de `:games:demos`. Substitui o papel anterior do `:engine-compose`. |
 | `ui-foundation`     | UI in-game base: `CanvasLayer` (Node screen-space) + `Panel` + `Button` (com signal `pressed` built-in, hit-test geométrico, `wasMouseClicked` consumido por UI), `DebugOverlayLayer` auto-inserido pela engine (FPS/colliders/momentum), `GameHost.render` proibido, demos cena 7 valida nos dois backends, jogos shipped (hello-world/pong/snake/tictactoe) migrados pra HUD em `CanvasLayer`. |
-| `debug-widgets`     | Refatora infra de debug: `DebugWidget` (interface) + `ScreenDebugWidget`/`WorldDebugWidget` (bases sob Node/Node2D), `DebugRegistry` per-tree, `DebugLayer` com world + screen sub-containers, HUD `Panel`+`Button` listando widgets como rows toggláveis num único keybind (`GameConfig.debugHudKey`), `MomentumOverlay` singleton e flags em `tree.debug.*` substituídos por widgets que ownam o próprio estado, hosts param de tocar em debug por frame. Adicionar widget novo num jogo = 1 arquivo + 1 chamada `tree.debug.register(...)`. |
 
 ## Planned
 
