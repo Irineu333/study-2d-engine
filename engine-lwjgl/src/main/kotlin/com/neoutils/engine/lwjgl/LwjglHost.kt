@@ -1,7 +1,5 @@
 package com.neoutils.engine.lwjgl
 
-import com.neoutils.engine.dx.FpsCounter
-import com.neoutils.engine.dx.MomentumOverlay
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
@@ -55,7 +53,7 @@ class LwjglHost : GameHost {
             renderer.init()
             val physics = PhysicsSystem()
             val loop = GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)
-            val fps = FpsCounter()
+            tree.debugHudKey = config.debugHudKey
             var lastNanos = 0L
 
             GLFW.glfwShowWindow(window)
@@ -72,27 +70,11 @@ class LwjglHost : GameHost {
                 val nanoTime = System.nanoTime()
                 val pendingDt = if (lastNanos == 0L) 16_666_666L else nanoTime - lastNanos
                 lastNanos = nanoTime
-                tree.debug.currentFps = fps.record(nanoTime)
 
                 val (winW, winH) = queryWindowSize(window)
                 val (fbW, fbH) = queryFramebufferSize(window)
                 val pixelRatio = if (winW > 0) fbW.toFloat() / winW.toFloat() else 1f
                 tree.resize(winW.toFloat(), winH.toFloat())
-
-                // Poll toggle keys before loop.tick so the UI hit-test and
-                // overlay layer see the flipped flags on the same tick the
-                // user pressed them. No host-side overlay drawing happens
-                // anymore — the auto-inserted `DebugOverlayLayer` handles it.
-                if (input.wasKeyPressed(config.toggleFpsKey)) {
-                    tree.debug.showFps = !tree.debug.showFps
-                }
-                if (input.wasKeyPressed(config.toggleCollidersKey)) {
-                    tree.debug.showColliders = !tree.debug.showColliders
-                }
-                if (input.wasKeyPressed(config.toggleMomentumOverlayKey)) {
-                    tree.debug.showMomentum = !tree.debug.showMomentum
-                    if (tree.debug.showMomentum) MomentumOverlay.reset()
-                }
 
                 GL11.glViewport(0, 0, fbW, fbH)
                 renderer.bind(winW, winH, pixelRatio)

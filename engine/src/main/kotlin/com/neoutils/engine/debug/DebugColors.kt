@@ -1,4 +1,4 @@
-package com.neoutils.engine.dx
+package com.neoutils.engine.debug
 
 import com.neoutils.engine.render.Color
 

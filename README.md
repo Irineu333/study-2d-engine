@@ -61,9 +61,23 @@ A executável `:games:demos` expõe 6 cenas trocáveis pelas teclas `1`–`6`, c
 
 ## Controles globais
 
-- `F1` — overlay de FPS (`Debug.showFps`)
-- `F2` — overlay de colliders (`Debug.colliderVisualization`)
-- `F3` — overlay de momento `Σp`/`ΣL`/`ΣKE` (apenas em Demos)
+- `F1` — abre/fecha a HUD de debug com checkboxes para cada widget registrado (FPS, Colliders, Momentum, e quaisquer widgets custom do jogo). O keybind é configurável via `GameConfig(debugHudKey = ...)`.
+
+A HUD lista uma linha por `DebugWidget` ativo no `tree.debug` registry; clicar uma linha alterna o `enabled` do widget. Para plugar um gizmo novo num projeto-jogo basta criar uma classe estendendo `ScreenDebugWidget` (overlay 2D em pixels) ou `WorldDebugWidget` (gizmo em coordenadas de mundo, recebe a view transform da `Camera2D` automaticamente) e registrá-la após `tree.start()`:
+
+```kotlin
+class MyAxes : WorldDebugWidget() {
+    override val title = "My axes"
+    override fun drawDebug(renderer: Renderer) { /* ... */ }
+}
+
+fun main() {
+    val tree = SceneTree(root = MyRoot())
+    tree.start()
+    tree.debug.register(MyAxes())
+    SkikoHost().run(tree, GameConfig())
+}
+```
 
 Controles específicos de cada jogo (teclas de movimento, mouse) vivem na spec do respectivo `<jogo>-sample` em [`openspec/specs/`](./openspec/specs/).
 

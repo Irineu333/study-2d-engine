@@ -33,6 +33,9 @@ class LogConfig {
 
 object Log {
 
+    /** Process-wide log configuration. Read by [log] before emitting. */
+    val config: LogConfig = LogConfig()
+
     @Volatile var sink: LogSink = ConsoleLogSink
 
     fun d(tag: String, message: String) = log(LogLevel.Debug, tag, message)
@@ -41,7 +44,7 @@ object Log {
     fun e(tag: String, message: String) = log(LogLevel.Error, tag, message)
 
     private fun log(level: LogLevel, tag: String, message: String) {
-        if (level.ordinal < Debug.log.effectiveLevel(tag).ordinal) return
+        if (level.ordinal < config.effectiveLevel(tag).ordinal) return
         sink.emit(System.currentTimeMillis(), level, tag, message)
     }
 }

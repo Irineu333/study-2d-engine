@@ -1,6 +1,9 @@
 package com.neoutils.engine.tree
 
+import com.neoutils.engine.debug.DebugLayer
+import com.neoutils.engine.debug.DebugRegistry
 import com.neoutils.engine.input.Input
+import com.neoutils.engine.input.Key
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
@@ -9,7 +12,6 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.CanvasLayer
-import com.neoutils.engine.scene.DebugOverlayLayer
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 
@@ -36,12 +38,21 @@ class SceneTree(val root: Node) {
         internal set
 
     /**
-     * Debug flags read by the auto-inserted `DebugOverlayLayer`. Hosts flip
-     * these in response to `GameConfig.toggleFpsKey` /
-     * `toggleCollidersKey` / `toggleMomentumOverlayKey`; widgets in the
-     * overlay layer read them every draw to decide whether to render.
+     * Per-tree registry of debug widgets. Holds the four engine built-ins
+     * (`fps`, `colliders`, `momentum`, `hud`) as convenience fields and the
+     * full registration list. Game code adds custom widgets via
+     * `tree.debug.register(...)` after `start()`. Read by the auto-inserted
+     * `DebugLayer` and rendered as ordinary scene nodes.
      */
-    val debug: DebugFlags = DebugFlags()
+    val debug: DebugRegistry = DebugRegistry(this)
+
+    /**
+     * Key the engine-internal `DebugToggleNode` polls each tick to toggle
+     * `tree.debug.hud.enabled`. `GameHost` implementations assign
+     * `config.debugHudKey` here once during startup; gameplay code does not
+     * touch this property.
+     */
+    var debugHudKey: Key = Key.F1
 
     /**
      * Set by [com.neoutils.engine.loop.GameLoop] at construction so engine-side
@@ -109,13 +120,13 @@ class SceneTree(val root: Node) {
             // off `children.isEmpty()` for first-run setup are not surprised
             // by the debug layer being present at attach time. Idempotent —
             // a re-start whose root already carries the layer is a no-op.
-            ensureDebugOverlay()
+            ensureDebugLayer()
         }
     }
 
-    private fun ensureDebugOverlay() {
-        if (root.findChild(DebugOverlayLayer.NODE_NAME) == null) {
-            root.addChild(DebugOverlayLayer())
+    private fun ensureDebugLayer() {
+        if (root.findChild(DebugLayer.NODE_NAME) == null) {
+            root.addChild(DebugLayer())
         }
     }
 

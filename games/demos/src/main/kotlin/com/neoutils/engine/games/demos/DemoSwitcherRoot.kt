@@ -38,7 +38,7 @@ class DemoSwitcherRoot : Node() {
         // Guard against re-attach (start/stop/start) — the active demo and the
         // HUD survive across reattachments. Checking the demo slot rather than
         // `children.isEmpty()` keeps us robust against engine-owned siblings
-        // (e.g. the auto-inserted DebugOverlayLayer).
+        // (e.g. the auto-inserted DebugLayer).
         if (activeNode != null) return
         // Demos run in raw surface pixels (no Camera2D) by design: they're
         // physics/collision exercises whose visuals follow the window, not a
@@ -88,7 +88,7 @@ private class HudOverlay(private val slot: () -> DemoSwitcherRoot.Slot) : Node()
         }
         renderer.drawText(name, Vec2(8f, 18f), size = 16f, color = Color.WHITE)
         renderer.drawText(
-            "keys: 1/2/3/4/5/6/7 switch | F1 fps | F2 colliders",
+            "keys: 1/2/3/4/5/6/7 switch | F1 opens debug HUD (checkboxes)",
             Vec2(8f, 38f),
             size = 12f,
             color = Color(1f, 1f, 1f, 0.7f),

@@ -1,8 +1,8 @@
-package com.neoutils.engine.dx
+package com.neoutils.engine.debug
 
 /**
  * Moving-average FPS over a sliding window of frame timestamps. The default
- * window is 1 second, matching the dx-tooling spec.
+ * window is 1 second. Owned by `FpsWidget`; no global instance exists.
  */
 class FpsCounter(val windowSeconds: Float = 1f) {
 

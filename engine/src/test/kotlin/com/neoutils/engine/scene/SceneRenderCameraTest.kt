@@ -61,8 +61,12 @@ class SceneRenderCameraTest {
         val recorder = RecordingRenderer()
         tree.render(recorder)
 
-        assertEquals(0, recorder.events.count { it is Call.Push })
-        assertEquals(0, recorder.events.count { it is Call.Pop })
+        // The auto-inserted `DebugLayer` carries a `WorldDebugContainer`
+        // (Node2D, identity transform) and a `ColliderWidget` (Node2D,
+        // identity transform) under it, contributing two push/pop pairs
+        // to the world pass.
+        assertEquals(2, recorder.events.count { it is Call.Push })
+        assertEquals(2, recorder.events.count { it is Call.Pop })
         assertEquals(1, recorder.events.count { it is Call.Rect })
     }
 
@@ -83,10 +87,11 @@ class SceneRenderCameraTest {
         tree.render(recorder)
 
         // Camera is a Node2D so it still produces its own per-Node2D push;
-        // what MUST be skipped is the outermost view push. With degenerate
-        // bounds, total pushes == 1 (the Camera2D Node2D itself) rather than 2.
-        assertEquals(1, recorder.events.count { it is Call.Push })
-        assertEquals(1, recorder.events.count { it is Call.Pop })
+        // what MUST be skipped is the outermost view push. The auto-inserted
+        // `WorldDebugContainer` and its `ColliderWidget` (both Node2D,
+        // identity) add two more push pairs. Total: Camera2D + WC + collider = 3.
+        assertEquals(3, recorder.events.count { it is Call.Push })
+        assertEquals(3, recorder.events.count { it is Call.Pop })
     }
 }
 

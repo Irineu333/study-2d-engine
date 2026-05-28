@@ -35,7 +35,8 @@ import com.neoutils.engine.scene.Panel
  *    `pressed`; the click also is NOT consumed (passes through).
  *  - Start / Quit emit `pressed` exactly once per click cycle; the click is
  *    consumed (no gameplay node would see `wasMouseClicked` for that tick).
- *  - F1/F2/F3 toggle the auto-inserted DebugOverlayLayer as in scenes 1–6.
+ *  - F1 opens the auto-inserted DebugLayer's HUD (checkboxes for fps,
+ *    colliders, momentum, and custom widgets like Axes) as in scenes 1–6.
  */
 class UiPlaygroundDemo : Node() {
 
