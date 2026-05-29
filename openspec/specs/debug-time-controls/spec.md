@@ -1,4 +1,16 @@
-## ADDED Requirements
+# debug-time-controls Specification
+
+## Purpose
+
+Provide the most basic time controls of any game engine/debugger — pause,
+step one frame at a time, and slow-motion / fast-forward — so collisions and
+solver behavior can be inspected step by step. `SceneTree` exposes
+`timeScale` / `paused` / `requestStep()` as first-class runtime state; the
+`GameLoop` honors all three (with defaults preserving current behavior); and a
+built-in `TimeControlWidget` surfaces pause, step, and speed controls in the
+debug HUD, operable even while paused.
+
+## Requirements
 
 ### Requirement: SceneTree exposes timeScale, paused, and a step request
 
@@ -90,7 +102,8 @@ The engine SHALL register a built-in `TimeControlWidget` (a
 `ScreenDebugWidget`, default `enabled = false`) as a togglable HUD row,
 exposed as a convenience field on `DebugRegistry`. When enabled, it SHALL
 display the current `paused` state and `timeScale`, and provide controls —
-pause/resume, step, and cycling through speed presets — that mutate
+pause/resume, step, and stepping through speed presets (clamped at the ends,
+no wrap) — that mutate
 `tree.paused` / `tree.timeScale` / `requestStep()`. These controls SHALL be
 operable while paused (driven through `hitTestUI`). Keyboard shortcuts for
 the same actions SHALL be polled by an internal debug node that runs under
