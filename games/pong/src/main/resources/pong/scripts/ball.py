@@ -9,6 +9,11 @@ maxSpeed: float = 560.0
 speedupPerHit: float = 1.05
 fieldCenter: Vec2 = Vec2(400.0, 300.0)
 
+# Seconds of look-ahead for the immediate-draw velocity gizmo: the vector is
+# drawn from the ball center to where it would be this many seconds from now.
+_VEL_GIZMO_LOOKAHEAD: float = 0.12
+_GIZMO_COLOR: Color = Color(1.0, 0.9, 0.2, 1.0)
+
 # Emitted with the side string ("Left" or "Right") when the ball enters a
 # goal Area2D. PongScene wires this signal up to the scoreboards.
 scored: Signal = signal(str)
@@ -26,6 +31,21 @@ def _physics_process(self, dt):
     v = self.velocity
     pos = self.position
     self.position = Vec2(pos.x + v.x * dt, pos.y + v.y * dt)
+
+
+def _process(self, dt):
+    # Immediate-draw debug gizmo: the ball's velocity vector in world space.
+    # Off by default (no-op until "Debug Draw" is on in the F1 HUD), emitted in
+    # _process so it lands exactly once per frame regardless of physics substeps.
+    tree = self.tree
+    if tree is None:
+        return
+    world = tree.debug.draw.world
+    center = Vec2(self.position.x + self.ballSize / 2.0, self.position.y + self.ballSize / 2.0)
+    v = self.velocity
+    tip = Vec2(center.x + v.x * _VEL_GIZMO_LOOKAHEAD, center.y + v.y * _VEL_GIZMO_LOOKAHEAD)
+    world.line(center, tip, _GIZMO_COLOR, 2.0)
+    world.circle(center, 3.0, _GIZMO_COLOR, True)
 
 
 def _draw(self, renderer):

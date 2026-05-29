@@ -51,3 +51,5 @@
   - nenhum acúmulo/rastro entre frames (buffers limpos a cada frame).
 - [x] 8.3 Demonstrar via script **Lua** (sentinela do segundo backend de scripting): o `board.lua` do tictactoe numera as 9 células em `draw.world`, realça a célula sob o cursor (`draw.world:rect`) e ecoa a célula em `draw.screen` perto do ponteiro — desligado por padrão. Coberto por teste de bundle (`TicTacToeBundleTest`).
 - [ ] 8.4 **Teste manual (Lua):** rodar `./gradlew :games:tictactoe:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: índices 1–9 nas células, realce da célula sob o mouse e o texto "cell N" seguindo o cursor; desmarcar limpa tudo.
+- [x] 8.5 Demonstrar em física (pong, Python): `ball.py` desenha o vetor de velocidade da bola (`draw.world.line` + marcador) e `paddle.py` (só IA) desenha a linha do alvo + faixa de tolerância — desligado por padrão. Coberto por teste de bundle (`PongBundleTest`).
+- [ ] 8.6 **Teste manual (pong):** rodar `./gradlew :games:pong:run`, abrir o HUD (`F1`), marcar "Debug Draw" e confirmar: o vetor de velocidade gira/encolhe a cada rebatida e a mira do paddle IA segue a bola dentro da faixa; desmarcar limpa tudo.
