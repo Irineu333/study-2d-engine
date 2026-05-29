@@ -12,6 +12,7 @@ function Signal:emit(value) end
 ---@class SceneTree
 ---@field input Input
 ---@field size Vec2
+---@field debug DebugRegistry
 local SceneTree = {}
 ---@param screenPosition Vec2
 ---@return Vec2

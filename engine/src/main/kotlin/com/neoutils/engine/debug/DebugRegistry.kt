@@ -5,9 +5,11 @@ import com.neoutils.engine.tree.SceneTree
 
 /**
  * Per-`SceneTree` runtime registry of debug widgets. Holds the five engine
- * built-ins ([fps], [colliders], [momentum], [log], [hud]) as fields for
- * ergonomic direct access, plus a flat list of every registered widget
- * (built-ins + user-registered, in registration order).
+ * built-in widgets ([fps], [colliders], [momentum], [log], [hud]) plus the
+ * immediate-draw facade ([draw], surfaced by an internal `"Debug Draw"`
+ * toggle widget) as fields for ergonomic direct access, plus a flat list of
+ * every registered widget (built-ins + user-registered, in registration
+ * order).
  *
  * Not a `Node`, never `@Serializable`, never shared across trees —
  * `SceneTree` owns one instance via its constructor.
@@ -26,6 +28,15 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     val momentum: MomentumWidget = MomentumWidget()
     val log: LogOverlayWidget = LogOverlayWidget()
     val hud: DebugHud = DebugHud()
+
+    /**
+     * Immediate-mode drawing facade reached via `tree.debug.draw`. Its single
+     * HUD row is the [drawToggle] proxy registered alongside the other
+     * built-ins; the facade itself is not a widget.
+     */
+    val draw: DebugDraw = DebugDraw()
+
+    private val drawToggle: DebugDrawToggle = DebugDrawToggle(draw)
 
     val widgets: List<DebugWidget> get() = _widgets
 
@@ -49,6 +60,7 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(momentum)
             register(log)
             register(hud)
+            register(drawToggle)
         }
     }
 

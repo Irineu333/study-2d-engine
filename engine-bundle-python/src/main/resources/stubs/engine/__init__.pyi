@@ -48,6 +48,11 @@ from engine.serialization import (
     signal as signal,
 )
 from engine.tree import SceneTree as SceneTree
+from engine.debug import (
+    DebugRegistry as DebugRegistry,
+    DebugDraw as DebugDraw,
+    DebugCanvas as DebugCanvas,
+)
 
 __all__ = [
     "Vec2",
@@ -86,4 +91,7 @@ __all__ = [
     "Disposable",
     "signal",
     "SceneTree",
+    "DebugRegistry",
+    "DebugDraw",
+    "DebugCanvas",
 ]

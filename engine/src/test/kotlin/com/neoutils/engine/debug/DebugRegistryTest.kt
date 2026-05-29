@@ -82,9 +82,9 @@ class DebugRegistryTest {
         val custom = TestScreenWidget()
         tree.debug.register(custom)
         val widgets = tree.debug.widgets
-        assertEquals(6, widgets.size)
+        assertEquals(7, widgets.size)
         assertSame(tree.debug.fps, widgets[0])
-        assertSame(custom, widgets[5])
+        assertSame(custom, widgets[6])
     }
 
     @Test

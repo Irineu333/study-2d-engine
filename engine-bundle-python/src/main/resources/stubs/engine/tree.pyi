@@ -7,6 +7,7 @@ from engine.math import Rect, Vec2
 
 if TYPE_CHECKING:
     from engine.scene import Node
+    from engine.debug import DebugRegistry
 
 
 class SceneTree:
@@ -23,6 +24,7 @@ class SceneTree:
     height: float
     viewport: Rect
     input: object
+    debug: "DebugRegistry"
 
     def get_nodes_in_group(self, name: str) -> List["Node"]: ...
     def screen_to_world(self, screen_position: Vec2) -> Vec2: ...

@@ -38,9 +38,10 @@ class SceneTree(val root: Node) {
         internal set
 
     /**
-     * Per-tree registry of debug widgets. Holds the four engine built-ins
-     * (`fps`, `colliders`, `momentum`, `hud`) as convenience fields and the
-     * full registration list. Game code adds custom widgets via
+     * Per-tree registry of debug widgets. Holds the engine built-ins
+     * (`fps`, `colliders`, `momentum`, `log`, `hud`) and the immediate-draw
+     * facade (`draw`) as convenience fields and the full registration list.
+     * Game code adds custom widgets via
      * `tree.debug.register(...)` after `start()`. Read by the auto-inserted
      * `DebugLayer` and rendered as ordinary scene nodes.
      */
@@ -216,6 +217,10 @@ class SceneTree(val root: Node) {
                 traverseCanvasLayerSubtree(layer, renderer)
             }
         }
+        // Immediate-draw buffers are single-frame: the backing nodes flushed
+        // them during the two passes above, so discard them here. Commands
+        // enqueued in process/physics of this tick were drawn exactly once.
+        debug.draw.clearFrame()
     }
 
     /**

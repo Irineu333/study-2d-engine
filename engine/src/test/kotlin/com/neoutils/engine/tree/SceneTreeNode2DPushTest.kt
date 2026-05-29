@@ -33,13 +33,13 @@ class SceneTreeNode2DPushTest {
         val recorder = RecordingRenderer()
         tree.render(recorder)
 
-        // Outer pair belongs to the rect (which is root); the inner two
-        // pairs are the auto-inserted `WorldDebugContainer` and the
-        // `ColliderWidget` inside it (both Node2D, identity transform).
+        // Outer pair belongs to the rect (which is root); the inner three
+        // pairs are the auto-inserted `WorldDebugContainer` and its
+        // `ImmediateWorldDrawNode` + `ColliderWidget` (all Node2D, identity).
         val pushes = recorder.events.filterIsInstance<RecordedEvent.Push>()
         val pops = recorder.events.filterIsInstance<RecordedEvent.Pop>()
-        assertEquals(3, pushes.size, "got ${recorder.events}")
-        assertEquals(3, pops.size, "got ${recorder.events}")
+        assertEquals(4, pushes.size, "got ${recorder.events}")
+        assertEquals(4, pops.size, "got ${recorder.events}")
 
         val outerPush = pushes[0]
         assertEquals(Vec2(50f, 70f), outerPush.translation)
@@ -68,13 +68,14 @@ class SceneTreeNode2DPushTest {
         tree.render(recorder)
 
         // Pushes: parent + child + WorldDebugContainer (Node2D, identity)
-        // + ColliderWidget (Node2D, identity).
+        // + ImmediateWorldDrawNode (Node2D, identity) + ColliderWidget.
         val pushes = recorder.events.filterIsInstance<RecordedEvent.Push>()
-        assertEquals(4, pushes.size)
+        assertEquals(5, pushes.size)
         assertEquals(Vec2(100f, 0f), pushes[0].translation)
         assertEquals(Vec2(0f, 50f), pushes[1].translation)
         // Order: push(parent), push(child), draw(child), pop(child),
-        // push(WC), push(collider), pop(collider), pop(WC), pop(parent).
+        // push(WC), push(immediate), pop(immediate), push(collider),
+        // pop(collider), pop(WC), pop(parent).
         val tags = recorder.events.map {
             when (it) {
                 is RecordedEvent.Push -> "push"
@@ -84,7 +85,10 @@ class SceneTreeNode2DPushTest {
             }
         }
         assertEquals(
-            listOf("push", "push", "rect", "pop", "push", "push", "pop", "pop", "pop"),
+            listOf(
+                "push", "push", "rect", "pop",
+                "push", "push", "pop", "push", "pop", "pop", "pop",
+            ),
             tags,
         )
     }
@@ -100,14 +104,15 @@ class SceneTreeNode2DPushTest {
         val recorder = RecordingRenderer()
         tree.render(recorder)
 
-        // Parent's push + WorldDebugContainer + ColliderWidget (both Node2D,
-        // identity) auto-inserted by the engine; the Timer (plain Node)
-        // contributes none.
+        // Parent's push + WorldDebugContainer + ImmediateWorldDrawNode +
+        // ColliderWidget (all Node2D, identity) auto-inserted by the engine;
+        // the Timer (plain Node) contributes none.
         val pushes = recorder.events.filterIsInstance<RecordedEvent.Push>()
-        assertEquals(3, pushes.size, "got ${recorder.events}")
+        assertEquals(4, pushes.size, "got ${recorder.events}")
         assertEquals(Vec2(10f, 10f), pushes[0].translation)
         assertEquals(Vec2.ZERO, pushes[1].translation)
         assertEquals(Vec2.ZERO, pushes[2].translation)
+        assertEquals(Vec2.ZERO, pushes[3].translation)
     }
 
     @Test
@@ -123,10 +128,10 @@ class SceneTreeNode2DPushTest {
         val recorder = RecordingRenderer()
         tree.render(recorder)
 
-        // Polygon push + WorldDebugContainer + ColliderWidget (identity)
-        // auto-insertion.
+        // Polygon push + WorldDebugContainer + ImmediateWorldDrawNode +
+        // ColliderWidget (identity) auto-insertion.
         val pushes = recorder.events.filterIsInstance<RecordedEvent.Push>()
-        assertEquals(3, pushes.size)
+        assertEquals(4, pushes.size)
         assertEquals((PI / 2.0).toFloat(), pushes[0].rotation)
 
         val draw = recorder.events.filterIsInstance<RecordedEvent.Polygon>().single()
@@ -166,11 +171,12 @@ class SceneTreeNode2DPushTest {
         tree.render(recorder)
 
         // Sequence: push(view), push(camera), pop(camera), push(rect),
-        // drawRect, pop(rect), push(WC), push(collider), pop(collider),
-        // pop(WC), pop(view). The camera node itself is a Node2D and
-        // produces a push; the engine-inserted `WorldDebugContainer`
-        // and its `ColliderWidget` are Node2Ds too and add identity pushes
-        // inside the camera's view transform.
+        // drawRect, pop(rect), push(WC), push(immediate), pop(immediate),
+        // push(collider), pop(collider), pop(WC), pop(view). The camera node
+        // itself is a Node2D and produces a push; the engine-inserted
+        // `WorldDebugContainer` with its `ImmediateWorldDrawNode` and
+        // `ColliderWidget` are Node2Ds too and add identity pushes inside the
+        // camera's view transform.
         val tags = recorder.events.map {
             when (it) {
                 is RecordedEvent.Push -> "push"
@@ -182,7 +188,7 @@ class SceneTreeNode2DPushTest {
         assertEquals(
             listOf(
                 "push", "push", "pop", "push", "rect", "pop",
-                "push", "push", "pop", "pop", "pop",
+                "push", "push", "pop", "push", "pop", "pop", "pop",
             ),
             tags,
         )

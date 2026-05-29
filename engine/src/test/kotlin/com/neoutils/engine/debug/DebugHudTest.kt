@@ -26,14 +26,16 @@ class DebugHudTest {
         tree.process(0.016f)
         tree.applyPending()
         val panel = tree.debug.hud.children.filterIsInstance<Panel>().single()
-        // Built-ins are 5 total; HUD excludes itself → 4 rows (FPS, Colliders, Momentum, Log).
+        // Built-ins are 6 total; HUD excludes itself → 5 rows
+        // (FPS, Colliders, Momentum, Log, Debug Draw).
         val buttons = panel.children.filterIsInstance<Button>()
-        assertEquals(4, buttons.size)
+        assertEquals(5, buttons.size)
         val labels = buttons.map { it.text }
         assertEquals("[ ] FPS", labels[0])
         assertEquals("[ ] Colliders", labels[1])
         assertEquals("[ ] Momentum", labels[2])
         assertEquals("[ ] Log", labels[3])
+        assertEquals("[ ] Debug Draw", labels[4])
     }
 
     @Test
