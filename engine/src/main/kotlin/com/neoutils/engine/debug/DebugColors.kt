@@ -8,6 +8,12 @@ val DEBUG_AREA_COLOR: Color = Color(0f, 1f, 0f, 0.8f)
 /** Color used to outline `PhysicsBody2D` shape bounds (solid bodies). */
 val DEBUG_BODY_COLOR: Color = Color(1f, 0.3f, 0.3f, 0.8f)
 
+/** Color of the `VelocityGizmoWidget` arrows (cyan). */
+val DEBUG_VELOCITY_COLOR: Color = Color(0.3f, 0.8f, 1f, 0.9f)
+
+/** Color of the `ContactGizmoWidget` markers and normal lines (yellow). */
+val DEBUG_CONTACT_COLOR: Color = Color(1f, 0.9f, 0.2f, 0.95f)
+
 /** Log overlay text color for `Debug`/`Info` entries (neutral light gray). */
 val DEBUG_LOG_NEUTRAL_COLOR: Color = Color(0.85f, 0.85f, 0.85f, 1f)
 

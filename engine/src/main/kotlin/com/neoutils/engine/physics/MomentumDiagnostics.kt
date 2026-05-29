@@ -55,3 +55,22 @@ private fun forEachRigid(node: Node, block: (RigidBody2D) -> Unit) {
     if (node is RigidBody2D && !node.disabled) block(node)
     for (child in node.children) forEachRigid(child, block)
 }
+
+/**
+ * Visits every live, non-disabled body that carries a linear velocity —
+ * [RigidBody2D] (via `linearVelocity`) and [CharacterBody2D] (via `velocity`)
+ * — handing the block the body's **world** position and that velocity. Used
+ * by the debug velocity gizmo, which draws an arrow per moving body.
+ */
+fun SceneTree.forEachBodyVelocity(block: (position: Vec2, velocity: Vec2) -> Unit) {
+    forEachMovingBody(root, block)
+}
+
+private fun forEachMovingBody(node: Node, block: (Vec2, Vec2) -> Unit) {
+    if (!node.isLive) return
+    when (node) {
+        is RigidBody2D -> if (!node.disabled) block(node.world().position, node.linearVelocity)
+        is CharacterBody2D -> if (!node.disabled) block(node.world().position, node.velocity)
+    }
+    for (child in node.children) forEachMovingBody(child, block)
+}

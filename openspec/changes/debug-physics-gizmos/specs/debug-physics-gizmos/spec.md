@@ -59,12 +59,13 @@ unchanged and SHALL NOT be replaced by this widget.
 `VelocityGizmoWidget` SHALL extend `WorldDebugWidget` and, when `enabled`,
 SHALL walk every live, non-disabled `RigidBody2D` and `CharacterBody2D` and
 draw a line from the body's world position along its linear velocity scaled
-by a configurable `var scale: Float`. A body with zero linear velocity SHALL
+by a configurable scale factor (`var velocityScale: Float` — named to avoid
+shadowing `Node2D.scale: Vec2`). A body with zero linear velocity SHALL
 produce no line. It SHALL NOT call `pushTransform`/`popTransform`.
 
 #### Scenario: Moving rigid body gets a velocity line
 
-- **GIVEN** a `RigidBody2D` at world position `p` with `linearVelocity = v` (non-zero), widget enabled with `scale = s`
+- **GIVEN** a `RigidBody2D` at world position `p` with `linearVelocity = v` (non-zero), widget enabled with `velocityScale = s`
 - **WHEN** a frame is rendered against a recording `Renderer`
 - **THEN** a `drawLine` from `p` to `p + v * s` SHALL be observed
 

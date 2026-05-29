@@ -54,6 +54,40 @@ class RectangleShape2D : Shape2D() {
         }
         return Rect(Vec2(minX, minY), Vec2(abs(maxX - minX), abs(maxY - minY)))
     }
+
+    /**
+     * Four world-space corners of this rectangle under [world], honoring
+     * `position`, `rotation` and `scale` — so a rotated rectangle yields a
+     * rotated quad, not an axis-aligned box. Order is stable: **top-left,
+     * top-right, bottom-right, bottom-left**, forming a closed loop (connect
+     * consecutive corners, then the last back to the first, to outline the
+     * shape). Local origin sits at `world.position`; the [CollisionShape2D]'s
+     * own offset is already folded into [world] by `CollisionShape2D.world()`.
+     *
+     * Distinct from the private [obbCorners] (TL, TR, BL, BR), whose order the
+     * SAT overlap math depends on; this loop order is the one debug gizmos and
+     * future OBB callers want for outlining.
+     */
+    fun worldCorners(world: Transform): List<Vec2> {
+        val originX = world.position.x
+        val originY = world.position.y
+        val w = size.x * world.scale.x
+        val h = size.y * world.scale.y
+        val locals = arrayOf(
+            Vec2(0f, 0f),
+            Vec2(w, 0f),
+            Vec2(w, h),
+            Vec2(0f, h),
+        )
+        if (world.rotation == 0f) {
+            return locals.map { Vec2(it.x + originX, it.y + originY) }
+        }
+        val c = cos(world.rotation)
+        val s = sin(world.rotation)
+        return locals.map { v ->
+            Vec2(v.x * c - v.y * s + originX, v.x * s + v.y * c + originY)
+        }
+    }
 }
 
 /**

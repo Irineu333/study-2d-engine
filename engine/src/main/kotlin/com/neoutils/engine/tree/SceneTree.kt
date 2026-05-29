@@ -39,7 +39,8 @@ class SceneTree(val root: Node) {
 
     /**
      * Per-tree registry of debug widgets. Holds the engine built-ins
-     * (`fps`, `colliders`, `momentum`, `log`, `hud`) and the immediate-draw
+     * (`fps`, `colliders`, `momentum`, `log`, `hud`, plus the physics gizmos
+     * `shapeGizmo`, `velocityGizmo`, `contactGizmo`) and the immediate-draw
      * facade (`draw`) as convenience fields and the full registration list.
      * Game code adds custom widgets via
      * `tree.debug.register(...)` after `start()`. Read by the auto-inserted

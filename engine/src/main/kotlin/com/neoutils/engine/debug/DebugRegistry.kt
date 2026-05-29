@@ -4,12 +4,13 @@ import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
 
 /**
- * Per-`SceneTree` runtime registry of debug widgets. Holds the five engine
- * built-in widgets ([fps], [colliders], [momentum], [log], [hud]) plus the
+ * Per-`SceneTree` runtime registry of debug widgets. Holds the engine
+ * built-in widgets ([fps], [colliders], [momentum], [log], [hud], plus the
+ * physics gizmos [shapeGizmo], [velocityGizmo], [contactGizmo]) and the
  * immediate-draw facade ([draw], surfaced by an internal `"Debug Draw"`
- * toggle widget) as fields for ergonomic direct access, plus a flat list of
- * every registered widget (built-ins + user-registered, in registration
- * order).
+ * toggle widget) as fields for ergonomic direct access, the per-tree contact
+ * buffer ([contacts]) feeding [contactGizmo], plus a flat list of every
+ * registered widget (built-ins + user-registered, in registration order).
  *
  * Not a `Node`, never `@Serializable`, never shared across trees —
  * `SceneTree` owns one instance via its constructor.
@@ -28,6 +29,22 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     val momentum: MomentumWidget = MomentumWidget()
     val log: LogOverlayWidget = LogOverlayWidget()
     val hud: DebugHud = DebugHud()
+
+    /** Real-geometry collider gizmo (circle outline / rotated-rect quad). */
+    val shapeGizmo: ShapeGizmoWidget = ShapeGizmoWidget()
+
+    /** Per-body linear velocity arrows for `RigidBody2D`/`CharacterBody2D`. */
+    val velocityGizmo: VelocityGizmoWidget = VelocityGizmoWidget()
+
+    /** Draws the contacts recorded into [contacts] by `PhysicsSystem.step`. */
+    val contactGizmo: ContactGizmoWidget = ContactGizmoWidget()
+
+    /**
+     * Per-tree buffer of resolved contacts captured during the last physics
+     * step. Recording is gated by `contactGizmo.enabled` (mirrored onto
+     * [PhysicsContactBuffer.recording]).
+     */
+    val contacts: PhysicsContactBuffer = PhysicsContactBuffer()
 
     /**
      * Immediate-mode drawing facade reached via `tree.debug.draw`. Its single
@@ -61,6 +78,9 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(log)
             register(hud)
             register(drawToggle)
+            register(shapeGizmo)
+            register(velocityGizmo)
+            register(contactGizmo)
         }
     }
 

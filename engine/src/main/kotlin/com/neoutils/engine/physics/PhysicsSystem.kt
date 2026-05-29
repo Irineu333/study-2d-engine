@@ -1,5 +1,6 @@
 package com.neoutils.engine.physics
 
+import com.neoutils.engine.debug.PhysicsContactBuffer
 import com.neoutils.engine.dx.Log
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node
@@ -63,8 +64,17 @@ class PhysicsSystem {
      * positions, so `_on_body_entered` reports the contact after impulse.
      */
     fun step(tree: SceneTree, dt: Float) {
+        // Contact recording is gated by ContactGizmoWidget.enabled (mirrored
+        // onto the buffer's `recording` flag). When off, `contactSink` is null
+        // and the solver pays no per-contact recording cost.
+        val contactBuffer = tree.debug.contacts
+        val contactSink = if (contactBuffer.recording) {
+            contactBuffer.also { it.clear() }
+        } else {
+            null
+        }
         integrate(tree, dt)
-        advanceAndResolve(tree, dt)
+        advanceAndResolve(tree, dt, contactSink)
         integrateAngular(tree, dt)
 
         // Drop any pair whose endpoint is no longer live before testing the
@@ -214,7 +224,7 @@ class PhysicsSystem {
      * deduplication is solver-owned (the impulse mutates both sides in one
      * call; the other side's own loop sees `v_rel·n >= 0` and skips).
      */
-    private fun advanceAndResolve(tree: SceneTree, dt: Float) {
+    private fun advanceAndResolve(tree: SceneTree, dt: Float, contactSink: PhysicsContactBuffer?) {
         val rigids = collectRigidBodies(tree)
         for (r in rigids) {
             if (!r.isLive) continue
@@ -240,6 +250,7 @@ class PhysicsSystem {
                         normal = sweepResult.normal,
                         contactPoint = sweepResult.point,
                     )
+                    contactSink?.append(sweepResult.point, sweepResult.normal)
                     val frac = 1f - toi
                     if (frac <= 0f) break
                     dtRemaining *= frac

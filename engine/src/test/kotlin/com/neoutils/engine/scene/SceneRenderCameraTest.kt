@@ -62,11 +62,12 @@ class SceneRenderCameraTest {
         tree.render(recorder)
 
         // The auto-inserted `DebugLayer` carries a `WorldDebugContainer`
-        // (Node2D, identity) with an `ImmediateWorldDrawNode` (Node2D,
-        // identity) and a `ColliderWidget` (Node2D, identity) under it,
-        // contributing three push/pop pairs to the world pass.
-        assertEquals(3, recorder.events.count { it is Call.Push })
-        assertEquals(3, recorder.events.count { it is Call.Pop })
+        // (Node2D, identity) with an `ImmediateWorldDrawNode`, a
+        // `ColliderWidget`, and the three physics gizmos (`ShapeGizmoWidget`,
+        // `VelocityGizmoWidget`, `ContactGizmoWidget`) — all Node2D, identity —
+        // contributing six push/pop pairs to the world pass.
+        assertEquals(6, recorder.events.count { it is Call.Push })
+        assertEquals(6, recorder.events.count { it is Call.Pop })
         assertEquals(1, recorder.events.count { it is Call.Rect })
     }
 
@@ -88,11 +89,12 @@ class SceneRenderCameraTest {
 
         // Camera is a Node2D so it still produces its own per-Node2D push;
         // what MUST be skipped is the outermost view push. The auto-inserted
-        // `WorldDebugContainer` with its `ImmediateWorldDrawNode` and
-        // `ColliderWidget` (all Node2D, identity) add three more push pairs.
-        // Total: Camera2D + WC + immediate + collider = 4.
-        assertEquals(4, recorder.events.count { it is Call.Push })
-        assertEquals(4, recorder.events.count { it is Call.Pop })
+        // `WorldDebugContainer` with its `ImmediateWorldDrawNode`,
+        // `ColliderWidget`, and three physics gizmos (all Node2D, identity)
+        // add six more push pairs. Total: Camera2D + WC + immediate +
+        // collider + shape + velocity + contact = 7.
+        assertEquals(7, recorder.events.count { it is Call.Push })
+        assertEquals(7, recorder.events.count { it is Call.Pop })
     }
 }
 
