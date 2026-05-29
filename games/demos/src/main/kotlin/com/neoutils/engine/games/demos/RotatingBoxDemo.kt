@@ -22,6 +22,8 @@ private const val WALL_THICKNESS = 12f
 private const val ANGULAR_VELOCITY = 0.4f
 private const val BALL_COUNT = 12
 private const val BALL_SIZE = 18f
+private const val VELOCITY_GIZMO_SCALE = 0.12f
+private const val ARROW_HEAD = 6f
 
 @Serializable
 class RotatingBoxDemo : Node2D() {
@@ -223,6 +225,31 @@ class BoxedBall(
             flashTimer -= dt
             if (flashTimer <= 0f) setArtColor(baseColor)
         }
+        drawVelocityArrow()
+    }
+
+    // A CharacterBody2D guarda a velocidade nos campos de script vx/vy (não no
+    // slot `velocity` que a engine lê) e se move via moveAndCollide, então o
+    // VelocityGizmoWidget built-in não enxerga essas bolas. Desenhamos a seta
+    // por conta própria via immediate-draw (`tree.debug.draw`): fica atrás do
+    // toggle "Debug Draw" do HUD e, ao contrário do gizmo built-in, compõe a
+    // velocidade do frame local para world via o world() deste corpo — a seta
+    // aponta para onde a bola realmente anda mesmo enquanto a caixa gira.
+    private fun drawVelocityArrow() {
+        val draw = tree?.debug?.draw ?: return
+        val center = Vec2(BALL_SIZE / 2f, BALL_SIZE / 2f)
+        val base = world().compose(Transform(position = center)).position
+        val tip = world()
+            .compose(Transform(position = center + Vec2(vx, vy) * VELOCITY_GIZMO_SCALE))
+            .position
+        val color = Color(0.3f, 0.8f, 1f, 0.9f)
+        draw.world.line(base, tip, color)
+        val dir = (tip - base).normalized
+        if (dir.x == 0f && dir.y == 0f) return
+        val back = tip - dir * ARROW_HEAD
+        val perp = Vec2(-dir.y, dir.x) * (ARROW_HEAD / 2f)
+        draw.world.line(tip, back + perp, color)
+        draw.world.line(tip, back - perp, color)
     }
 
     internal fun setArtColor(c: Color) {
