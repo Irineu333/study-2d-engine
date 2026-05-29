@@ -19,8 +19,8 @@ import kotlin.math.abs
  * `process(0f)`).
  *
  * Keyboard shortcuts are polled by the engine-internal [TimeControlShortcutNode]
- * under `process`, alive under pause for the same reason; its speed key cycles
- * the presets with wrap (see [cycleSpeed]). Mirrors `DebugHud`'s
+ * under `process`, alive under pause for the same reason; its speed keys step
+ * the presets the same way the − / + buttons do. Mirrors `DebugHud`'s
  * build-panel-on-enable lifecycle.
  */
 class TimeControlWidget : ScreenDebugWidget() {
@@ -146,20 +146,14 @@ class TimeControlWidget : ScreenDebugWidget() {
         "${String.format(Locale.US, "%.2f", scale)}x"
 
     companion object {
-        /** Speed-preset ring shared by the widget button and the shortcut node. */
+        /** Speed-preset list shared by the widget steppers and the shortcut node. */
         val SPEED_PRESETS: List<Float> = listOf(0.25f, 0.5f, 1f, 2f, 4f)
 
         /**
-         * Next preset strictly greater than [current], wrapping to the first
-         * once past the last. Stateless so the button and keyboard shortcut
-         * cycle identically regardless of how `timeScale` was last set.
-         */
-        fun cycleSpeed(current: Float): Float =
-            SPEED_PRESETS.firstOrNull { it > current + 1e-4f } ?: SPEED_PRESETS.first()
-
-        /**
          * One preset up ([up] = true) or down from the entry nearest [current],
-         * clamped at the ends (no wrap) — the − / + steppers in the widget.
+         * clamped at the ends (no wrap) — drives both the − / + buttons and the
+         * speed keyboard shortcuts. Stateless, so it behaves identically
+         * regardless of how `timeScale` was last set.
          */
         fun stepSpeed(current: Float, up: Boolean): Float {
             val target = (nearestPresetIndex(current) + if (up) 1 else -1)

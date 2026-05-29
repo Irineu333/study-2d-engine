@@ -6,8 +6,9 @@ import com.neoutils.engine.scene.Node
 /**
  * Engine-internal `Node` that polls the time-control keyboard shortcuts each
  * tick and mutates the owning `SceneTree`'s time state on the key edge:
- * [pauseKey] toggles `paused`, [stepKey] calls `requestStep()`, [speedKey]
- * cycles `timeScale` through [TimeControlWidget.SPEED_PRESETS].
+ * [pauseKey] toggles `paused`, [stepKey] calls `requestStep()`, and
+ * [speedDownKey] / [speedUpKey] step `timeScale` one [TimeControlWidget.SPEED_PRESETS]
+ * entry down / up — mirroring the widget's − / + steppers (clamped, no wrap).
  *
  * Lives under `ScreenDebugCanvas` so it runs in `process` — and since
  * `GameLoop` keeps `process` running under pause (`dt = 0`), the shortcuts
@@ -19,7 +20,8 @@ internal class TimeControlShortcutNode : Node() {
 
     var pauseKey: Key = Key.P
     var stepKey: Key = Key.O
-    var speedKey: Key = Key.I
+    var speedDownKey: Key = Key.U
+    var speedUpKey: Key = Key.I
 
     init { name = "TimeControlShortcutNode" }
 
@@ -33,8 +35,11 @@ internal class TimeControlShortcutNode : Node() {
         if (input.wasKeyPressed(stepKey)) {
             owningTree.requestStep()
         }
-        if (input.wasKeyPressed(speedKey)) {
-            owningTree.timeScale = TimeControlWidget.cycleSpeed(owningTree.timeScale)
+        if (input.wasKeyPressed(speedDownKey)) {
+            owningTree.timeScale = TimeControlWidget.stepSpeed(owningTree.timeScale, up = false)
+        }
+        if (input.wasKeyPressed(speedUpKey)) {
+            owningTree.timeScale = TimeControlWidget.stepSpeed(owningTree.timeScale, up = true)
         }
     }
 }

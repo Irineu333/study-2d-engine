@@ -125,11 +125,11 @@ class TimeControlWidgetTest {
     }
 
     @Test
-    fun `stepSpeed clamps and cycleSpeed wraps`() {
+    fun `stepSpeed steps one preset and clamps at the ends`() {
         assertEquals(0.5f, TimeControlWidget.stepSpeed(0.25f, up = true))
-        assertEquals(0.25f, TimeControlWidget.stepSpeed(0.25f, up = false))
-        assertEquals(4f, TimeControlWidget.stepSpeed(4f, up = true))
-        assertEquals(0.25f, TimeControlWidget.cycleSpeed(4f), "cycle wraps to the first preset")
+        assertEquals(0.25f, TimeControlWidget.stepSpeed(0.25f, up = false), "clamps at the bottom")
+        assertEquals(4f, TimeControlWidget.stepSpeed(4f, up = true), "clamps at the top")
+        assertEquals(2f, TimeControlWidget.stepSpeed(4f, up = false))
     }
 
     @Test
