@@ -99,6 +99,40 @@ class TimeControlWidgetTest {
     }
 
     @Test
+    fun `speed steppers raise and lower timeScale clamped at the ends`() {
+        val tree = SceneTree(Node()).also { it.start() }
+        val input = MouseInput()
+
+        val plus = buttonNamed(tree, "TimeControlSpeedUp")
+        click(tree, input, plus)
+        assertEquals(2f, tree.timeScale, "+ steps 1.00x → 2.00x")
+        click(tree, input, plus)
+        click(tree, input, plus) // already at 4x, clamps
+        assertEquals(4f, tree.timeScale, "+ clamps at the top preset")
+
+        val minus = tree.debug.timeControls.children
+            .filterIsInstance<Panel>().single()
+            .children.filterIsInstance<Button>().single { it.name == "TimeControlSpeedDown" }
+        repeat(10) { click(tree, input, minus) }
+        assertEquals(0.25f, tree.timeScale, "- clamps at the bottom preset")
+    }
+
+    @Test
+    fun `speed display button never consumes clicks`() {
+        val tree = SceneTree(Node()).also { it.start() }
+        val display = buttonNamed(tree, "TimeControlSpeedDisplay")
+        assertTrue(display.disabled)
+    }
+
+    @Test
+    fun `stepSpeed clamps and cycleSpeed wraps`() {
+        assertEquals(0.5f, TimeControlWidget.stepSpeed(0.25f, up = true))
+        assertEquals(0.25f, TimeControlWidget.stepSpeed(0.25f, up = false))
+        assertEquals(4f, TimeControlWidget.stepSpeed(4f, up = true))
+        assertEquals(0.25f, TimeControlWidget.cycleSpeed(4f), "cycle wraps to the first preset")
+    }
+
+    @Test
     fun `step control requests a step and the next tick advances one`() {
         val root = Node()
         val probe = StepProbe()
