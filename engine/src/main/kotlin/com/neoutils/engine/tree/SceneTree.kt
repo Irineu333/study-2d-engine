@@ -39,8 +39,9 @@ class SceneTree(val root: Node) {
 
     /**
      * Per-tree registry of debug widgets. Holds the engine built-ins
-     * (`fps`, `colliders`, `momentum`, `log`, `hud`, plus the physics gizmos
-     * `shapeGizmo`, `velocityGizmo`, `contactGizmo`) and the immediate-draw
+     * (`fps`, `colliders`, `momentum`, `log`, `hud`, `timeControls`, plus the
+     * physics gizmos `shapeGizmo`, `velocityGizmo`, `contactGizmo`) and the
+     * immediate-draw
      * facade (`draw`) as convenience fields and the full registration list.
      * Game code adds custom widgets via
      * `tree.debug.register(...)` after `start()`. Read by the auto-inserted
@@ -55,6 +56,55 @@ class SceneTree(val root: Node) {
      * touch this property.
      */
     var debugHudKey: Key = Key.F1
+
+    /**
+     * Gameplay time multiplier applied by `GameLoop` before accumulating the
+     * frame delta for physics and before `process`. `1f` is normal speed,
+     * `0.25f` slow-motion, `2f` fast-forward, `0f` a soft freeze (no physics,
+     * `process` runs at `dt = 0`). First-class on the tree — gameplay may use
+     * it as a slow-mo feature; the debug `TimeControlWidget` is only a UI over
+     * this. Coerced to `>= 0f` in the setter (negative time has no meaning).
+     * Runtime-only state — never serialized, never shared across trees.
+     */
+    var timeScale: Float = 1f
+        set(value) {
+            field = value.coerceAtLeast(0f)
+        }
+
+    /**
+     * Hard freeze independent of [timeScale]. When `true`, `GameLoop` runs no
+     * physics and invokes `process(0f)` (rather than skipping `process`), so
+     * debug nodes that poll input and screen-space UI stay alive while the
+     * frozen frame and HUD keep drawing. Runtime-only state — never serialized.
+     */
+    var paused: Boolean = false
+
+    /** Single-use step flag; consumed by `GameLoop` each tick (see [requestStep]). */
+    private var pendingStep: Boolean = false
+
+    /**
+     * Requests exactly one fixed physics step on the next tick while the tree
+     * is frozen ([paused] or `timeScale == 0`). Single-use: `GameLoop` consumes
+     * and clears the flag every tick, so each call advances exactly one step
+     * and a step requested while time is flowing is a no-op (consumed and
+     * ignored by the running path).
+     */
+    fun requestStep() {
+        pendingStep = true
+    }
+
+    /**
+     * Consumed by `GameLoop` once per tick: returns whether a step was pending
+     * and clears the flag unconditionally, so a request never survives a tick.
+     */
+    internal fun consumePendingStep(): Boolean {
+        val pending = pendingStep
+        pendingStep = false
+        return pending
+    }
+
+    /** Test/inspection hook: whether a step request is currently pending. */
+    internal val hasPendingStep: Boolean get() = pendingStep
 
     /**
      * Set by [com.neoutils.engine.loop.GameLoop] at construction so engine-side

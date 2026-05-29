@@ -32,19 +32,30 @@ class GameLoop(
     /**
      * One frame of the engine. Logically:
      *
-     *  1. accumulate the raw frame `dt`;
-     *  2. while the accumulator can fit a full physics step (and we have not
+     *  1. hit-test UI (always), then resolve the effective gameplay delta:
+     *     `gameplayDt = if (paused) 0 else rawDt * tree.timeScale`;
+     *  2. step path — if the tree is frozen (`paused` or `timeScale == 0`) and
+     *     a [SceneTree.requestStep] is pending, advance exactly one fixed
+     *     physics step (drain pending, `_physics_process`, `physics.step`,
+     *     `_process(physicsDt)`, `render`) and return; the pending flag is
+     *     consumed every tick so a step while time flows is a no-op;
+     *  3. accumulate `gameplayDt` (not the raw `dt`), so `timeScale`/`paused`
+     *     naturally scale how many physics steps drain (zero when frozen);
+     *  4. while the accumulator can fit a full physics step (and we have not
      *     hit [maxStepsPerFrame]): drain pending, run `_physics_process`,
      *     drain pending, run `physics.step`, then decrement the accumulator;
-     *  3. if [maxStepsPerFrame] was reached and the accumulator still holds
+     *  5. if [maxStepsPerFrame] was reached and the accumulator still holds
      *     more than one physics step, reset it to zero (spiral-of-death
-     *     clamp — see design.md D3);
-     *  4. drain pending, run `_process` with the frame `dt` (clamped to
-     *     [maxDt] so visual interpolation does not warp on stalls);
-     *  5. drain pending, then `render`.
+     *     clamp — covers high `timeScale`, which accumulates faster);
+     *  6. drain pending, run `_process` with the scaled frame `dt` (clamped to
+     *     [maxDt] so visual interpolation does not warp on stalls) — frozen
+     *     runs `process(0f)` rather than skipping it, keeping debug/UI alive;
+     *  7. drain pending, then `render`.
      *
-     * The accumulator lives in the loop, so backends (`SkikoHost`,
-     * future LWJGL host) need not be aware of fixed-step physics.
+     * With the defaults (`timeScale == 1`, `paused == false`, no pending step)
+     * this is byte-for-byte the previous tick. The accumulator lives in the
+     * loop, so backends (`SkikoHost`, LWJGL host) need not be aware of
+     * fixed-step physics.
      */
     fun tick(dtNanos: Long) {
         if (!tree.root.isLive) tree.start()
@@ -54,7 +65,23 @@ class GameLoop(
         // click landed on a Button).
         tree.hitTestUI(input)
         val rawDt = (dtNanos / 1_000_000_000f).coerceAtLeast(0f)
-        accumulator += rawDt
+        val frozen = tree.paused || tree.timeScale == 0f
+        // Consume the step flag every tick so a request never survives one and
+        // requestStep() while time flows is a no-op.
+        val stepRequested = tree.consumePendingStep()
+        if (frozen && stepRequested) {
+            tree.applyPending()
+            tree.physicsProcess(physicsDt)
+            tree.applyPending()
+            physics.step(tree, physicsDt)
+            tree.applyPending()
+            tree.process(physicsDt)
+            tree.applyPending()
+            tree.render(renderer)
+            return
+        }
+        val gameplayDt = if (tree.paused) 0f else rawDt * tree.timeScale
+        accumulator += gameplayDt
         var steps = 0
         while (accumulator >= physicsDt && steps < maxStepsPerFrame) {
             tree.applyPending()
@@ -73,7 +100,7 @@ class GameLoop(
             )
             accumulator = 0f
         }
-        val frameDt = rawDt.coerceAtMost(maxDt)
+        val frameDt = gameplayDt.coerceAtMost(maxDt)
         tree.applyPending()
         tree.process(frameDt)
         tree.applyPending()
