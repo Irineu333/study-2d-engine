@@ -109,7 +109,10 @@ open class CharacterBody2D : PhysicsBody2D() {
             // in `step` consolidates it. Early-out when recording is off.
             val contacts = tree.debug.contacts
             if (contacts.recording) {
-                contacts.stage(bestHit.point, bestHit.normal)
+                // Normalize to world space so the world-pass gizmo draws
+                // nested-body contacts correctly; identity for top-level.
+                val (worldPoint, worldNormal) = worldContact(parent, bestHit.point, bestHit.normal)
+                contacts.stage(worldPoint, worldNormal)
             }
             KinematicCollision2D(
                 point = bestHit.point,

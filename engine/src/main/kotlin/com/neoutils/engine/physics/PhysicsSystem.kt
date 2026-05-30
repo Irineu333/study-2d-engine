@@ -256,7 +256,13 @@ class PhysicsSystem {
                         normal = sweepResult.normal,
                         contactPoint = sweepResult.point,
                     )
-                    contactSink?.append(sweepResult.point, sweepResult.normal)
+                    if (contactSink != null) {
+                        // Normalize to world space (identity for top-level
+                        // bodies) so nested rigid contacts draw in the right
+                        // place; same helper the kinematic path uses.
+                        val worldHit = worldContact(parent, sweepResult.point, sweepResult.normal)
+                        contactSink.append(worldHit.first, worldHit.second)
+                    }
                     val frac = 1f - toi
                     if (frac <= 0f) break
                     dtRemaining *= frac
