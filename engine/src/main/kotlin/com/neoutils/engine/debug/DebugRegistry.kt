@@ -6,8 +6,8 @@ import com.neoutils.engine.tree.SceneTree
 /**
  * Per-`SceneTree` runtime registry of debug widgets. Holds the engine
  * built-in widgets ([fps], [colliders], [momentum], [log], [hud],
- * [timeControls], plus the physics gizmos [shapeGizmo], [velocityGizmo],
- * [contactGizmo]) and the
+ * [timeControls], [profiler], plus the physics gizmos [shapeGizmo],
+ * [velocityGizmo], [contactGizmo]) and the
  * immediate-draw facade ([draw], surfaced by an internal `"Debug Draw"`
  * toggle widget) as fields for ergonomic direct access, the per-tree contact
  * buffer ([contacts]) feeding [contactGizmo], plus a flat list of every
@@ -42,6 +42,12 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
 
     /** Pause/step/speed controls over `tree.paused` / `tree.timeScale`. */
     val timeControls: TimeControlWidget = TimeControlWidget()
+
+    /** Per-frame tick phase timings, written by `GameLoop.tick` when profiling. */
+    val frameProfile: FrameProfile = FrameProfile()
+
+    /** Per-phase profiler HUD; its `enabled` drives the loop's measurement. */
+    val profiler: ProfilerWidget = ProfilerWidget()
 
     /**
      * Per-tree buffer of resolved contacts captured during the last physics
@@ -86,6 +92,7 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(velocityGizmo)
             register(contactGizmo)
             register(timeControls)
+            register(profiler)
         }
     }
 
