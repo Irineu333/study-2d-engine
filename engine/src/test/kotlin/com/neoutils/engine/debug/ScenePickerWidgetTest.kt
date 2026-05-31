@@ -39,9 +39,12 @@ class ScenePickerWidgetTest {
         val (tree, _, recorder) = treeWithSelectedTarget()
         tree.render(recorder)
         val lines = textLines(recorder)
-        assertTrue(lines.any { it.startsWith("type: ColorRect") }, lines.toString())
-        assertTrue(lines.any { it.startsWith("name: Target") }, lines.toString())
-        assertTrue(lines.any { it.startsWith("size = ") && it.contains("40.0") }, lines.toString())
+        // Header carries the type and name; the property appears as a key/value pair.
+        assertTrue(lines.any { it == "ColorRect" }, lines.toString())
+        assertTrue(lines.any { it == "Target" }, lines.toString())
+        assertTrue(lines.any { it == "Properties" }, lines.toString())
+        assertTrue(lines.any { it == "size" }, lines.toString())
+        assertTrue(lines.any { it.contains("40.0") }, lines.toString())
     }
 
     @Test
@@ -57,7 +60,9 @@ class ScenePickerWidgetTest {
         val (tree, _, recorder) = treeWithSelectedTarget()
         tree.render(recorder)
         val lines = textLines(recorder)
-        assertTrue(lines.any { it.startsWith("world.pos: ") && it.contains("100.0") }, lines.toString())
+        assertTrue(lines.any { it == "Transform (world)" }, lines.toString())
+        assertTrue(lines.any { it == "pos" }, lines.toString())
+        assertTrue(lines.any { it.contains("100.0") }, lines.toString())
     }
 
     @Test
