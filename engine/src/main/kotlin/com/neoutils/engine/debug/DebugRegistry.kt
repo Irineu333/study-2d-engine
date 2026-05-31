@@ -52,7 +52,11 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     /** Owns the world-space pick selection (breadcrumb + read-only property panel). */
     val scenePicker: ScenePickerWidget = ScenePickerWidget()
 
-    /** Oriented-box highlight of `scenePicker.selected` in world space. */
+    /**
+     * Oriented-box highlight of `scenePicker.selected` in world space. The
+     * picker's world-space arm — driven by `scenePicker.enabled`, auto-inserted
+     * under the world container but intentionally absent from [widgets]/HUD.
+     */
     val selectionGizmo: SelectionGizmoWidget = SelectionGizmoWidget()
 
     /**
@@ -100,7 +104,11 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(timeControls)
             register(profiler)
             register(scenePicker)
-            register(selectionGizmo)
+            // The gizmo is the picker's world-space arm, not a standalone
+            // widget: attach it to the world container so it draws in the world
+            // pass, but keep it out of `_widgets`/HUD — `scenePicker.enabled`
+            // drives it (see SelectionGizmoWidget.enabled).
+            layer.worldContainer.addChild(selectionGizmo)
         }
     }
 

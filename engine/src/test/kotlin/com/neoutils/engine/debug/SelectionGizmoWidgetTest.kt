@@ -27,8 +27,8 @@ class SelectionGizmoWidgetTest {
             transform = Transform(position = Vec2(100f, 100f), rotation = (PI / 6.0).toFloat())
         }
         val tree = SceneTree(Node().apply { addChild(target) }).also { it.start() }
+        // Enabling the picker is the single switch — the gizmo follows it.
         tree.debug.scenePicker.enabled = true
-        tree.debug.selectionGizmo.enabled = true
         // Click the rotated box center: local (20,15) → world.
         val center = target.world().apply(Vec2(20f, 15f))
         tree.hitTestPick(FakeInput(pointer = center, leftClicked = true))
@@ -49,8 +49,25 @@ class SelectionGizmoWidgetTest {
     @Test
     fun `nothing drawn without a selection`() {
         val tree = SceneTree(Node()).also { it.start() }
-        tree.debug.selectionGizmo.enabled = true
-        // No pick performed → no selection.
+        tree.debug.scenePicker.enabled = true
+        // Picker on but no pick performed → no selection.
+        val recorder = RecordingRenderer()
+        tree.render(recorder)
+        assertTrue(selectionLines(recorder).isEmpty())
+    }
+
+    @Test
+    fun `nothing drawn when the picker is disabled even with a prior selection`() {
+        val target = ColorRect().apply {
+            name = "Target"
+            size = Vec2(40f, 40f)
+            transform = Transform(position = Vec2(100f, 100f))
+        }
+        val tree = SceneTree(Node().apply { addChild(target) }).also { it.start() }
+        tree.debug.scenePicker.enabled = true
+        tree.hitTestPick(FakeInput(pointer = Vec2(120f, 120f), leftClicked = true))
+        // Turn the tool off — the gizmo must stop drawing.
+        tree.debug.scenePicker.enabled = false
         val recorder = RecordingRenderer()
         tree.render(recorder)
         assertTrue(selectionLines(recorder).isEmpty())

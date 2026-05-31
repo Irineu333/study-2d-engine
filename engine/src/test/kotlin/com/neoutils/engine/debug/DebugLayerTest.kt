@@ -75,7 +75,7 @@ class DebugLayerTest {
         val tree = SceneTree(Node())
         tree.start()
         val widgets = tree.debug.widgets
-        assertEquals(13, widgets.size)
+        assertEquals(12, widgets.size)
         assertSame(tree.debug.fps, widgets[0])
         assertSame(tree.debug.colliders, widgets[1])
         assertSame(tree.debug.momentum, widgets[2])
@@ -88,6 +88,8 @@ class DebugLayerTest {
         assertSame(tree.debug.timeControls, widgets[9])
         assertSame(tree.debug.profiler, widgets[10])
         assertSame(tree.debug.scenePicker, widgets[11])
-        assertSame(tree.debug.selectionGizmo, widgets[12])
+        // selectionGizmo is the picker's world-space arm — NOT a standalone
+        // widget, so it is absent from `widgets`.
+        assertTrue(tree.debug.selectionGizmo !in widgets)
     }
 }

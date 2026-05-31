@@ -76,18 +76,25 @@ SHALL be cleared when that node is no longer live in the tree.
 
 The engine SHALL provide a `SelectionGizmoWidget` (`WorldDebugWidget`) that
 draws the oriented bounding box of the selected node in world space, following
-the active `Camera2D`.
+the active `Camera2D`. The gizmo is the world-space arm of the single picker
+tool: its visibility SHALL derive from the picker being enabled (it has no
+independent toggle), so the picker and the gizmo turn on and off together.
 
 #### Scenario: Oriented box drawn around the selection
 
-- **WHEN** the gizmo is enabled and a node is selected
-- **THEN** it draws the node's oriented box (the corners of `localBounds()`
-  projected through `world().apply`)
+- **WHEN** the picker is enabled and a node is selected
+- **THEN** the gizmo draws the node's oriented box (the corners of
+  `localBounds()` projected through `world().apply`)
 
 #### Scenario: Nothing drawn without a selection
 
-- **WHEN** the gizmo is enabled and there is no selection
-- **THEN** it draws nothing
+- **WHEN** the picker is enabled and there is no selection
+- **THEN** the gizmo draws nothing
+
+#### Scenario: Gizmo follows the picker toggle
+
+- **WHEN** the picker is disabled
+- **THEN** the gizmo draws nothing regardless of any prior selection
 
 ### Requirement: Picker Panel With Breadcrumb And Inspect Properties
 
@@ -134,19 +141,30 @@ the property name otherwise.
 
 ### Requirement: Built-In Registration And HUD Rows
 
-The `ScenePickerWidget` and `SelectionGizmoWidget` SHALL be auto-registered
-built-ins reachable via the `DebugRegistry`, default-disabled, each with a
-toggle row in the debug HUD, and SHALL impose no per-frame cost while
-disabled.
+The picker tool SHALL be an auto-inserted built-in reachable via the
+`DebugRegistry`, default-disabled, exposed as a **single** toggle row in the
+debug HUD (the `ScenePickerWidget`), and SHALL impose no per-frame cost while
+disabled. The `SelectionGizmoWidget` SHALL be auto-inserted under the world
+debug container so it draws in the world pass, but SHALL NOT appear as its own
+HUD row nor in the registry's `widgets` list — it is controlled entirely
+through the picker.
 
-#### Scenario: Built-ins registered and toggleable
+#### Scenario: Picker registered as a single toggle
 
 - **WHEN** the tree starts
-- **THEN** both widgets are present in the registry's `widgets`, default
-  disabled, parented under the correct debug containers (screen for the
-  picker, world for the gizmo), and exposed as rows in the HUD
+- **THEN** the `ScenePickerWidget` is present in the registry's `widgets`,
+  default disabled, parented under the screen debug container, and exposed as
+  one row in the HUD
+
+#### Scenario: Gizmo auto-inserted but not a separate row
+
+- **WHEN** the tree starts
+- **THEN** the `SelectionGizmoWidget` is parented under the world debug
+  container, is reachable via `DebugRegistry.selectionGizmo`, but is absent
+  from the registry's `widgets` list and from the HUD rows
 
 #### Scenario: Zero cost while disabled
 
-- **WHEN** both widgets are disabled
-- **THEN** no pick hit-test walk runs and neither widget draws
+- **WHEN** the picker is disabled
+- **THEN** no pick hit-test walk runs and neither the panel nor the gizmo
+  draws

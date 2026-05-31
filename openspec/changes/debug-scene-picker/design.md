@@ -111,26 +111,37 @@ UI extra. Epsilon evita que micro-tremores do mouse reiniciem o ciclo.
 - **Sempre front-most, sem ciclo**: nodes cobertos ficam inacessíveis ao
   clique. Rejeitado para o MVP por custo trivial do ciclo.
 
-### Decision 4: Dois widgets — `ScenePickerWidget` (screen) + `SelectionGizmoWidget` (world)
+### Decision 4: Uma ferramenta, um toggle — `ScenePickerWidget` (dono/screen) + `SelectionGizmoWidget` (braço world, derivado)
 
-A seleção é estado único, mas o desenho mora em dois espaços: o OBB
-highlight precisa da view da câmera (world), o painel/breadcrumb são pixels
-de tela. Logo:
-- `SelectionGizmoWidget : WorldDebugWidget` desenha o OBB (cantos de
-  `localBounds` via `world().apply`) no world pass.
-- `ScenePickerWidget : ScreenDebugWidget` é o "dono" — guarda a seleção e o
-  estado de ciclo, é lido pelo `hitTestPick`, e desenha breadcrumb + painel.
+Conceitualmente o picker é **uma** ferramenta; do ponto de vista do usuário,
+selecionar um node, ver o painel e ver o OBB highlight são a mesma coisa. A
+única razão de haver duas classes é arquitetural: o painel/breadcrumb são
+pixels de tela (`ScreenDebugWidget`) e o OBB precisa da view da câmera
+(`WorldDebugWidget`) — e a infra de debug proíbe um widget desenhar nos dois
+espaços. Logo:
+- `ScenePickerWidget : ScreenDebugWidget` é o **dono e o único toggle**:
+  guarda a seleção e o estado de ciclo, é lido pelo `hitTestPick`, desenha
+  breadcrumb + painel, e é o único exposto no HUD (row `"Picker"`).
+- `SelectionGizmoWidget : WorldDebugWidget` é o **braço world-space** da mesma
+  ferramenta: desenha o OBB (cantos de `localBounds` via `world().apply`) no
+  world pass. Seu `enabled` é **derivado** de `scenePicker.enabled` (não tem
+  estado próprio nem setter efetivo) e ele **não** aparece como row no HUD —
+  vive no `WorldDebugContainer` mas fora da lista `widgets`.
 
-A fonte de verdade da seleção fica no `ScenePickerWidget`; o gizmo lê dela
-(via `tree.debug.scenePicker.selected`).
+A fonte de verdade (seleção + on/off) fica toda no `ScenePickerWidget`; o
+gizmo apenas reflete (`tree.debug.scenePicker.selected` / `.enabled`).
 
-**Por quê:** espelha a separação world/screen que a infra de debug já impõe
-(um widget não pode desenhar nos dois espaços). Mantém cada widget togglável
-de forma independente (ver o OBB sem o painel, p.ex.).
+**Por quê:** dois toggles para uma ferramenta confundem ("qual ligo?") — o
+usuário reportou exatamente isso. Acoplar o gizmo ao picker dá um único
+controle coerente sem violar a separação world/screen dos passes (continuam
+dois nós, dois espaços, mas uma superfície de controle).
 
 **Alternativas consideradas:**
 - **Um único widget**: impossível desenhar OBB world e painel screen do
   mesmo `onDraw` sob a arquitetura de passes. Rejeitado.
+- **Dois toggles independentes (HUD lista ambos)**: a versão inicial; permitia
+  "ver o OBB sem o painel", mas na prática só gerou confusão de UX para zero
+  ganho real. Rejeitado em favor do toggle único.
 
 ### Decision 5: Seleção por identidade de instância; breadcrumb (não lista clicável)
 

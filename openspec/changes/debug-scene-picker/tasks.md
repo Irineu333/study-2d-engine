@@ -27,15 +27,15 @@
 
 ## 5. `SelectionGizmoWidget` — OBB highlight
 
-- [x] 5.1 Create `SelectionGizmoWidget : WorldDebugWidget` (`title = "Selection"`, `enabled = false`) reading `debug.scenePicker.selected`.
+- [x] 5.1 Create `SelectionGizmoWidget : WorldDebugWidget` (`title = "Selection"`) reading `debug.scenePicker.selected`; its `enabled` is **derived** from `scenePicker.enabled` (no independent state/setter), so the gizmo is the world-space arm of the single picker tool.
 - [x] 5.2 `drawDebug`: draw the oriented box = `selected.localBounds().corners()` projected through `selected.world().apply`; nothing when no selection or `localBounds == null`.
-- [x] 5.3 Unit tests: oriented box drawn around the selection (corners match `world().apply`); nothing drawn without a selection.
+- [x] 5.3 Unit tests: oriented box drawn around the selection when the picker is enabled (corners match `world().apply`); nothing drawn without a selection; nothing drawn when the picker is disabled.
 
 ## 6. Built-in registration + HUD
 
-- [x] 6.1 Add `scenePicker: ScenePickerWidget` and `selectionGizmo: SelectionGizmoWidget` fields to `DebugRegistry`; register both in `bindLayer` (default `enabled = false`) — picker to the screen container, gizmo to the world container.
-- [x] 6.2 Ensure both surface as toggle rows in `DebugHud`.
-- [x] 6.3 Tests: both built-ins non-null after `start()`; correct parent containers; present in `widgets`; rows in the HUD; disabled → no pick walk and no draws.
+- [x] 6.1 Add `scenePicker: ScenePickerWidget` and `selectionGizmo: SelectionGizmoWidget` fields to `DebugRegistry`; in `bindLayer` register the picker through the screen container (so it joins `widgets`/HUD) and attach the gizmo straight to the world container **without** adding it to `widgets` — it is controlled via the picker.
+- [x] 6.2 Ensure the picker surfaces as a single toggle row in `DebugHud`; the gizmo has no row of its own.
+- [x] 6.3 Tests: picker present in `widgets` and as one HUD row under the screen container; gizmo reachable via `debug.selectionGizmo`, parented under the world container, but absent from `widgets` and from the HUD rows; disabled → no pick walk and no draws (panel nor gizmo).
 
 ## 7. Verification
 
@@ -47,3 +47,4 @@
 
 - [x] 8.1 Pong manual test confirmed: ball selects with correct OBB; paddle OBB appears offset (the known `RectangleShape2D` anchoring divergence resolved by the separate `center-rectangle-shape` change, not a picker bug) and `CanvasLayer` HUD labels are correctly non-pickable (world-only scope, invariant #6).
 - [x] 8.2 Demos `SpawnerDemo` (scene 3) leaked the picker's claimed click: it edge-detected raw `isMouseDown` instead of `wasMouseClicked`, bypassing `mouseClickConsumed`. Switched to `input.wasMouseClicked(MouseButton.Left)` so the spawn honors UI/picker consumption (same one-spawn-per-click behavior). Swept all games — it was the only consumer using the raw pattern.
+- [x] 8.3 UX: `Picker` and `Selection` showed as two separate HUD toggles for what is one tool. Folded into a single `Picker` toggle — `SelectionGizmoWidget.enabled` now derives from `scenePicker.enabled` and the gizmo is auto-inserted under the world container but kept out of `widgets`/HUD (Decision 4 + the Selection-Gizmo / Built-In-Registration requirements updated to match).

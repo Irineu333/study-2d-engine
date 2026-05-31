@@ -10,13 +10,25 @@ import com.neoutils.engine.scene.Node2D
  * selection from `tree.debug.scenePicker`; draws nothing when there is no
  * selection or the selected node has no `localBounds()`.
  *
- * Lives under `WorldDebugContainer`, so the world pass of `SceneTree.render`
- * already applies the current `Camera2D` view transform — no manual
- * `pushTransform` here.
+ * This is the **world-space arm of the single picker tool**, not an
+ * independent widget: its [enabled] is derived from `scenePicker.enabled` (one
+ * HUD row controls both) and direct writes are ignored. It is auto-inserted
+ * under `WorldDebugContainer` — so the world pass of `SceneTree.render` applies
+ * the current `Camera2D` view transform (no manual `pushTransform`) — but is
+ * deliberately kept out of `DebugRegistry.widgets` and the HUD.
  */
 class SelectionGizmoWidget : WorldDebugWidget() {
 
     override val title: String = "Selection"
+
+    /**
+     * Derived from the owning tree's `scenePicker.enabled`: the gizmo turns on
+     * and off together with the picker. The setter is a no-op so nothing can
+     * desync the two halves of the one tool.
+     */
+    override var enabled: Boolean
+        get() = tree?.debug?.scenePicker?.enabled ?: false
+        set(_) {}
 
     init { name = "SelectionGizmoWidget" }
 
