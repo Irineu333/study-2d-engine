@@ -54,6 +54,14 @@ class LwjglRenderer : Renderer {
         }
     }
 
+    /**
+     * Off-frame text measurer sharing this renderer's NanoVG context and
+     * registered font. Call after [init]; the returned measurer matches
+     * [measureText] exactly and is safe to call outside a frame. Wired onto
+     * `SceneTree.textMeasurer` by `LwjglHost` at startup.
+     */
+    fun createTextMeasurer(): LwjglTextMeasurer = LwjglTextMeasurer(requiredCtx(), defaultFontId)
+
     fun shutdown() {
         if (nvgContext != NULL) {
             NanoVGGL3.nvgDelete(nvgContext)

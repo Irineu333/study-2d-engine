@@ -62,7 +62,7 @@ abstract class CollisionObject2D : Node2D() {
         val out = mutableListOf<Pair<CollisionShape2D, Rect>>()
         for (child in children) {
             if (child !is CollisionShape2D) continue
-            val bounds = child.worldBounds() ?: continue
+            val bounds = child.broadPhaseBounds() ?: continue
             out += child to bounds
         }
         return out

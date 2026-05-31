@@ -7,10 +7,8 @@ import com.neoutils.engine.math.rotate
 import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
 import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -32,6 +30,15 @@ sealed class Shape2D {
      * offset (almost always [Vec2.ZERO]).
      */
     abstract fun bounds(world: Transform, localOffset: Vec2): Rect
+
+    /**
+     * Extent of this shape in its **own local frame**, centered on the shape
+     * origin and **without** any world scale (scale enters later through
+     * `world()` when [com.neoutils.engine.scene.Node2D.worldBounds] projects
+     * the corners). Distinct from [bounds], which is the world-space AABB the
+     * physics broad-phase consumes.
+     */
+    abstract fun localBounds(): Rect
 }
 
 @Serializable
@@ -39,6 +46,8 @@ class RectangleShape2D : Shape2D() {
 
     @Inspect
     var size: Vec2 = Vec2(10f, 10f)
+
+    override fun localBounds(): Rect = Rect(Vec2(-size.x / 2f, -size.y / 2f), size)
 
     override fun bounds(world: Transform, localOffset: Vec2): Rect {
         val corners = obbCorners(world, size, localOffset)
@@ -68,26 +77,12 @@ class RectangleShape2D : Shape2D() {
      * SAT overlap math depends on; this loop order is the one debug gizmos and
      * future OBB callers want for outlining.
      */
-    fun worldCorners(world: Transform): List<Vec2> {
-        val originX = world.position.x
-        val originY = world.position.y
-        val w = size.x * world.scale.x
-        val h = size.y * world.scale.y
-        val locals = arrayOf(
-            Vec2(0f, 0f),
-            Vec2(w, 0f),
-            Vec2(w, h),
-            Vec2(0f, h),
-        )
-        if (world.rotation == 0f) {
-            return locals.map { Vec2(it.x + originX, it.y + originY) }
-        }
-        val c = cos(world.rotation)
-        val s = sin(world.rotation)
-        return locals.map { v ->
-            Vec2(v.x * c - v.y * s + originX, v.x * s + v.y * c + originY)
-        }
-    }
+    fun worldCorners(world: Transform): List<Vec2> = listOf(
+        world.apply(Vec2(0f, 0f)),
+        world.apply(Vec2(size.x, 0f)),
+        world.apply(Vec2(size.x, size.y)),
+        world.apply(Vec2(0f, size.y)),
+    )
 }
 
 /**
@@ -99,30 +94,15 @@ class RectangleShape2D : Shape2D() {
  * corners in that case.
  */
 private fun obbCorners(world: Transform, size: Vec2, localOffset: Vec2): Array<Vec2> {
-    val originX = world.position.x + localOffset.x
-    val originY = world.position.y + localOffset.y
-    val w = size.x * world.scale.x
-    val h = size.y * world.scale.y
-    if (world.rotation == 0f) {
-        return arrayOf(
-            Vec2(originX, originY),
-            Vec2(originX + w, originY),
-            Vec2(originX, originY + h),
-            Vec2(originX + w, originY + h),
-        )
-    }
-    val c = cos(world.rotation)
-    val s = sin(world.rotation)
-    val locals = arrayOf(
-        Vec2(0f, 0f),
-        Vec2(w, 0f),
-        Vec2(0f, h),
-        Vec2(w, h),
+    // Fold the (unrotated) localOffset into the transform origin, then map the
+    // four local corners through it. Order: TL, TR, BL, BR.
+    val t = world.copy(position = world.position + localOffset)
+    return arrayOf(
+        t.apply(Vec2(0f, 0f)),
+        t.apply(Vec2(size.x, 0f)),
+        t.apply(Vec2(0f, size.y)),
+        t.apply(Vec2(size.x, size.y)),
     )
-    return Array(4) { i ->
-        val v = locals[i]
-        Vec2(v.x * c - v.y * s + originX, v.x * s + v.y * c + originY)
-    }
 }
 
 @Serializable
@@ -130,6 +110,9 @@ class CircleShape2D : Shape2D() {
 
     @Inspect
     var radius: Float = 5f
+
+    override fun localBounds(): Rect =
+        Rect(Vec2(-radius, -radius), Vec2(2f * radius, 2f * radius))
 
     override fun bounds(world: Transform, localOffset: Vec2): Rect {
         val r = radius * max(abs(world.scale.x), abs(world.scale.y))

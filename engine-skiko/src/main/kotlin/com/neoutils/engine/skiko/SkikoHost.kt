@@ -44,6 +44,9 @@ class SkikoHost : GameHost {
             val physics = PhysicsSystem()
             val loop = GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)
             tree.debugHudKey = config.debugHudKey
+            // Wire off-frame text metrics before the first frame so
+            // `Label.localBounds()` resolves even before any draw.
+            tree.textMeasurer = SkikoTextMeasurer()
 
             val skiaLayer = SkiaLayer()
             var lastNanos = 0L

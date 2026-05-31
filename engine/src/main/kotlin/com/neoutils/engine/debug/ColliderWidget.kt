@@ -19,7 +19,7 @@ class ColliderWidget : WorldDebugWidget() {
     override fun drawDebug(renderer: Renderer) {
         val owningTree = tree ?: return
         for ((shape, owner) in collectActiveCollisionShapes(owningTree)) {
-            val bounds = shape.worldBounds() ?: continue
+            val bounds = shape.broadPhaseBounds() ?: continue
             val color = if (owner is Area2D) DEBUG_AREA_COLOR else DEBUG_BODY_COLOR
             renderer.drawRect(bounds, color, filled = false)
         }

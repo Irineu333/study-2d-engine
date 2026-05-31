@@ -69,15 +69,17 @@ open class Button : Node2D() {
     @Transient
     private var armed: Boolean = false
 
+    override fun localBounds(): Rect = Rect(Vec2.ZERO, size)
+
     /**
-     * Returns the button's screen-space rect using `world()` to compose any
-     * Node2D ancestors. Under a `CanvasLayer` (a non-Node2D), composition
-     * stops at the layer boundary — coordinates are pure screen pixels.
+     * Screen-space axis-aligned rect, equivalent to [worldBounds]: the AABB
+     * enclosing `world().apply(c)` for each corner of [localBounds]. Accounts
+     * for the full world transform including **rotation** — superseding the
+     * older scale-only computation that silently ignored it. Under a
+     * `CanvasLayer` (a non-Node2D) composition stops at the layer boundary, so
+     * coordinates are pure screen pixels.
      */
-    fun screenRect(): Rect {
-        val w = world()
-        return Rect(w.position, Vec2(size.x * w.scale.x, size.y * w.scale.y))
-    }
+    fun screenRect(): Rect = worldBounds()!!
 
     /**
      * Tests whether [pointer] is inside this button's screen rect AND the

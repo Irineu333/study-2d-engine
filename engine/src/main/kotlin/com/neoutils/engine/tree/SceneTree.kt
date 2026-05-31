@@ -8,6 +8,7 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.render.TextMeasurer
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
@@ -56,6 +57,16 @@ class SceneTree(val root: Node) {
      * touch this property.
      */
     var debugHudKey: Key = Key.F1
+
+    /**
+     * Off-frame font metrics, assigned by the host at startup (before the first
+     * frame) so engine code that needs text size outside a draw pass — notably
+     * [com.neoutils.engine.scene.Label.localBounds] — can measure without a
+     * bound `Renderer`. `null` until a host wires it (e.g. unit tests driving
+     * the tree directly), in which case `Label.localBounds()` degrades to
+     * `null`. Backend-supplied; never serialized.
+     */
+    var textMeasurer: TextMeasurer? = null
 
     /**
      * Gameplay time multiplier applied by `GameLoop` before accumulating the

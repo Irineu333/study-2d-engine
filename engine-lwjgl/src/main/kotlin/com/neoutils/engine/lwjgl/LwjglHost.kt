@@ -54,6 +54,10 @@ class LwjglHost : GameHost {
             val physics = PhysicsSystem()
             val loop = GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)
             tree.debugHudKey = config.debugHudKey
+            // Wire off-frame text metrics before the first frame so
+            // `Label.localBounds()` resolves even before any draw. Built after
+            // `renderer.init()` so the NanoVG context and font are registered.
+            tree.textMeasurer = renderer.createTextMeasurer()
             var lastNanos = 0L
 
             GLFW.glfwShowWindow(window)

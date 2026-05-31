@@ -136,7 +136,7 @@ private data class TextLineKey(val text: String, val size: Float)
 // baseline math collapses, putting glyphs above the requested top-anchored y.
 // Resolve against a prioritized list of platform families, then any enumerated
 // family, before falling back to the empty typeface.
-private fun resolveDefaultTypeface(): Typeface {
+internal fun resolveDefaultTypeface(): Typeface {
     val mgr = FontMgr.default
     val preferred: Array<String?> = arrayOf(
         "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica",

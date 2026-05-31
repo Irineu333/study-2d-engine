@@ -1,6 +1,7 @@
 package com.neoutils.engine.math
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -61,5 +62,23 @@ class RectTest {
         assertFalse(r.contains(Vec2(40f, 30f)))
         assertFalse(r.contains(Vec2(20f, 60f)))
         assertFalse(r.contains(Vec2(40f, 60f)))
+    }
+
+    @Test
+    fun `corners returns four corners in TL TR BR BL order`() {
+        val r = Rect(Vec2(0f, 0f), Vec2(4f, 2f))
+        assertEquals(
+            listOf(Vec2(0f, 0f), Vec2(4f, 0f), Vec2(4f, 2f), Vec2(0f, 2f)),
+            r.corners(),
+        )
+    }
+
+    @Test
+    fun `corners honors a non-zero origin`() {
+        val r = Rect(Vec2(-5f, -3f), Vec2(10f, 6f))
+        assertEquals(
+            listOf(Vec2(-5f, -3f), Vec2(5f, -3f), Vec2(5f, 3f), Vec2(-5f, 3f)),
+            r.corners(),
+        )
     }
 }

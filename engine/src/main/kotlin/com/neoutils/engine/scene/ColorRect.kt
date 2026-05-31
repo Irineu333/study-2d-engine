@@ -22,6 +22,8 @@ open class ColorRect : Node2D() {
     @Inspect
     var color: Color = Color.WHITE
 
+    override fun localBounds(): Rect = Rect(Vec2.ZERO, size)
+
     override fun onDraw(renderer: Renderer) {
         renderer.drawRect(Rect(Vec2.ZERO, size), color, filled = true)
         super.onDraw(renderer)

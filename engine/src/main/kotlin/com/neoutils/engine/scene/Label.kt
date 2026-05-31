@@ -1,5 +1,6 @@
 package com.neoutils.engine.scene
 
+import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
@@ -23,6 +24,17 @@ open class Label : Node2D() {
 
     @Inspect
     var color: Color = Color.WHITE
+
+    /**
+     * Drawn rect in the local frame, measured off-frame via
+     * `tree.textMeasurer`. `null` when the label is detached from any tree or
+     * its tree has no measurer wired — measuring text needs font metrics this
+     * pure query cannot synthesize. Correct even before the first draw.
+     */
+    override fun localBounds(): Rect? {
+        val measurer = tree?.textMeasurer ?: return null
+        return Rect(Vec2.ZERO, measurer.measureText(text, size))
+    }
 
     override fun onDraw(renderer: Renderer) {
         renderer.drawText(text, Vec2.ZERO, size, color)

@@ -26,6 +26,18 @@ data class Transform(
             rotation = rotation + child.rotation,
         )
     }
+
+    /**
+     * Maps a point [p] expressed in this transform's local frame to the parent
+     * frame: `position + rotate(scale ⊙ p, rotation)`. Composing
+     * `world().apply(c)` over the corners of a node's `localBounds()` yields the
+     * node's oriented (rotated) world-space box; [com.neoutils.engine.scene.Node2D.worldBounds]
+     * takes the AABB of those four points.
+     */
+    fun apply(p: Vec2): Vec2 {
+        val scaled = Vec2(scale.x * p.x, scale.y * p.y)
+        return position + rotate(scaled, rotation)
+    }
 }
 
 internal fun rotate(v: Vec2, radians: Float): Vec2 {

@@ -17,4 +17,17 @@ data class Rect(val origin: Vec2, val size: Vec2) {
     fun contains(point: Vec2): Boolean =
         point.x >= left && point.x < right &&
             point.y >= top && point.y < bottom
+
+    /**
+     * Four corners in stable order — top-left, top-right, bottom-right,
+     * bottom-left — forming a closed loop. Feeding each through
+     * [Transform.apply] is how [com.neoutils.engine.scene.Node2D.worldBounds]
+     * and oriented-box consumers project a local rect into world space.
+     */
+    fun corners(): List<Vec2> = listOf(
+        Vec2(left, top),
+        Vec2(right, top),
+        Vec2(right, bottom),
+        Vec2(left, bottom),
+    )
 }

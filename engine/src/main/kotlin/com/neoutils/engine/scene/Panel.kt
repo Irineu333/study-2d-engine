@@ -28,6 +28,8 @@ open class Panel : Node2D() {
     @Inspect
     var border: Border? = null
 
+    override fun localBounds(): Rect = Rect(Vec2.ZERO, size)
+
     override fun onDraw(renderer: Renderer) {
         val rect = Rect(Vec2.ZERO, size)
         renderer.drawRect(rect, color, filled = true)

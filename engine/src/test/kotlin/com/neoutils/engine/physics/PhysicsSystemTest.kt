@@ -234,12 +234,12 @@ class PhysicsSystemTest {
     }
 
     @Test
-    fun `CollisionShape2D worldBounds returns null when disabled`() {
+    fun `CollisionShape2D broadPhaseBounds returns null when disabled`() {
         val s = CollisionShape2D().apply {
             shape = RectangleShape2D().apply { size = Vec2(10f, 10f) }
             disabled = true
         }
-        assertEquals(null, s.worldBounds())
+        assertEquals(null, s.broadPhaseBounds())
     }
 
     @Test

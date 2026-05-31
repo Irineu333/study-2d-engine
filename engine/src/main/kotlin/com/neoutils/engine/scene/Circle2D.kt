@@ -1,5 +1,6 @@
 package com.neoutils.engine.scene
 
+import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
@@ -20,6 +21,9 @@ open class Circle2D : Node2D() {
 
     @Inspect
     var color: Color = Color.WHITE
+
+    override fun localBounds(): Rect =
+        Rect(Vec2(-radius, -radius), Vec2(2f * radius, 2f * radius))
 
     override fun onDraw(renderer: Renderer) {
         renderer.drawCircle(
