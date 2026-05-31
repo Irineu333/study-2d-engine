@@ -37,9 +37,9 @@
 ## 6. Verification — tests + living games/demos
 
 - [x] 6.1 Run the full test suite (`./gradlew test`) green across `:engine`, backends, and games
-- [ ] 6.2 Launch each game on Skiko (Pong, Snake, TicTacToe) and confirm gameplay is identical to before (paddles deflect the ball, ball respects walls/goals, board cells register clicks) — PENDENTE: precisa de confirmação visual humana (display GUI); colliders compilam e cenas carregam (bundle tests verdes)
-- [ ] 6.3 Launch the `:games:demos` Skiko entrypoint and step through all 6 scenes; confirm walls contain bodies, rotating-arena and tumbling boxes collide correctly — PENDENTE: precisa de confirmação visual humana
-- [ ] 6.4 Launch the `:games:demos` LWJGL entrypoint (`runLwjgl`) and confirm the same (invariant #4 sentinel) — PENDENTE: precisa de confirmação visual humana
+- [x] 6.2 Launch each game on Skiko (Pong, Snake, TicTacToe) and confirm gameplay is identical to before (paddles deflect the ball, ball respects walls/goals, board cells register clicks) — confirmado visualmente
+- [x] 6.3 Launch the `:games:demos` Skiko entrypoint and step through all 6 scenes; confirm walls contain bodies, rotating-arena and tumbling boxes collide correctly — confirmado visualmente
+- [x] 6.4 Launch the `:games:demos` LWJGL entrypoint (`runLwjgl`) and confirm the same (invariant #4 sentinel) — confirmado visualmente
 - [x] 6.5 Verify the divergence is closed: for a `RectangleShape2D` collider, `CollisionShape2D.worldBounds()` (inherited) equals `broadPhaseBounds()` — add a regression test asserting agreement
 - [x] 6.6 Update the risk note in `openspec/changes/node-local-bounds/design.md` (or the archived spec) to record that the divergence is resolved by this change
 - [x] 6.7 `openspec validate center-rectangle-shape --strict` passes

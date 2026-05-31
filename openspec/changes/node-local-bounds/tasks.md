@@ -49,7 +49,7 @@
 
 - [x] 8.1 Implement LWJGL `TextMeasurer` (`nvgTextBounds` + `nvgTextMetrics`), callable off-frame, matching `LwjglRenderer.measureText`
 - [x] 8.2 Wire it into `SceneTree.textMeasurer` at LWJGL host startup, before the first frame
-- [ ] 8.3 Verify via `:games:demos` LWJGL entrypoint: measurer non-null and `Label.localBounds()` non-null _(requires a GL/display; wiring compiles and mirrors the already-tested `LwjglRenderer.measureText` — manual run pending)_
+- [x] 8.3 Verify via `:games:demos` LWJGL entrypoint: measurer non-null and `Label.localBounds()` non-null _(manual run confirmed)_
 
 ## 9. Verification
 
