@@ -42,3 +42,8 @@
 - [x] 7.1 Run the full `:engine` suite; confirm green (no collision/UI/serialization regressions).
 - [x] 7.2 Verify invariants: #1 (pick selects, never mutates the tree), #4 (`GameHost` untouched; `hitTestPick` is engine-internal like `hitTestUI`), #6 (`CanvasLayer` skipped).
 - [x] 7.3 `openspec validate debug-scene-picker --strict` passes; review specs↔implementation coherence.
+
+## 8. Manual-test follow-ups
+
+- [x] 8.1 Pong manual test confirmed: ball selects with correct OBB; paddle OBB appears offset (the known `RectangleShape2D` anchoring divergence resolved by the separate `center-rectangle-shape` change, not a picker bug) and `CanvasLayer` HUD labels are correctly non-pickable (world-only scope, invariant #6).
+- [x] 8.2 Demos `SpawnerDemo` (scene 3) leaked the picker's claimed click: it edge-detected raw `isMouseDown` instead of `wasMouseClicked`, bypassing `mouseClickConsumed`. Switched to `input.wasMouseClicked(MouseButton.Left)` so the spawn honors UI/picker consumption (same one-spawn-per-click behavior). Swept all games — it was the only consumer using the raw pattern.

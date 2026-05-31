@@ -66,19 +66,17 @@ class Spawner : Node2D() {
     private val rng = Random(System.nanoTime())
 
     @Transient
-    private var leftWasDown: Boolean = false
-
-    @Transient
     private var autoCooldown: Float = 0f
 
     override fun onProcess(dt: Float) {
         val tree = tree ?: return
         val input = tree.input ?: return
-        val leftDown = input.isMouseDown(MouseButton.Left)
-        if (leftDown && !leftWasDown) {
+        // `wasMouseClicked` (not raw isMouseDown edge-detection) honors UI/picker
+        // click consumption: with the scene picker active the click is claimed
+        // upstream and no ball spawns under the cursor.
+        if (input.wasMouseClicked(MouseButton.Left)) {
             spawn(at = input.pointerPosition)
         }
-        leftWasDown = leftDown
 
         autoCooldown -= dt
         if (autoCooldown <= 0f) {
