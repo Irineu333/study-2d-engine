@@ -3,9 +3,7 @@
 ## Purpose
 
 Scene graph estilo Godot em Kotlin puro — `Node` hierarchy, lifecycle, `SceneTree` (live tree owner, não-Node), math primitives, SPI de `Renderer`/`Input`, `Collider` + `PhysicsSystem`, `GameLoop`. Invariante: zero dependência em `androidx.compose.*` ou `org.jetbrains.compose.*`.
-
 ## Requirements
-
 ### Requirement: Scene graph node hierarchy
 
 The engine SHALL provide a base abstract class `Node` from which all scene elements derive. Each `Node` MUST hold an optional reference to a parent `Node` and a list of children `Node`s, forming a tree. Each `Node` MUST have a mutable `name: String` attribute and a mutable `groups: Set<String>` accessor with `addToGroup(name: String)` / `removeFromGroup(name: String)` / `isInGroup(name: String): Boolean`. The engine SHALL provide a concrete subclass `Node2D` that adds a `Transform` with position, scale and rotation. The engine SHALL provide additional concrete `Node2D` subclasses for primitive visuals: `ColorRect` (filled rectangle), `Circle2D` (filled circle), `Line2D` (connected line segments), `Polygon2D` (filled polygon by vertices), `Label` (text), and `Camera2D` (viewport bounds carrier).
@@ -1382,3 +1380,50 @@ Nodes that are NOT `Node2D` (e.g. `Timer`, the abstract `Node` base) SHALL NOT t
 
 - **WHEN** the `:engine` module is compiled
 - **THEN** `TextMeasurer` SHALL reference only `:engine` math types (`Vec2`) and no Skiko/LWJGL/AWT/Compose type
+
+### Requirement: Transform inverse point projection
+
+`Transform` SHALL provide `applyInverse(p: Vec2): Vec2`, the exact inverse of
+`apply`, mapping a point expressed in the parent frame back into this
+transform's local frame: `rotate(p - position, -rotation)` divided
+component-wise by `scale`. This lets consumers bring a world-space point into
+a node's local frame for oriented hit-testing.
+
+#### Scenario: Inverse of apply round-trips
+
+- **WHEN** `applyInverse(apply(p))` is evaluated for any transform whose scale
+  components are non-zero
+- **THEN** it returns `p` within float tolerance
+
+#### Scenario: Maps a parent-frame point into the local frame
+
+- **WHEN** `applyInverse(p)` is called
+- **THEN** it returns `rotate(p - position, -rotation)` divided component-wise
+  by `scale`
+
+### Requirement: Scene pick hit-testing
+
+The engine SHALL run a scene-pick hit-test step in `GameLoop.tick`,
+immediately after UI hit-testing and before gameplay processing, gated on the
+scene picker being enabled, so an active picker can claim the pointer click
+before gameplay reads it.
+
+#### Scenario: Pick hit-test runs after UI and before gameplay process
+
+- **WHEN** `GameLoop.tick` runs a frame
+- **THEN** `SceneTree.hitTestPick(input)` is invoked after `hitTestUI` and
+  before `tree.process(dt)`
+
+#### Scenario: Disabled picker is a no-op
+
+- **WHEN** the scene picker is disabled
+- **THEN** `hitTestPick` performs no tree walk, does not change the selection,
+  and does not touch `Input.mouseClickConsumed`
+
+#### Scenario: Active picker claims the click
+
+- **WHEN** the scene picker is enabled and a left click occurs that the UI did
+  not already consume
+- **THEN** `hitTestPick` resolves the selection and sets
+  `Input.mouseClickConsumed` so gameplay does not also see the click
+
