@@ -38,6 +38,20 @@ data class Transform(
         val scaled = Vec2(scale.x * p.x, scale.y * p.y)
         return position + rotate(scaled, rotation)
     }
+
+    /**
+     * Exact inverse of [apply]: maps a point [p] expressed in the parent frame
+     * back into this transform's local frame, `rotate(p - position, -rotation)`
+     * divided component-wise by `scale`. Brings a world-space point into a
+     * node's local frame so an oriented hit-test can compare it against the
+     * node's `localBounds()` (precise under rotation, unlike the loose
+     * world-space AABB). Undefined when a scale component is zero (degenerate
+     * transform with no inverse).
+     */
+    fun applyInverse(p: Vec2): Vec2 {
+        val unrotated = rotate(p - position, -rotation)
+        return Vec2(unrotated.x / scale.x, unrotated.y / scale.y)
+    }
 }
 
 internal fun rotate(v: Vec2, radians: Float): Vec2 {

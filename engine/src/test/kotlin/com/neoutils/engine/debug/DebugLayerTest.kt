@@ -75,7 +75,7 @@ class DebugLayerTest {
         val tree = SceneTree(Node())
         tree.start()
         val widgets = tree.debug.widgets
-        assertEquals(11, widgets.size)
+        assertEquals(13, widgets.size)
         assertSame(tree.debug.fps, widgets[0])
         assertSame(tree.debug.colliders, widgets[1])
         assertSame(tree.debug.momentum, widgets[2])
@@ -87,5 +87,7 @@ class DebugLayerTest {
         assertSame(tree.debug.contactGizmo, widgets[8])
         assertSame(tree.debug.timeControls, widgets[9])
         assertSame(tree.debug.profiler, widgets[10])
+        assertSame(tree.debug.scenePicker, widgets[11])
+        assertSame(tree.debug.selectionGizmo, widgets[12])
     }
 }

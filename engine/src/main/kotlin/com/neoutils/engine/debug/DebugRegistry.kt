@@ -49,6 +49,12 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     /** Per-phase profiler HUD; its `enabled` drives the loop's measurement. */
     val profiler: ProfilerWidget = ProfilerWidget()
 
+    /** Owns the world-space pick selection (breadcrumb + read-only property panel). */
+    val scenePicker: ScenePickerWidget = ScenePickerWidget()
+
+    /** Oriented-box highlight of `scenePicker.selected` in world space. */
+    val selectionGizmo: SelectionGizmoWidget = SelectionGizmoWidget()
+
     /**
      * Per-tree buffer of resolved contacts captured during the last physics
      * step. Recording is gated by `contactGizmo.enabled` (mirrored onto
@@ -93,6 +99,8 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(contactGizmo)
             register(timeControls)
             register(profiler)
+            register(scenePicker)
+            register(selectionGizmo)
         }
     }
 

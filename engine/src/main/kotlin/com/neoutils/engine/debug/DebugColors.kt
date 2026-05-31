@@ -22,3 +22,6 @@ val DEBUG_LOG_WARN_COLOR: Color = Color(1f, 0.75f, 0.2f, 1f)
 
 /** Log overlay text color for `Error` entries (red). */
 val DEBUG_LOG_ERROR_COLOR: Color = Color(1f, 0.35f, 0.35f, 1f)
+
+/** Color of the `SelectionGizmoWidget` oriented box (magenta). */
+val DEBUG_SELECTION_COLOR: Color = Color(1f, 0.2f, 1f, 0.95f)

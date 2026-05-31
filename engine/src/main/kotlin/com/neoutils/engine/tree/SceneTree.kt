@@ -248,6 +248,53 @@ class SceneTree(val root: Node) {
         return null
     }
 
+    /**
+     * Scene-pick hit-test phase. Runs in `GameLoop.tick` right after
+     * [hitTestUI] and before `tree.process`, gated on
+     * `debug.scenePicker.enabled`. When disabled it is a strict no-op — no tree
+     * walk, no selection change, [Input.mouseClickConsumed] untouched — so the
+     * picker costs nothing while off.
+     *
+     * When enabled and the UI did not already absorb the left click, it claims
+     * the click ([Input.mouseClickConsumed] = `true`, pre-empting gameplay) and
+     * resolves the selection: every world-space `Node2D` with a non-null
+     * `localBounds()` (skipping `CanvasLayer` subtrees, invariant #6) whose
+     * world `worldBounds()` AABB contains the click is broad-phase accepted,
+     * then confirmed by the oriented test
+     * `localBounds().contains(world().applyInverse(clickWorld))`. Confirmed
+     * candidates come out in DFS draw-order; the picker selects the front-most
+     * on a fresh click and cycles through the stack on repeated near-same
+     * clicks. Never mutates the tree (invariant #1).
+     */
+    fun hitTestPick(input: Input) {
+        val picker = debug.scenePicker
+        if (!picker.enabled) return
+        if (!root.isLive) return
+        if (input.mouseClickConsumed) return
+        if (!input.wasMouseClickedRaw(MouseButton.Left)) return
+        input.mouseClickConsumed = true
+        val clickWorld = screenToWorld(input.pointerPosition)
+        val candidates = mutableListOf<Node2D>()
+        collectPickCandidates(root, clickWorld, candidates)
+        // DFS pre-order appends a node before its children, so later entries are
+        // painted on top; reversing yields front-most-first.
+        picker.applyPick(input.pointerPosition, candidates.asReversed())
+    }
+
+    private fun collectPickCandidates(node: Node, clickWorld: Vec2, out: MutableList<Node2D>) {
+        if (node is CanvasLayer) return
+        if (node is Node2D) {
+            val aabb = node.worldBounds()
+            if (aabb != null && aabb.contains(clickWorld)) {
+                val local = node.localBounds()
+                if (local != null && local.contains(node.world().applyInverse(clickWorld))) {
+                    out += node
+                }
+            }
+        }
+        for (child in node.children) collectPickCandidates(child, clickWorld, out)
+    }
+
     fun process(dt: Float) {
         if (!root.isLive) return
         runTraversal(rendering = false) { traverseProcess(root, dt) }

@@ -78,6 +78,7 @@ class GameLoop(
         tree.input = input
         val hitTestStart = System.nanoTime()
         tree.hitTestUI(input)
+        tree.hitTestPick(input)
         hitTestNanos = System.nanoTime() - hitTestStart
 
         val rawDt = (dtNanos / 1_000_000_000f).coerceAtLeast(0f)
@@ -136,8 +137,10 @@ class GameLoop(
         tree.input = input
         // UI hit-test runs first so any consumption is visible to scripts in
         // the same tick (gameplay's `wasMouseClicked` returns false when the
-        // click landed on a Button).
+        // click landed on a Button). The scene picker runs right after and, when
+        // enabled, claims the click before gameplay reads it.
         tree.hitTestUI(input)
+        tree.hitTestPick(input)
         val rawDt = (dtNanos / 1_000_000_000f).coerceAtLeast(0f)
         val frozen = tree.paused || tree.timeScale == 0f
         // Consume the step flag every tick so a request never survives one and
