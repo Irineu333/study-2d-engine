@@ -35,6 +35,20 @@ class ScenePickerWidgetTest {
         recorder.events.filterIsInstance<RecordedEvent.Text>().map { it.text }
 
     @Test
+    fun `panel anchors to the bottom-right corner`() {
+        val (tree, _, recorder) = treeWithSelectedTarget() // surface 800x600
+        tree.render(recorder)
+        // The panel's background/border share one rect whose far corner sits a
+        // uniform margin from the bottom-right of the surface.
+        val anchored = recorder.events.filterIsInstance<RecordedEvent.Rect>().any {
+            val right = it.rect.origin.x + it.rect.size.x
+            val bottom = it.rect.origin.y + it.rect.size.y
+            kotlin.math.abs(right - (800f - 8f)) < 0.5f && kotlin.math.abs(bottom - (600f - 8f)) < 0.5f
+        }
+        assertTrue(anchored, "expected a panel rect anchored to the bottom-right margin")
+    }
+
+    @Test
     fun `panel lists the selection's inspect properties with current values`() {
         val (tree, _, recorder) = treeWithSelectedTarget()
         tree.render(recorder)

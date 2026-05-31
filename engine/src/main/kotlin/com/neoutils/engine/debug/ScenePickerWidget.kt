@@ -67,38 +67,44 @@ class ScenePickerWidget : ScreenDebugWidget() {
 
     override fun drawDebug(renderer: Renderer) {
         val node = selected ?: return
-        val owningTree = tree ?: return
+        val surface = tree?.size ?: return
 
         val rows = buildRows(node)
-        // Fit vertically within the surface; collapse the tail into an overflow
-        // row rather than spilling past the bottom edge.
-        val maxHeight = owningTree.size.y - TOP - MARGIN
+        // Fit vertically; collapse the tail into an overflow row rather than
+        // spilling past the screen edge.
+        val maxHeight = surface.y - MARGIN * 2f
         val shown = mutableListOf<Row>()
         var contentHeight = INNER_PAD * 2f
         var hidden = 0
         for ((index, row) in rows.withIndex()) {
-            val h = row.height
-            if (contentHeight + h > maxHeight) {
+            if (contentHeight + row.height > maxHeight) {
                 hidden = rows.size - index
                 break
             }
             shown += row
-            contentHeight += h
+            contentHeight += row.height
         }
         if (hidden > 0) {
             shown += Row.Section("… (+$hidden more)")
             contentHeight += SECTION_H
         }
 
-        val panelWidth = (shown.maxOf { it.width(renderer) }) + INNER_PAD * 2f
+        val panelWidth = shown.maxOf { it.width(renderer) } + INNER_PAD * 2f
         // The last row carries a trailing LINE_GAP it does not need; drop it so
         // the bottom inset equals the top (and the sides).
         val panelHeight = contentHeight - LINE_GAP
-        renderer.drawRect(Rect(Vec2(MARGIN, TOP), Vec2(panelWidth, panelHeight)), PANEL_BG, filled = true)
-        renderer.drawRect(Rect(Vec2(MARGIN, TOP), Vec2(panelWidth, panelHeight)), PANEL_BORDER, filled = false)
+        // Anchor to the bottom-right corner — the only corner free of built-in
+        // overlays (FPS/TimeControls top-left, Debug HUD top-right,
+        // Momentum/Log/Profiler bottom-left). The fixed corner keeps the panel
+        // steady as its width/height change with the selection.
+        val originX = maxOf(MARGIN, surface.x - MARGIN - panelWidth)
+        val originY = maxOf(MARGIN, surface.y - MARGIN - panelHeight)
 
-        val x = MARGIN + INNER_PAD
-        var y = TOP + INNER_PAD
+        renderer.drawRect(Rect(Vec2(originX, originY), Vec2(panelWidth, panelHeight)), PANEL_BG, filled = true)
+        renderer.drawRect(Rect(Vec2(originX, originY), Vec2(panelWidth, panelHeight)), PANEL_BORDER, filled = false)
+
+        val x = originX + INNER_PAD
+        var y = originY + INNER_PAD
         for (row in shown) {
             row.draw(renderer, x, y)
             y += row.height
@@ -189,7 +195,6 @@ class ScenePickerWidget : ScreenDebugWidget() {
         private const val CYCLE_EPSILON: Float = 4f
 
         private const val MARGIN: Float = 8f
-        private const val TOP: Float = 40f
         private const val INNER_PAD: Float = 8f
         private const val INDENT: Float = 8f
         private const val KEY_COL: Float = 64f
