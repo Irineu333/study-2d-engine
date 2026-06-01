@@ -1,5 +1,6 @@
 package com.neoutils.engine.debug
 
+import com.neoutils.engine.input.Input
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
@@ -13,9 +14,19 @@ import com.neoutils.engine.scene.Node
  *
  * The base owns the shared panel **chrome**: when [enabled] and the widget has
  * a non-empty [bodySize], `onDraw` paints the background, a title-bar header
- * (the [title] text on [DebugTheme.headerBackground]) and the border, then calls
- * [drawDebug] so the subclass only draws its body — from [bodyOrigin], just
- * below the header.
+ * and the border. The header carries three interactive zones — a drag grip
+ * (2×3 dots) at the left, then the title, then the window controls at the right:
+ * collapse (`[_]`) and close (`[x]`). The body ([drawDebug]) is painted just
+ * below the header, but only while [bodyVisible].
+ *
+ * Window controls, hit-tested manually in [updateDrag] (same polling style as
+ * the drag):
+ *  - **close** (`[x]`) sets [enabled] = `false` — a soft close, the panel
+ *    reopens from the `DebugHud` (which itself reopens via `debugHudKey`).
+ *  - **collapse/expand** toggles [collapsed]: the header stays, the body is
+ *    hidden, and the `DebugDock` re-flows the other panels from the reduced
+ *    [contentSize]. Its glyph is state-aware — a dash (`[_]`, minimize) when
+ *    expanded, a hollow box (`[□]`, maximize) when collapsed.
  *
  * Positioning is the `DebugDock`'s job, not the widget's: the widget declares a
  * [slot] and reports its [bodySize]; the dock writes [dockOrigin]. Dragging the
@@ -53,6 +64,30 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         private set
 
     /**
+     * Session-only collapse state toggled by the header's `[_]` control. While
+     * `true` only the header is drawn (the body is hidden and the dock re-flows
+     * the reduced height). Mirrors [customOrigin]'s lifetime: survives the
+     * enable/disable toggle and `tree.resize`, never persists to disk; cleared
+     * by [resetPosition].
+     */
+    var collapsed: Boolean = false
+        private set
+
+    /** Flips [collapsed]; backs the header's `[_]` control. */
+    fun toggleCollapsed() {
+        collapsed = !collapsed
+    }
+
+    /**
+     * Effective body visibility: the body (`drawDebug` and any child-node
+     * content) shows only when the widget is [enabled] **and** not [collapsed].
+     * The chrome (header) is drawn whenever [enabled]. Widgets that mount child
+     * nodes (`DebugHud`, `TimeControlWidget`) watch this — not `enabled` — to
+     * build/tear down those children, so collapsing fully un-mounts them.
+     */
+    val bodyVisible: Boolean get() = enabled && !collapsed
+
+    /**
      * Screen-pixel top-left of the whole panel (header + body): the drag
      * [customOrigin] when present, otherwise the dock-assigned [dockOrigin].
      */
@@ -72,12 +107,17 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     open fun bodySize(): Vec2 = Vec2.ZERO
 
     /**
-     * Full panel size (header + body) the `DebugDock` stacks by. `(0, 0)` when
-     * the body is empty, so the dock skips the panel and no header is drawn.
+     * Full panel size the `DebugDock` stacks by. `(0, 0)` (the dock skips it and
+     * no chrome is drawn) when the body has no width. When [collapsed] only the
+     * header is reported — same width as the body keeps the panel coherent
+     * across states — so the dock re-flows the reduced height; otherwise it is
+     * header + body.
      */
     fun contentSize(): Vec2 {
         val body = bodySize()
-        if (body.x <= 0f || body.y <= 0f) return Vec2.ZERO
+        if (body.x <= 0f) return Vec2.ZERO
+        if (!bodyVisible) return Vec2(body.x, DebugTheme.headerHeight)
+        if (body.y <= 0f) return Vec2.ZERO
         return Vec2(body.x, DebugTheme.headerHeight + body.y)
     }
 
@@ -87,11 +127,12 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     final override fun onDraw(renderer: Renderer) {
         if (!enabled) return
         val full = contentSize()
-        if (full.x > 0f && full.y > 0f) drawChrome(renderer, full)
-        drawDebug(renderer)
+        if (full.x <= 0f || full.y <= 0f) return
+        drawChrome(renderer, full)
+        if (bodyVisible) drawDebug(renderer)
     }
 
-    /** Background + title-bar header + border shared by every screen panel. */
+    /** Background + title-bar header (grip + title + window controls) + border. */
     private fun drawChrome(renderer: Renderer, full: Vec2) {
         val o = origin
         renderer.drawRect(Rect(o, full), DebugTheme.panelBackground, filled = true)
@@ -100,34 +141,31 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
             DebugTheme.headerBackground,
             filled = true,
         )
+        drawDragGrip(renderer)
         renderer.drawText(
             text = title,
             position = Vec2(
-                o.x + DebugTheme.padding,
+                gripRect().right + CONTROL_GAP,
                 o.y + (DebugTheme.headerHeight - DebugTheme.titleTextSize) / 2f,
             ),
             size = DebugTheme.titleTextSize,
             color = DebugTheme.textColor,
         )
-        drawDragGrip(renderer, o, full.x)
+        drawCollapseGlyph(renderer)
+        drawCloseGlyph(renderer)
         renderer.drawRect(Rect(o, full), DebugTheme.panelBorderColor, filled = false)
     }
 
     /**
-     * A 2×3 grid of dots at the right of the header — the universal "grab me"
+     * A 2×3 grid of dots at the left of the header — the universal "grab me"
      * affordance — signalling the title bar is the drag handle.
      */
-    private fun drawDragGrip(renderer: Renderer, headerOrigin: Vec2, width: Float) {
-        val cols = 2
-        val rows = 3
-        val gridW = cols * GRIP_DOT + (cols - 1) * GRIP_GAP
-        val gridH = rows * GRIP_DOT + (rows - 1) * GRIP_GAP
-        val startX = headerOrigin.x + width - DebugTheme.padding - gridW
-        val startY = headerOrigin.y + (DebugTheme.headerHeight - gridH) / 2f
-        for (c in 0 until cols) {
-            for (r in 0 until rows) {
-                val x = startX + c * (GRIP_DOT + GRIP_GAP)
-                val y = startY + r * (GRIP_DOT + GRIP_GAP)
+    private fun drawDragGrip(renderer: Renderer) {
+        val grip = gripRect()
+        for (c in 0 until GRIP_COLS) {
+            for (r in 0 until GRIP_ROWS) {
+                val x = grip.left + c * (GRIP_DOT + GRIP_GAP)
+                val y = grip.top + r * (GRIP_DOT + GRIP_GAP)
                 renderer.drawRect(
                     Rect(Vec2(x, y), Vec2(GRIP_DOT, GRIP_DOT)),
                     DebugTheme.headerGripColor,
@@ -137,15 +175,98 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         }
     }
 
+    /**
+     * The collapse/expand control, state-aware so minimize and maximize read
+     * differently: when expanded, a bottom dash (`[_]`, "minimize" — hides the
+     * body); when [collapsed], a hollow box (`[□]`, "maximize" — restores it).
+     */
+    private fun drawCollapseGlyph(renderer: Renderer) {
+        val r = collapseRect()
+        val color = DebugTheme.headerControlColor
+        if (collapsed) {
+            renderer.drawRect(
+                Rect(
+                    Vec2(r.left + GLYPH_INSET, r.top + GLYPH_INSET),
+                    Vec2(r.size.x - 2f * GLYPH_INSET, r.size.y - 2f * GLYPH_INSET),
+                ),
+                color,
+                filled = false,
+            )
+        } else {
+            val y = r.bottom - GLYPH_INSET
+            renderer.drawLine(
+                Vec2(r.left + GLYPH_INSET, y),
+                Vec2(r.right - GLYPH_INSET, y),
+                GLYPH_THICKNESS,
+                color,
+            )
+        }
+    }
+
+    /** The close control: two crossed diagonals inside its rect (`[x]`). */
+    private fun drawCloseGlyph(renderer: Renderer) {
+        val r = closeRect()
+        val color = DebugTheme.headerControlColor
+        renderer.drawLine(
+            Vec2(r.left + GLYPH_INSET, r.top + GLYPH_INSET),
+            Vec2(r.right - GLYPH_INSET, r.bottom - GLYPH_INSET),
+            GLYPH_THICKNESS,
+            color,
+        )
+        renderer.drawLine(
+            Vec2(r.right - GLYPH_INSET, r.top + GLYPH_INSET),
+            Vec2(r.left + GLYPH_INSET, r.bottom - GLYPH_INSET),
+            GLYPH_THICKNESS,
+            color,
+        )
+    }
+
+    /** Bounding rect of the drag-grip dots at the header's left. */
+    internal fun gripRect(): Rect {
+        val gridW = GRIP_COLS * GRIP_DOT + (GRIP_COLS - 1) * GRIP_GAP
+        val gridH = GRIP_ROWS * GRIP_DOT + (GRIP_ROWS - 1) * GRIP_GAP
+        val o = origin
+        return Rect(
+            Vec2(o.x + DebugTheme.padding, o.y + (DebugTheme.headerHeight - gridH) / 2f),
+            Vec2(gridW, gridH),
+        )
+    }
+
+    /** Square hit/draw rect of the close (`[x]`) control at the header's right edge. */
+    internal fun closeRect(): Rect {
+        val o = origin
+        val width = contentSize().x
+        return Rect(
+            Vec2(
+                o.x + width - DebugTheme.padding - CONTROL_SIZE,
+                o.y + (DebugTheme.headerHeight - CONTROL_SIZE) / 2f,
+            ),
+            Vec2(CONTROL_SIZE, CONTROL_SIZE),
+        )
+    }
+
+    /** Square hit/draw rect of the collapse (`[_]`) control, left of [closeRect]. */
+    internal fun collapseRect(): Rect {
+        val close = closeRect()
+        return Rect(
+            Vec2(close.left - CONTROL_GAP - CONTROL_SIZE, close.top),
+            Vec2(CONTROL_SIZE, CONTROL_SIZE),
+        )
+    }
+
     override fun onProcess(dt: Float) {
         super.onProcess(dt)
         updateDrag()
     }
 
-    /** Clears the drag override so the panel flows back to its dock slot. */
+    /**
+     * Clears the drag override and expands the panel, so it flows back to its
+     * dock slot fully shown — the single "restore default layout" gesture.
+     */
     fun resetPosition() {
         customOrigin = null
         dragging = false
+        collapsed = false
     }
 
     /**
@@ -163,7 +284,8 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     /**
      * Polling drag, mirroring the engine's other debug nodes: press the title-bar
      * header to begin (capturing [grabOffset]), follow the pointer while the
-     * button is held, release to end. While dragging, the panel owns the drag —
+     * button is held, release to end. Before arming a drag, a press on a window
+     * control runs its action instead. While dragging, the panel owns the drag —
      * it flags [com.neoutils.engine.input.Input.mouseDragConsumed] so gameplay
      * pan/drag consumers stand down.
      */
@@ -189,20 +311,46 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
             input.mouseDragConsumed = true
             return
         }
-        // Begin only on the press edge inside the header (the drag handle).
-        if (down && input.wasMouseClickedRaw(MouseButton.Left) && inHeader(input.pointerPosition, full)) {
+        // Act only on the press edge.
+        if (!(down && input.wasMouseClickedRaw(MouseButton.Left))) return
+        val pointer = input.pointerPosition
+        // Window controls take precedence over starting a drag (and are carved
+        // out of inHeader, so the drag path never fires over them).
+        if (closeRect().contains(pointer)) {
+            enabled = false
+            consumePress(input)
+            return
+        }
+        if (collapseRect().contains(pointer)) {
+            toggleCollapsed()
+            consumePress(input)
+            return
+        }
+        if (inHeader(pointer, full)) {
             dragging = true
-            grabOffset = input.pointerPosition - origin
+            grabOffset = pointer - origin
             input.mouseDragConsumed = true
         }
     }
 
+    /** Mark the current press as handled so it neither drags nor reaches the picker. */
+    private fun consumePress(input: Input) {
+        input.mouseClickConsumed = true
+        input.mouseDragConsumed = true
+    }
+
     /**
-     * The drag handle is the title-bar header strip: pressing it starts a drag,
-     * while the body below (rows, steppers, readouts) keeps routing clicks.
+     * The drag handle is the title-bar header strip minus the three interactive
+     * rects (grip, collapse, close): pressing the bare header starts a drag,
+     * while the controls and the body below keep their own behavior.
      */
-    private fun inHeader(pointer: Vec2, full: Vec2): Boolean =
-        Rect(origin, Vec2(full.x, DebugTheme.headerHeight)).contains(pointer)
+    private fun inHeader(pointer: Vec2, full: Vec2): Boolean {
+        if (!Rect(origin, Vec2(full.x, DebugTheme.headerHeight)).contains(pointer)) return false
+        if (gripRect().contains(pointer)) return false
+        if (collapseRect().contains(pointer)) return false
+        if (closeRect().contains(pointer)) return false
+        return true
+    }
 
     private fun clampToSurface(pos: Vec2, size: Vec2, surface: Vec2): Vec2 {
         val maxX = (surface.x - size.x).coerceAtLeast(0f)
@@ -211,7 +359,21 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     }
 
     private companion object {
+        const val GRIP_COLS: Int = 2
+        const val GRIP_ROWS: Int = 3
         const val GRIP_DOT: Float = 2f
         const val GRIP_GAP: Float = 2f
+
+        /** Side of each window-control hit/draw square. */
+        const val CONTROL_SIZE: Float = 12f
+
+        /** Gap after the grip and between the two window controls. */
+        const val CONTROL_GAP: Float = 6f
+
+        /** Inset of a glyph's strokes inside its control square. */
+        const val GLYPH_INSET: Float = 2.5f
+
+        /** Stroke width of the control glyphs. */
+        const val GLYPH_THICKNESS: Float = 1.5f
     }
 }

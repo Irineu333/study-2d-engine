@@ -63,7 +63,7 @@ A executável `:games:demos` expõe 6 cenas trocáveis pelas teclas `1`–`6`, c
 
 - `F1` — abre/fecha a HUD de debug com checkboxes para cada widget registrado (FPS, Colliders, Momentum, e quaisquer widgets custom do jogo). O keybind é configurável via `GameConfig(debugHudKey = ...)`.
 
-A HUD lista uma linha por `DebugWidget` ativo no `tree.debug` registry; clicar uma linha alterna o `enabled` do widget. Para plugar um gizmo novo num projeto-jogo basta criar uma classe estendendo `ScreenDebugWidget` (overlay 2D em pixels) ou `WorldDebugWidget` (gizmo em coordenadas de mundo, recebe a view transform da `Camera2D` automaticamente) e registrá-la após `tree.start()`:
+A HUD lista uma linha por `DebugWidget` ativo no `tree.debug` registry; clicar uma linha alterna o `enabled` do widget. Cada painel screen-space (`ScreenDebugWidget`) tem um header com controles de janela: o **grip** (grade de pontos) à esquerda arrasta o painel, e à direita ficam **colapsar** (`[_]`, esconde o corpo mantendo só o header) e **fechar** (`[x]`, soft close via `enabled = false` — reabre pela HUD). `BACKSPACE` restaura o layout default: devolve cada painel ao seu slot e expande os colapsados. Para plugar um gizmo novo num projeto-jogo basta criar uma classe estendendo `ScreenDebugWidget` (overlay 2D em pixels) ou `WorldDebugWidget` (gizmo em coordenadas de mundo, recebe a view transform da `Camera2D` automaticamente) e registrá-la após `tree.start()`:
 
 ```kotlin
 class MyAxes : WorldDebugWidget() {

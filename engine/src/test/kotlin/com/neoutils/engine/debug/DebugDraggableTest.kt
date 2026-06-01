@@ -74,7 +74,7 @@ class DebugDraggableTest {
         tree.debug.register(widget)
         tree.debug.dock.relayout(tree.size)
         val docked = widget.dockOrigin
-        val grabPoint = docked + Vec2(8f, 8f)
+        val grabPoint = docked + Vec2(40f, 8f)
 
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input) // press inside the grab zone begins the drag
@@ -105,7 +105,7 @@ class DebugDraggableTest {
         widget.parent!!.addChild(consumer)
         tree.applyPending()
 
-        val grabPoint = widget.dockOrigin + Vec2(8f, 8f)
+        val grabPoint = widget.dockOrigin + Vec2(40f, 8f)
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input) // begin drag
 
@@ -140,7 +140,7 @@ class DebugDraggableTest {
         val widget = FixedScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f))
         tree.debug.register(widget)
         tree.debug.dock.relayout(tree.size)
-        val grabPoint = widget.dockOrigin + Vec2(8f, 8f)
+        val grabPoint = widget.dockOrigin + Vec2(40f, 8f)
 
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input)
@@ -174,7 +174,7 @@ class DebugDraggableTest {
         tree.debug.register(widget)
         tree.debug.dock.relayout(tree.size)
         val slotOrigin = widget.dockOrigin
-        val grabPoint = slotOrigin + Vec2(8f, 8f)
+        val grabPoint = slotOrigin + Vec2(40f, 8f)
 
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input)

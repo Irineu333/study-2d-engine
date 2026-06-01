@@ -31,22 +31,25 @@ class TimeControlWidget : ScreenDebugWidget() {
     private var panel: Panel? = null
     private var pauseButton: Button? = null
     private var speedDisplay: Button? = null
-    private var lastEnabled: Boolean = false
+    private var lastBodyVisible: Boolean = false
 
     init { name = "TimeControlWidget" }
 
     override fun onProcess(dt: Float) {
         super.onProcess(dt)
-        if (enabled != lastEnabled) {
-            lastEnabled = enabled
-            if (enabled) buildPanel() else tearDownPanel()
+        if (bodyVisible != lastBodyVisible) {
+            lastBodyVisible = bodyVisible
+            if (bodyVisible) buildPanel() else tearDownPanel()
             return
         }
-        if (!enabled) return
+        if (!bodyVisible) return
         refreshLabels()
     }
 
-    override fun bodySize(): Vec2 = panel?.size ?: Vec2.ZERO
+    // Keep a stable header width while collapsed (the panel is torn down, so
+    // panel.size is gone) so the chrome still shows at full panel width.
+    override fun bodySize(): Vec2 =
+        panel?.size ?: if (collapsed) Vec2(PANEL_WIDTH, 0f) else Vec2.ZERO
 
     override fun drawDebug(renderer: Renderer) {
         // The base paints the chrome + header; the Buttons draw themselves
