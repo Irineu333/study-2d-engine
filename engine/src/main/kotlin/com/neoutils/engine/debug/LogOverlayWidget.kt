@@ -21,7 +21,7 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
 
     override val title: String = "Log"
 
-    override val slot: DockSlot = DockSlot.BOTTOM_LEFT
+    override val defaultSlot: DockSlot = DockSlot.BOTTOM_LEFT
 
     /** Display-only floor; orthogonal to `Log.config`. Set freely at runtime. */
     var minLevel: LogLevel = LogLevel.Debug

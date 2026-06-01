@@ -29,44 +29,88 @@ import com.neoutils.engine.scene.Node
  *    expanded, a hollow box (`[□]`, maximize) when collapsed.
  *
  * Positioning is the `DebugDock`'s job, not the widget's: the widget declares a
- * [slot] and reports its [bodySize]; the dock writes [dockOrigin]. Dragging the
- * header writes a [customOrigin] that overrides the slot. Subclasses never
- * hardcode a screen corner.
+ * [defaultSlot] and reports its [bodySize]; the dock writes [dockOrigin]. The
+ * runtime position is an explicit two-state model — **docked** ([currentSlot] +
+ * [orderInSlot], placed by the dock) or **floating** ([floatingPosition], a free
+ * position over any slot). Dragging resolves a drop target per frame and applies
+ * it on release: re-dock into another slot, reorder within a slot, or float in
+ * the center. Subclasses never hardcode a screen corner.
  */
 abstract class ScreenDebugWidget : Node(), DebugWidget {
 
     override var enabled: Boolean = false
 
     /**
-     * Corner/center this widget docks to. The `DebugDock` stacks every enabled
-     * widget sharing a slot, so the default is safe even when unset; widgets
-     * with a deliberate placement override it.
+     * Corner/center this widget docks to by default — the class-declared anchor
+     * and the target of a reset. Independent of [currentSlot], which the user
+     * may move; the `DebugDock` stacks every enabled widget sharing a slot, so
+     * the default is safe even when unset; widgets with a deliberate placement
+     * override it.
      */
-    open val slot: DockSlot = DockSlot.TOP_LEFT
+    open val defaultSlot: DockSlot = DockSlot.TOP_LEFT
+
+    // Lazily defaults to defaultSlot so a subclass `override val defaultSlot`
+    // (initialized after the base constructor) is respected — reading it eagerly
+    // in a field initializer would capture the base default instead.
+    private var movedSlot: DockSlot? = null
 
     /**
-     * Screen-pixel top-left assigned by the `DebugDock` each render from [slot]
-     * and [contentSize]. Used only while the panel has no drag [customOrigin];
-     * read [origin] (not this) when drawing. Defaults to the origin until the
-     * first relayout.
+     * The slot the panel is **currently** docked in. Starts at [defaultSlot];
+     * dragging the panel onto another dock band moves it here without touching
+     * [defaultSlot]. Session-only; reset restores it to [defaultSlot].
+     */
+    var currentSlot: DockSlot
+        get() = movedSlot ?: defaultSlot
+        internal set(value) { movedSlot = value }
+
+    /**
+     * Default stacking order assigned by the `DebugDock` at registration
+     * (registration order, globally increasing). The target [orderInSlot] a
+     * reset restores to.
+     */
+    internal var defaultOrder: Int = 0
+
+    /**
+     * Mutable stacking position within [currentSlot]: the dock stacks the slot's
+     * docked panels in ascending [orderInSlot] (not registration/DFS order), and
+     * a reorder drag edits it. Session-only; reset restores it to [defaultOrder].
+     */
+    var orderInSlot: Int = 0
+        internal set
+
+    /**
+     * Screen-pixel top-left assigned by the `DebugDock` each render from
+     * [currentSlot], [orderInSlot] and [contentSize]. Used only while the panel
+     * is docked (no [floatingPosition], not mid-drag); read [origin] (not this)
+     * when drawing. Defaults to the origin until the first relayout.
      */
     var dockOrigin: Vec2 = Vec2.ZERO
         internal set
 
     /**
-     * Session-only position override set by dragging the panel's header. `null`
-     * means "follow the dock slot"; once set, it wins over [dockOrigin]. Survives
-     * the widget's enable/disable toggle and `tree.resize` (re-clamped into the
-     * viewport by the dock via [reclampCustomOrigin]); never persisted to disk.
-     * Cleared by [resetPosition].
+     * Session-only free position, set only when a drag is released in the miolo
+     * (center) of the viewport — `null` means "docked, follow [currentSlot]".
+     * Wins over [dockOrigin] while set. Survives the widget's enable/disable
+     * toggle and `tree.resize` (re-clamped into the viewport by the dock via
+     * [reclampFloating]); never persisted to disk. Cleared by [resetPosition]
+     * or by re-docking.
      */
-    var customOrigin: Vec2? = null
-        private set
+    var floatingPosition: Vec2? = null
+        internal set
+
+    /** Transient drag position while a drag is in flight; follows the pointer. */
+    private var dragOrigin: Vec2? = null
+
+    /** Whether this panel is floating (a free position) rather than docked. */
+    val isFloating: Boolean get() = floatingPosition != null
+
+    /** Whether a header drag is currently in flight on this panel. */
+    val isDragging: Boolean get() = dragging
 
     /**
      * Session-only collapse state toggled by the header's `[_]` control. While
      * `true` only the header is drawn (the body is hidden and the dock re-flows
-     * the reduced height). Mirrors [customOrigin]'s lifetime: survives the
+     * the reduced height). Mirrors [floatingPosition]'s lifetime: survives the
      * enable/disable toggle and `tree.resize`, never persists to disk; cleared
      * by [resetPosition].
      */
@@ -88,10 +132,11 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     val bodyVisible: Boolean get() = enabled && !collapsed
 
     /**
-     * Screen-pixel top-left of the whole panel (header + body): the drag
-     * [customOrigin] when present, otherwise the dock-assigned [dockOrigin].
+     * Screen-pixel top-left of the whole panel (header + body): the live
+     * [dragOrigin] while dragging, else the [floatingPosition] when floating,
+     * else the dock-assigned [dockOrigin].
      */
-    val origin: Vec2 get() = customOrigin ?: dockOrigin
+    val origin: Vec2 get() = dragOrigin ?: floatingPosition ?: dockOrigin
 
     /**
      * Top-left of the body area, just below the title-bar header. Subclasses
@@ -260,54 +305,72 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     }
 
     /**
-     * Clears the drag override and expands the panel, so it flows back to its
-     * dock slot fully shown — the single "restore default layout" gesture.
+     * Restores the panel to its default layout — back to [defaultSlot] with
+     * [defaultOrder], un-floated and expanded — the single "restore default
+     * layout" gesture. Also ends any in-flight drag so the dock stops tracking
+     * it.
      */
     fun resetPosition() {
-        customOrigin = null
+        if (dragging) tree?.debug?.dock?.endDrag(this)
         dragging = false
+        dragOrigin = null
+        movedSlot = null
+        orderInSlot = defaultOrder
+        floatingPosition = null
         collapsed = false
     }
 
     /**
-     * Re-clamp the drag override into [surface], called by the `DebugDock` each
-     * relayout so a panel left off-screen by a shrunk window stays visible.
-     * No-op when there is no override or the panel currently shows nothing.
+     * Re-clamp the floating position into [surface], called by the `DebugDock`
+     * each relayout so a panel left off-screen by a shrunk window stays visible.
+     * No-op when the panel is docked or currently shows nothing.
      */
-    internal fun reclampCustomOrigin(surface: Vec2) {
-        val current = customOrigin ?: return
+    internal fun reclampFloating(surface: Vec2) {
+        val current = floatingPosition ?: return
         val size = contentSize()
         if (size.x <= 0f || size.y <= 0f) return
-        customOrigin = clampToSurface(current, size, surface)
+        floatingPosition = clampToSurface(current, size, surface)
     }
 
     /**
      * Polling drag, mirroring the engine's other debug nodes: press the title-bar
      * header to begin (capturing [grabOffset]), follow the pointer while the
-     * button is held, release to end. Before arming a drag, a press on a window
-     * control runs its action instead. While dragging, the panel owns the drag —
-     * it flags [com.neoutils.engine.input.Input.mouseDragConsumed] so gameplay
-     * pan/drag consumers stand down.
+     * button is held, release to resolve a drop target. Before arming a drag, a
+     * press on a window control runs its action instead. While dragging, the
+     * panel owns the drag — it flags
+     * [com.neoutils.engine.input.Input.mouseDragConsumed] so gameplay pan/drag
+     * consumers stand down — and the `DebugDock` is asked each frame for the live
+     * drop target (so the insertion indicator tracks the pointer). On release the
+     * dock resolves the final target: a band docks the panel into the resolved
+     * `(slot, index)`; the miolo floats it where it was dropped.
      */
     private fun updateDrag() {
         if (!enabled) {
-            dragging = false
+            stopDrag()
             return
         }
         val input = tree?.input ?: return
+        val dock = tree?.debug?.dock ?: return
         val surface = tree?.size ?: return
         val full = contentSize()
         if (full.x <= 0f || full.y <= 0f) {
-            dragging = false
+            stopDrag()
             return
         }
         val down = input.isMouseDown(MouseButton.Left)
         if (dragging) {
+            val pointer = input.pointerPosition
             if (!down) {
-                dragging = false
+                when (val drop = dock.resolveDropTarget(pointer)) {
+                    is DropTarget.Dock -> dock.dockWidget(this, drop.slot, drop.index)
+                    DropTarget.Floating ->
+                        floatingPosition = clampToSurface(pointer - grabOffset, full, surface)
+                }
+                stopDrag()
                 return
             }
-            customOrigin = clampToSurface(input.pointerPosition - grabOffset, full, surface)
+            dragOrigin = clampToSurface(pointer - grabOffset, full, surface)
+            dock.updateDropTarget(this, pointer)
             input.mouseDragConsumed = true
             return
         }
@@ -329,8 +392,17 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         if (inHeader(pointer, full)) {
             dragging = true
             grabOffset = pointer - origin
+            dragOrigin = origin
+            dock.beginDrag(this)
             input.mouseDragConsumed = true
         }
+    }
+
+    /** Ends an in-flight drag and tells the dock to stop tracking this panel. */
+    private fun stopDrag() {
+        if (dragging) tree?.debug?.dock?.endDrag(this)
+        dragging = false
+        dragOrigin = null
     }
 
     /** Mark the current press as handled so it neither drags nor reaches the picker. */

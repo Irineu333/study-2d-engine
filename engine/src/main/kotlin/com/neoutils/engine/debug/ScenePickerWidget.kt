@@ -25,7 +25,7 @@ class ScenePickerWidget : ScreenDebugWidget() {
 
     override val title: String = "Picker"
 
-    override val slot: DockSlot = DockSlot.BOTTOM_RIGHT
+    override val defaultSlot: DockSlot = DockSlot.BOTTOM_RIGHT
 
     init { name = "ScenePickerWidget" }
 

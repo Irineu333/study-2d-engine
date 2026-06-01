@@ -14,7 +14,7 @@ class FpsWidget : ScreenDebugWidget() {
 
     override val title: String = "FPS"
 
-    override val slot: DockSlot = DockSlot.TOP_LEFT
+    override val defaultSlot: DockSlot = DockSlot.TOP_LEFT
 
     private val counter: FpsCounter = FpsCounter()
 

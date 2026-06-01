@@ -339,6 +339,8 @@ class SceneTree(val root: Node) {
             for (layer in layers) {
                 traverseCanvasLayerSubtree(layer, renderer)
             }
+            // Dock overlay (insertion indicator) on top of the UI, screen pixels.
+            debug.dock.drawOverlay(renderer)
         }
         // Immediate-draw buffers are single-frame: the backing nodes flushed
         // them during the two passes above, so discard them here. Commands

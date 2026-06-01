@@ -25,7 +25,7 @@ class MomentumWidget : ScreenDebugWidget() {
 
     override val title: String = "Momentum"
 
-    override val slot: DockSlot = DockSlot.BOTTOM_LEFT
+    override val defaultSlot: DockSlot = DockSlot.BOTTOM_LEFT
 
     private val capacity: Int = 60
     private val pXSamples: FloatArray = FloatArray(capacity)

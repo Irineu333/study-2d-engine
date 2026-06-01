@@ -24,7 +24,7 @@ class DebugHud : ScreenDebugWidget() {
 
     override val title: String = "Debug HUD"
 
-    override val slot: DockSlot = DockSlot.TOP_RIGHT
+    override val defaultSlot: DockSlot = DockSlot.TOP_RIGHT
 
     private var panel: Panel? = null
     private val rows: MutableList<Row> = mutableListOf()

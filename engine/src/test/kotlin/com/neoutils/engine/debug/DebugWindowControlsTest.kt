@@ -14,13 +14,12 @@ import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Fixed-size screen widget whose body size is stable across collapse. */
 private class ControlsScreenWidget(
-    override val slot: DockSlot,
+    override val defaultSlot: DockSlot,
     private val size: Vec2,
     override val title: String = "Fixed",
 ) : ScreenDebugWidget() {
@@ -72,7 +71,7 @@ class DebugWindowControlsTest {
 
         assertFalse(widget.enabled, "close sets enabled = false")
         assertTrue(input.mouseDragConsumed, "the control press is consumed and never starts a drag")
-        assertNull(widget.customOrigin, "pressing close does not start a drag")
+        assertFalse(widget.isDragging, "pressing close does not start a drag")
     }
 
     @Test
@@ -86,7 +85,7 @@ class DebugWindowControlsTest {
         tick(tree, input)
         assertTrue(widget.collapsed, "collapse toggles the state")
         assertEquals(DebugTheme.headerHeight, widget.contentSize().y, "collapsed height is just the header")
-        assertNull(widget.customOrigin, "pressing collapse does not start a drag")
+        assertFalse(widget.isDragging, "pressing collapse does not start a drag")
 
         // A fresh press edge re-expands.
         input.pointer = center(widget.collapseRect())
@@ -173,7 +172,7 @@ class DebugWindowControlsTest {
 
         // Pressing the grip does not begin a drag.
         tick(tree, ControlsInput(pointer = center(widget.gripRect()), clicked = true, down = true))
-        assertNull(widget.customOrigin, "the grip is not part of the drag zone")
+        assertFalse(widget.isDragging, "the grip is not part of the drag zone")
         assertTrue(widget.enabled, "pressing the grip leaves the widget enabled")
         assertFalse(widget.collapsed, "pressing the grip does not collapse")
 
@@ -184,7 +183,7 @@ class DebugWindowControlsTest {
         drag.clicked = false
         drag.pointer = bareHeader + Vec2(40f, 30f)
         tick(tree, drag)
-        assertNotNull(widget.customOrigin, "the bare header still starts a drag")
+        assertTrue(widget.isDragging, "the bare header still starts a drag")
     }
 
     @Test
@@ -202,11 +201,12 @@ class DebugWindowControlsTest {
         drag.pointer = bareHeader + Vec2(50f, 0f)
         tick(tree, drag)
         assertTrue(widget.collapsed)
-        assertNotNull(widget.customOrigin)
+        assertTrue(widget.isDragging)
 
         tree.debug.resetAllPanelPositions()
         assertFalse(widget.collapsed, "reset expands the panel")
-        assertNull(widget.customOrigin, "reset clears the drag override")
+        assertFalse(widget.isDragging, "reset ends the drag")
+        assertNull(widget.floatingPosition, "reset un-floats the panel")
     }
 
     private fun countButtons(node: Node): Int {

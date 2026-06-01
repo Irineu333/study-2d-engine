@@ -26,7 +26,7 @@ class TimeControlWidget : ScreenDebugWidget() {
 
     override val title: String = "Time"
 
-    override val slot: DockSlot = DockSlot.TOP_LEFT
+    override val defaultSlot: DockSlot = DockSlot.TOP_LEFT
 
     private var panel: Panel? = null
     private var pauseButton: Button? = null

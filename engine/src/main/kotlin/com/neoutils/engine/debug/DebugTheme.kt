@@ -48,6 +48,17 @@ object DebugTheme {
     /** Inner padding between a panel's border and its content. */
     val padding: Float = 8f
 
+    /**
+     * Thickness (in screen pixels) of the top and bottom dock bands the dynamic
+     * dock maps the pointer into: a release inside a band docks the panel, a
+     * release in the central remainder (the miolo) floats it. Sized to be a
+     * comfortable drop target near each edge without swallowing the center.
+     */
+    val dockBandThickness: Float = 96f
+
+    /** Fill of the insertion indicator drawn in the target slot during a drag. */
+    val insertionIndicatorColor: Color = Color(0.4f, 0.9f, 1f, 0.95f)
+
     /** Headline text size (panel titles). */
     val titleTextSize: Float = 14f
 

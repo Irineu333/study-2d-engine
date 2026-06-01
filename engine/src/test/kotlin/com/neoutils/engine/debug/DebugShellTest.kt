@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 /** Minimal screen widget with a fixed size/slot, for exercising the dock. */
 private class FakeScreenWidget(
-    override val slot: DockSlot,
+    override val defaultSlot: DockSlot,
     private val size: Vec2,
     override val title: String = "Fake",
 ) : ScreenDebugWidget() {

@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 /** Fixed-size screen widget (no controls) for exercising the drag layer. */
 private class FixedScreenWidget(
-    override val slot: DockSlot,
+    override val defaultSlot: DockSlot,
     private val size: Vec2,
     override val title: String = "Fixed",
 ) : ScreenDebugWidget() {
@@ -79,16 +79,18 @@ class DebugDraggableTest {
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input) // press inside the grab zone begins the drag
         assertTrue(input.mouseDragConsumed, "starting a drag flags the pointer as consumed")
+        assertTrue(widget.isDragging, "pressing the header begins a drag")
 
         input.clicked = false
-        input.pointer = grabPoint + Vec2(150f, 120f)
+        input.pointer = grabPoint + Vec2(150f, 120f) // into the miolo
         tick(tree, input) // move while held
-        assertNotNull(widget.customOrigin, "the panel now carries a drag override")
         assertEquals(docked + Vec2(150f, 120f), widget.origin, "panel follows the pointer by the grab offset")
         assertTrue(input.mouseDragConsumed, "an ongoing drag keeps the consume flag set")
 
         input.down = false
-        tick(tree, input) // release ends the drag
+        tick(tree, input) // release in the miolo floats the panel
+        assertFalse(widget.isDragging, "releasing ends the drag")
+        assertNotNull(widget.floatingPosition, "released in the miolo, the panel is floating")
         // After release the per-tick flag was reset by hitTestUI and not re-set.
         assertFalse(input.mouseDragConsumed, "releasing stops consuming the drag")
     }
@@ -135,7 +137,7 @@ class DebugDraggableTest {
     }
 
     @Test
-    fun `custom position survives toggle and is re-clamped on resize`() {
+    fun `floating position survives toggle and is re-clamped on resize`() {
         val tree = startedTree(800f, 600f)
         val widget = FixedScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f))
         tree.debug.register(widget)
@@ -145,24 +147,26 @@ class DebugDraggableTest {
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input)
         input.clicked = false
-        input.pointer = grabPoint + Vec2(600f, 600f) // pushes toward bottom-right, clamped
+        // Release deep in the miolo, far bottom-right but inside the central band
+        // gap (y < surface.y - dockBandThickness), so it floats (and clamps).
+        input.pointer = Vec2(760f, 440f)
         tick(tree, input)
         input.down = false
         tick(tree, input)
-        val dragged = widget.customOrigin
-        assertNotNull(dragged)
+        val floated = widget.floatingPosition
+        assertNotNull(floated, "released in the miolo, the panel is floating")
 
-        // Toggle off then on: the override must persist.
+        // Toggle off then on: the floating position must persist.
         widget.enabled = false
         tick(tree, DragInput())
         widget.enabled = true
         tick(tree, DragInput())
-        assertEquals(dragged, widget.customOrigin, "the custom position survives a disable/enable cycle")
+        assertEquals(floated, widget.floatingPosition, "the floating position survives a disable/enable cycle")
 
-        // Shrink the surface: the override is re-clamped into the viewport.
+        // Shrink the surface: the floating position is re-clamped into the viewport.
         tree.resize(400f, 300f)
         tree.debug.dock.relayout(tree.size)
-        val clamped = widget.customOrigin
+        val clamped = widget.floatingPosition
         assertNotNull(clamped)
         assertTrue(clamped.x in 0f..200f && clamped.y in 0f..200f, "re-clamped inside the shrunk viewport: $clamped")
     }
@@ -179,12 +183,14 @@ class DebugDraggableTest {
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input)
         input.clicked = false
-        input.pointer = grabPoint + Vec2(120f, 90f)
+        input.pointer = grabPoint + Vec2(120f, 90f) // miolo
         tick(tree, input)
-        assertNotNull(widget.customOrigin)
+        input.down = false
+        tick(tree, input) // release floats it
+        assertNotNull(widget.floatingPosition)
 
         tree.debug.resetAllPanelPositions()
-        assertNull(widget.customOrigin, "reset clears the override")
+        assertNull(widget.floatingPosition, "reset un-floats the panel")
         tree.debug.dock.relayout(tree.size)
         assertEquals(slotOrigin, widget.origin, "the panel is positioned by the dock again")
     }
@@ -208,13 +214,13 @@ class DebugDraggableTest {
         val input = DragInput(pointer = center, clicked = true, down = true)
         tick(tree, input) // press on the button: hitTestUI arms it, no drag begins
         assertTrue(input.mouseClickConsumed, "the button absorbs the click")
-        assertNull(tc.customOrigin, "pressing a control does not start a drag")
+        assertFalse(tc.isDragging, "pressing a control does not start a drag")
 
         input.clicked = false
         input.down = false
         tick(tree, input) // release inside emits the press
         assertEquals(!pausedBefore, tree.paused, "the pause button still toggles the tree")
-        assertNull(tc.customOrigin, "still no drag after a normal button click")
+        assertFalse(tc.isDragging, "still no drag after a normal button click")
     }
 
     @Test
