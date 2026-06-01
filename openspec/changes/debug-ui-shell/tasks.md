@@ -32,4 +32,4 @@
 - [x] 5.1 Teste: dois widgets no mesmo slot empilham sem sobrepor
 - [x] 5.2 Teste: re-fluxo no resize mantém widgets dentro do viewport
 - [x] 5.3 Teste: tema aplicado — chrome idêntica entre os painéis
-- [ ] 5.4 Validação visual manual nas demos (todos os widgets ligados juntos)
+- [x] 5.4 Validação visual manual nas demos (todos os widgets ligados juntos)
