@@ -1,6 +1,7 @@
 package com.neoutils.engine.debug
 
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Panel
@@ -45,13 +46,14 @@ class TimeControlWidget : ScreenDebugWidget() {
         refreshLabels()
     }
 
-    override fun contentSize(): Vec2 = panel?.size ?: Vec2.ZERO
+    override fun bodySize(): Vec2 = panel?.size ?: Vec2.ZERO
 
     override fun drawDebug(renderer: Renderer) {
-        // Panel + Buttons draw themselves through the scene-graph traversal;
-        // place the panel at the dock-assigned origin just before its children
-        // draw (this onDraw runs ahead of the panel child in the DFS).
-        panel?.position = origin
+        // The base paints the chrome + header; the Buttons draw themselves
+        // through the scene-graph traversal. Place the (invisible) container at
+        // the body origin just before its children draw (this onDraw runs ahead
+        // of the panel child in the DFS).
+        panel?.position = bodyOrigin
     }
 
     private fun buildPanel() {
@@ -59,8 +61,9 @@ class TimeControlWidget : ScreenDebugWidget() {
         val newPanel = Panel().apply {
             name = "TimeControlPanel"
             size = Vec2(PANEL_WIDTH, PANEL_HEADER + ROW_HEIGHT * 3 + ROW_GAP)
-            color = DebugTheme.panelBackground
-            border = DebugTheme.border
+            // Invisible container: the base paints the shared chrome behind it.
+            color = TRANSPARENT
+            border = null
         }
         addChild(newPanel)
         panel = newPanel
@@ -97,7 +100,7 @@ class TimeControlWidget : ScreenDebugWidget() {
         plus.pressed.connect { tree?.let { it.timeScale = stepSpeed(it.timeScale, up = true) } }
         newPanel.addChild(plus)
 
-        panel?.position = origin
+        panel?.position = bodyOrigin
     }
 
     private fun rowButton(buttonName: String, index: Int, label: String): Button =
@@ -172,6 +175,7 @@ class TimeControlWidget : ScreenDebugWidget() {
             return best
         }
 
+        private val TRANSPARENT: Color = Color(0f, 0f, 0f, 0f)
         private const val PANEL_WIDTH: Float = 140f
         private const val STEPPER_WIDTH: Float = 28f
         private const val PANEL_HEADER: Float = 6f

@@ -62,7 +62,7 @@ class MomentumWidget : ScreenDebugWidget() {
         if (size < capacity) size++
     }
 
-    override fun contentSize(): Vec2 {
+    override fun bodySize(): Vec2 {
         if (size == 0) return Vec2.ZERO
         val pad = DebugTheme.padding
         return Vec2(pad * 2f + SPARK_COLUMN + SPARK_WIDTH, pad * 2f + LINE_HEIGHT * 3f)
@@ -72,10 +72,9 @@ class MomentumWidget : ScreenDebugWidget() {
         if (size == 0) return
         val pad = DebugTheme.padding
         val textSize = DebugTheme.bodyTextSize
-        val origin = origin
-        drawPanelChrome(renderer, origin, contentSize())
-        val originX = origin.x + pad
-        val baseY = origin.y + pad
+        val body = bodyOrigin
+        val originX = body.x + pad
+        val baseY = body.y + pad
         val pNowX = lastSample(pXSamples)
         val pNowY = lastSample(pYSamples)
         val lNow = lastSample(lSamples)

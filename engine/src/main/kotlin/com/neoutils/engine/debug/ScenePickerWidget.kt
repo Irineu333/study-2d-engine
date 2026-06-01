@@ -72,7 +72,7 @@ class ScenePickerWidget : ScreenDebugWidget() {
         }
     }
 
-    override fun contentSize(): Vec2 {
+    override fun bodySize(): Vec2 {
         val node = selected
         val measurer = tree?.textMeasurer
         val surface = tree?.size
@@ -87,10 +87,9 @@ class ScenePickerWidget : ScreenDebugWidget() {
 
     override fun drawDebug(renderer: Renderer) {
         val current = layout ?: return
-        val origin = origin
-        drawPanelChrome(renderer, origin, current.size)
-        val x = origin.x + DebugTheme.padding
-        var y = origin.y + DebugTheme.padding
+        val body = bodyOrigin
+        val x = body.x + DebugTheme.padding
+        var y = body.y + DebugTheme.padding
         for (row in current.rows) {
             row.draw(renderer, x, y)
             y += row.height
@@ -104,7 +103,8 @@ class ScenePickerWidget : ScreenDebugWidget() {
      */
     private fun computeLayout(node: Node, measurer: TextMeasurer, surface: Vec2): PanelLayout {
         val rows = buildRows(node)
-        val maxHeight = surface.y - DebugTheme.margin * 2f
+        // Leave room for the title-bar header drawn above the body.
+        val maxHeight = surface.y - DebugTheme.margin * 2f - DebugTheme.headerHeight
         val shown = mutableListOf<Row>()
         var contentHeight = DebugTheme.padding * 2f
         var hidden = 0

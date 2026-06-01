@@ -24,6 +24,15 @@ object DebugTheme {
     /** Outline thickness carried by the panel [border]. */
     val panelBorderWidth: Float = 1f
 
+    /**
+     * Fill behind a panel's title bar — the drag handle. A touch lighter than
+     * [panelBackground] so the grabbable header reads as distinct from the body.
+     */
+    val headerBackground: Color = Color(0.18f, 0.19f, 0.24f, 0.95f)
+
+    /** Height of the panel title bar / drag handle, in screen pixels. */
+    val headerHeight: Float = 20f
+
     /** Outer inset between a docked panel and the screen edge. */
     val margin: Float = 12f
 

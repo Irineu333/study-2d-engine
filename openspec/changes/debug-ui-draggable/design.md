@@ -67,10 +67,14 @@ arquivo/escopo de persistência — isso é uma Fase 3 deliberadamente separada.
 
 - **[Pega vs. clique de conteúdo]** painéis com botões (Time HUD) precisam
   distinguir "arrastar a barra" de "clicar um botão". Mitigação (implementada):
-  a zona de pega é o retângulo do painel **menos** os `Button` interativos
-  descendentes — pressionar a chrome inicia o arrasto, pressionar um controle
-  roteia o clique normalmente. Funciona para todo painel sem reservar uma
-  barra de título dedicada.
+  cada painel ganhou uma **barra de título** (`DebugTheme.headerHeight`, com o
+  `title` do widget sobre `headerBackground`) desenhada pela chrome central no
+  `ScreenDebugWidget`; a zona de pega é exatamente essa barra. O corpo abaixo
+  (linhas do HUD, steppers do Time, readouts) continua roteando clique normal.
+  A chrome (fundo + header + borda) virou responsabilidade da base: widgets
+  imediatos desenham só o corpo a partir de `bodyOrigin`; os baseados em
+  `Panel` (HUD, Time) tornam o `Panel` um container invisível posicionado em
+  `bodyOrigin`.
 - **[Consumo de drag retroativo]** gameplay existente que faz pan/arraste não
   conhece o flag novo. Mitigação: default não-consumido; varrer os jogos
   shipped (pool8 "puxar e soltar") e adotar o flag onde fizer sentido.

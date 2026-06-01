@@ -59,7 +59,7 @@ class ProfilerWidget : ScreenDebugWidget() {
         if (size < capacity) size++
     }
 
-    override fun contentSize(): Vec2 {
+    override fun bodySize(): Vec2 {
         if (size == 0) return Vec2.ZERO
         return Vec2(WIDTH, DebugTheme.padding * 2f + LINE_HEIGHT * ROW_COUNT)
     }
@@ -74,10 +74,9 @@ class ProfilerWidget : ScreenDebugWidget() {
         val other = (total - hitTest - physics - process - render).coerceAtLeast(0f)
 
         val textSize = DebugTheme.bodyTextSize
-        val origin = origin
-        drawPanelChrome(renderer, origin, contentSize())
-        val x = origin.x + DebugTheme.padding
-        var y = origin.y + DebugTheme.padding
+        val body = bodyOrigin
+        val x = body.x + DebugTheme.padding
+        var y = body.y + DebugTheme.padding
         row(renderer, "hitTest", hitTest, total, x, y, textSize); y += LINE_HEIGHT
         row(renderer, "physics ($lastSteps)", physics, total, x, y, textSize); y += LINE_HEIGHT
         row(renderer, "process", process, total, x, y, textSize); y += LINE_HEIGHT

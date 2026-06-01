@@ -21,8 +21,9 @@
 - [x] 2.3 Setar o flag de drag-consumido enquanto arrastando
 - [x] 2.4 Distinguir pega-de-arrasto de clique-de-conteúdo (botões do Time HUD
   continuam clicáveis)
-  > Zona de pega = retângulo do painel **menos** os `Button` interativos
-  > descendentes: a chrome arrasta, os controles roteiam o clique normalmente.
+  > Cada painel ganhou uma barra de título (`DebugTheme.headerHeight`) desenhada
+  > pela chrome central na base; a zona de pega é o header. O corpo (incl. os
+  > botões, abaixo do header) roteia clique normalmente.
 
 ## 3. Override de posição sobre o slot
 - [x] 3.1 Painel guarda override de posição custom (default: ausente → segue slot)

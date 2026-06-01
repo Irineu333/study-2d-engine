@@ -4,25 +4,23 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Renderer
-import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Node
 
 /**
  * Base for debug widgets that render in screen pixels (no `Camera2D` view
  * transform). Lives under the `ScreenDebugCanvas` (`CanvasLayer`) child of
- * the auto-inserted `DebugLayer`. The final `onDraw` gates `drawDebug` on
- * [enabled], so subclasses focus on the visualization without re-checking
- * the flag.
+ * the auto-inserted `DebugLayer`.
  *
- * Positioning is the `DebugDock`'s job, not the widget's: the widget declares
- * a [slot], reports the size it occupies via [contentSize], and draws from
- * [origin] (the dock-assigned [dockOrigin], or the drag [customOrigin] when the
- * panel has been moved). Subclasses never hardcode a screen corner.
+ * The base owns the shared panel **chrome**: when [enabled] and the widget has
+ * a non-empty [bodySize], `onDraw` paints the background, a title-bar header
+ * (the [title] text on [DebugTheme.headerBackground]) and the border, then calls
+ * [drawDebug] so the subclass only draws its body — from [bodyOrigin], just
+ * below the header.
  *
- * The base also makes every screen panel **draggable**: pressing the panel's
- * chrome (everything but its interactive `Button` controls) starts a drag that
- * follows the pointer until released, writing a session-only [customOrigin] that
- * overrides the dock slot (see [updateDrag]).
+ * Positioning is the `DebugDock`'s job, not the widget's: the widget declares a
+ * [slot] and reports its [bodySize]; the dock writes [dockOrigin]. Dragging the
+ * header writes a [customOrigin] that overrides the slot. Subclasses never
+ * hardcode a screen corner.
  */
 abstract class ScreenDebugWidget : Node(), DebugWidget {
 
@@ -45,9 +43,9 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         internal set
 
     /**
-     * Session-only position override set by dragging the panel. `null` means
-     * "follow the dock slot"; once set, it wins over [dockOrigin]. Survives the
-     * widget's enable/disable toggle and `tree.resize` (re-clamped into the
+     * Session-only position override set by dragging the panel's header. `null`
+     * means "follow the dock slot"; once set, it wins over [dockOrigin]. Survives
+     * the widget's enable/disable toggle and `tree.resize` (re-clamped into the
      * viewport by the dock via [reclampCustomOrigin]); never persisted to disk.
      * Cleared by [resetPosition].
      */
@@ -55,25 +53,63 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         private set
 
     /**
-     * Screen-pixel top-left the widget actually draws from: the drag
+     * Screen-pixel top-left of the whole panel (header + body): the drag
      * [customOrigin] when present, otherwise the dock-assigned [dockOrigin].
-     * Subclasses draw from this, not from [dockOrigin].
      */
     val origin: Vec2 get() = customOrigin ?: dockOrigin
 
     /**
-     * Size in screen pixels the widget currently occupies, measured from its
-     * content; `(0, 0)` when there is nothing to show. The dock stacks and
-     * aligns widgets by this and skips zero-size ones. Widgets of variable
-     * height recompute it from current state, so the dock re-flows as they grow.
+     * Top-left of the body area, just below the title-bar header. Subclasses
+     * draw their content from here.
      */
-    open fun contentSize(): Vec2 = Vec2.ZERO
+    val bodyOrigin: Vec2 get() = origin + Vec2(0f, DebugTheme.headerHeight)
+
+    /**
+     * Size in screen pixels of the widget's **body** (excluding the header);
+     * `(0, 0)` when there is nothing to show. Widgets of variable height
+     * recompute it from current state, so the dock re-flows as they grow.
+     */
+    open fun bodySize(): Vec2 = Vec2.ZERO
+
+    /**
+     * Full panel size (header + body) the `DebugDock` stacks by. `(0, 0)` when
+     * the body is empty, so the dock skips the panel and no header is drawn.
+     */
+    fun contentSize(): Vec2 {
+        val body = bodySize()
+        if (body.x <= 0f || body.y <= 0f) return Vec2.ZERO
+        return Vec2(body.x, DebugTheme.headerHeight + body.y)
+    }
 
     private var dragging: Boolean = false
     private var grabOffset: Vec2 = Vec2.ZERO
 
     final override fun onDraw(renderer: Renderer) {
-        if (enabled) drawDebug(renderer)
+        if (!enabled) return
+        val full = contentSize()
+        if (full.x > 0f && full.y > 0f) drawChrome(renderer, full)
+        drawDebug(renderer)
+    }
+
+    /** Background + title-bar header + border shared by every screen panel. */
+    private fun drawChrome(renderer: Renderer, full: Vec2) {
+        val o = origin
+        renderer.drawRect(Rect(o, full), DebugTheme.panelBackground, filled = true)
+        renderer.drawRect(
+            Rect(o, Vec2(full.x, DebugTheme.headerHeight)),
+            DebugTheme.headerBackground,
+            filled = true,
+        )
+        renderer.drawText(
+            text = title,
+            position = Vec2(
+                o.x + DebugTheme.padding,
+                o.y + (DebugTheme.headerHeight - DebugTheme.titleTextSize) / 2f,
+            ),
+            size = DebugTheme.titleTextSize,
+            color = DebugTheme.textColor,
+        )
+        renderer.drawRect(Rect(o, full), DebugTheme.panelBorderColor, filled = false)
     }
 
     override fun onProcess(dt: Float) {
@@ -100,8 +136,8 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     }
 
     /**
-     * Polling drag, mirroring the engine's other debug nodes: press the panel's
-     * grab zone to begin (capturing [grabOffset]), follow the pointer while the
+     * Polling drag, mirroring the engine's other debug nodes: press the title-bar
+     * header to begin (capturing [grabOffset]), follow the pointer while the
      * button is held, release to end. While dragging, the panel owns the drag —
      * it flags [com.neoutils.engine.input.Input.mouseDragConsumed] so gameplay
      * pan/drag consumers stand down.
@@ -113,8 +149,8 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         }
         val input = tree?.input ?: return
         val surface = tree?.size ?: return
-        val size = contentSize()
-        if (size.x <= 0f || size.y <= 0f) {
+        val full = contentSize()
+        if (full.x <= 0f || full.y <= 0f) {
             dragging = false
             return
         }
@@ -124,12 +160,12 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
                 dragging = false
                 return
             }
-            customOrigin = clampToSurface(input.pointerPosition - grabOffset, size, surface)
+            customOrigin = clampToSurface(input.pointerPosition - grabOffset, full, surface)
             input.mouseDragConsumed = true
             return
         }
-        // Begin only on the press edge inside the grab zone.
-        if (down && input.wasMouseClickedRaw(MouseButton.Left) && inGrabZone(input.pointerPosition, size)) {
+        // Begin only on the press edge inside the header (the drag handle).
+        if (down && input.wasMouseClickedRaw(MouseButton.Left) && inHeader(input.pointerPosition, full)) {
             dragging = true
             grabOffset = input.pointerPosition - origin
             input.mouseDragConsumed = true
@@ -137,23 +173,11 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     }
 
     /**
-     * The grab zone is the panel rect minus the rects of its interactive
-     * `Button` descendants: pressing empty chrome starts a drag, while pressing
-     * a control (HUD rows, time steppers) routes the click to that control as
-     * usual — so panels with buttons stay both draggable and clickable.
+     * The drag handle is the title-bar header strip: pressing it starts a drag,
+     * while the body below (rows, steppers, readouts) keeps routing clicks.
      */
-    private fun inGrabZone(pointer: Vec2, size: Vec2): Boolean {
-        if (!Rect(origin, size).contains(pointer)) return false
-        return !overInteractiveChild(this, pointer)
-    }
-
-    private fun overInteractiveChild(node: Node, pointer: Vec2): Boolean {
-        for (child in node.children) {
-            if (child is Button && !child.disabled && child.screenRect().contains(pointer)) return true
-            if (overInteractiveChild(child, pointer)) return true
-        }
-        return false
-    }
+    private fun inHeader(pointer: Vec2, full: Vec2): Boolean =
+        Rect(origin, Vec2(full.x, DebugTheme.headerHeight)).contains(pointer)
 
     private fun clampToSurface(pos: Vec2, size: Vec2, surface: Vec2): Vec2 {
         val maxX = (surface.x - size.x).coerceAtLeast(0f)

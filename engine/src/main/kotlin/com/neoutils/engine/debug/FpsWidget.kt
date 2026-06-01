@@ -1,6 +1,5 @@
 package com.neoutils.engine.debug
 
-import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Renderer
 
@@ -9,7 +8,7 @@ import com.neoutils.engine.render.Renderer
  * `System.nanoTime()` each `onProcess` call — no host involvement, no
  * shared state. Defaults to `enabled = false`; user enables via the HUD.
  *
- * Draws a `DebugTheme` panel at the `DebugDock`-assigned `dockOrigin`.
+ * Draws the `fps NN` readout in the panel body; the base paints the chrome.
  */
 class FpsWidget : ScreenDebugWidget() {
 
@@ -26,19 +25,17 @@ class FpsWidget : ScreenDebugWidget() {
         if (enabled) counter.record(System.nanoTime())
     }
 
-    override fun contentSize(): Vec2 = Vec2(
+    override fun bodySize(): Vec2 = Vec2(
         WIDTH,
-        DebugTheme.padding * 2f + DebugTheme.titleTextSize,
+        DebugTheme.padding * 2f + DebugTheme.bodyTextSize,
     )
 
     override fun drawDebug(renderer: Renderer) {
-        val size = contentSize()
-        val origin = origin
-        drawPanelChrome(renderer, origin, size)
+        val body = bodyOrigin
         renderer.drawText(
             text = "fps ${counter.current.toInt()}",
-            position = Vec2(origin.x + DebugTheme.padding, origin.y + DebugTheme.padding),
-            size = DebugTheme.titleTextSize,
+            position = Vec2(body.x + DebugTheme.padding, body.y + DebugTheme.padding),
+            size = DebugTheme.bodyTextSize,
             color = DebugTheme.textColor,
         )
     }
@@ -46,11 +43,4 @@ class FpsWidget : ScreenDebugWidget() {
     companion object {
         private const val WIDTH: Float = 88f
     }
-}
-
-/** Draws the shared `DebugTheme` panel background + border at [origin]/[size]. */
-internal fun drawPanelChrome(renderer: Renderer, origin: Vec2, size: Vec2) {
-    val rect = Rect(origin, size)
-    renderer.drawRect(rect, DebugTheme.panelBackground, filled = true)
-    renderer.drawRect(rect, DebugTheme.panelBorderColor, filled = false)
 }

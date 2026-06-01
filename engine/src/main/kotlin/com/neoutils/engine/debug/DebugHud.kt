@@ -1,6 +1,7 @@
 package com.neoutils.engine.debug
 
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Panel
@@ -42,13 +43,14 @@ class DebugHud : ScreenDebugWidget() {
         refreshLabels()
     }
 
-    override fun contentSize(): Vec2 = panel?.size ?: Vec2.ZERO
+    override fun bodySize(): Vec2 = panel?.size ?: Vec2.ZERO
 
     override fun drawDebug(renderer: Renderer) {
-        // The Panel + Buttons draw themselves via the scene-graph traversal.
-        // Place the panel at the dock-assigned origin just before its children
-        // draw (this onDraw runs ahead of the panel child in the DFS).
-        panel?.position = origin
+        // The base paints the chrome + header; the Buttons draw themselves via
+        // the scene-graph traversal. Place the (invisible) container at the body
+        // origin just before its children draw (this onDraw runs ahead of the
+        // panel child in the DFS).
+        panel?.position = bodyOrigin
     }
 
     private fun buildPanel() {
@@ -57,8 +59,9 @@ class DebugHud : ScreenDebugWidget() {
         val newPanel = Panel().apply {
             name = "DebugHudPanel"
             size = Vec2(PANEL_WIDTH, PANEL_HEADER + ROW_HEIGHT * candidates.size + ROW_GAP)
-            color = DebugTheme.panelBackground
-            border = DebugTheme.border
+            // Invisible container: the base paints the shared chrome behind it.
+            color = TRANSPARENT
+            border = null
         }
         addChild(newPanel)
         panel = newPanel
@@ -75,7 +78,7 @@ class DebugHud : ScreenDebugWidget() {
             newPanel.addChild(btn)
             rows += Row(widget, btn)
         }
-        panel?.position = origin
+        panel?.position = bodyOrigin
     }
 
     private fun tearDownPanel() {
@@ -98,6 +101,7 @@ class DebugHud : ScreenDebugWidget() {
     private data class Row(val widget: DebugWidget, val button: Button)
 
     companion object {
+        private val TRANSPARENT: Color = Color(0f, 0f, 0f, 0f)
         private const val PANEL_WIDTH: Float = 200f
         private const val PANEL_HEADER: Float = 6f
         private const val ROW_HEIGHT: Float = 24f

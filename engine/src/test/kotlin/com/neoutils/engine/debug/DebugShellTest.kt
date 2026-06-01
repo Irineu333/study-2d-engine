@@ -16,7 +16,7 @@ private class FakeScreenWidget(
     override val title: String = "Fake",
 ) : ScreenDebugWidget() {
     init { enabled = true }
-    override fun contentSize(): Vec2 = size
+    override fun bodySize(): Vec2 = size
     override fun drawDebug(renderer: Renderer) {}
 }
 

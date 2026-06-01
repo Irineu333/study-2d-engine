@@ -78,7 +78,7 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
         return snapshot.filter { it.level.ordinal >= minLevel.ordinal }
     }
 
-    override fun contentSize(): Vec2 {
+    override fun bodySize(): Vec2 {
         lastVisible = snapshotVisible()
         if (lastVisible.isEmpty()) return Vec2.ZERO
         return Vec2(WIDTH, DebugTheme.padding * 2f + lastVisible.size * LINE_HEIGHT)
@@ -88,17 +88,15 @@ class LogOverlayWidget : ScreenDebugWidget(), LogSink {
         val visible = lastVisible
         if (visible.isEmpty()) return
 
-        val origin = origin
-        drawPanelChrome(renderer, origin, Vec2(WIDTH, DebugTheme.padding * 2f + visible.size * LINE_HEIGHT))
-
+        val body = bodyOrigin
         // Oldest visible line on top, newest at the base; drawn newest-first so
         // overlapping (none here) and recorded order stay newest-first.
-        val top = origin.y + DebugTheme.padding
+        val top = body.y + DebugTheme.padding
         for ((rowFromBottom, entry) in visible.asReversed().withIndex()) {
             val index = visible.size - 1 - rowFromBottom
             renderer.drawText(
                 text = "[${entry.tag}] ${entry.message}",
-                position = Vec2(origin.x + DebugTheme.padding, top + index * LINE_HEIGHT),
+                position = Vec2(body.x + DebugTheme.padding, top + index * LINE_HEIGHT),
                 size = TEXT_SIZE,
                 color = colorFor(entry.level),
             )

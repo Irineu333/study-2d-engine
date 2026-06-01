@@ -45,7 +45,10 @@ class LogOverlayWidgetTest {
     private fun overlayTexts(tree: SceneTree): List<RecordedEvent.Text> {
         val recorder = RecordingRenderer()
         tree.render(recorder)
+        // Exclude the panel title-bar text drawn by the shared chrome; these
+        // tests assert on the log lines, which are tagged "[...]".
         return recorder.events.filterIsInstance<RecordedEvent.Text>()
+            .filter { it.text.startsWith("[") }
     }
 
     @Test

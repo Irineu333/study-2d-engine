@@ -39,8 +39,10 @@ class BuiltinWidgetsTest {
         tree.process(0.016f)
         val recorder = RecordingRenderer()
         tree.render(recorder)
-        val text = recorder.events.filterIsInstance<RecordedEvent.Text>().single()
-        assertTrue(text.text.startsWith("fps "), "got '${text.text}'")
+        // Texts: the panel title-bar ("FPS") plus the body readout.
+        val body = recorder.events.filterIsInstance<RecordedEvent.Text>()
+            .single { it.text.startsWith("fps ") }
+        assertTrue(body.text.startsWith("fps "), "got '${body.text}'")
     }
 
     @Test
@@ -121,9 +123,11 @@ class BuiltinWidgetsTest {
         tree.physicsProcess(0.016f)
         val recorder = RecordingRenderer()
         tree.render(recorder)
-        // Three readout lines (Σp, ΣL, ΣKE) when samples exist.
-        val textCount = recorder.events.count { it is RecordedEvent.Text }
-        assertEquals(3, textCount)
+        // Three readout lines (Σp, ΣL, ΣKE) when samples exist, plus the
+        // title-bar text drawn by the shared panel chrome.
+        val readouts = recorder.events.filterIsInstance<RecordedEvent.Text>()
+            .count { it.text.startsWith("Σ") }
+        assertEquals(3, readouts)
     }
 
     @Test

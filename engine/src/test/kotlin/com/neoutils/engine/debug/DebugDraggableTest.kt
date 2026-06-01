@@ -23,7 +23,7 @@ private class FixedScreenWidget(
     override val title: String = "Fixed",
 ) : ScreenDebugWidget() {
     init { enabled = true }
-    override fun contentSize(): Vec2 = size
+    override fun bodySize(): Vec2 = size
     override fun drawDebug(renderer: Renderer) {}
 }
 
