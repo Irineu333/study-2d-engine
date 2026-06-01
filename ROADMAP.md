@@ -11,6 +11,7 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | `debug-time-controls` | `timeScale`/`paused`/`requestStep` first-class na `SceneTree`; `GameLoop.tick` escala o `gameplayDt` e trata pause como `dt=0` (mantendo `process`/`hitTestUI`/`render` vivos p/ o HUD operar pausado). `TimeControlWidget` + atalhos vivos sob pause. Default preserva o tick. |
 | `debug-profiler` | `FrameProfile` por-tree com ms por fase do tick (hitTest/physics/process/render/total) + contagem de steps; `GameLoop.tick` instrumenta via `nanoTime` quando habilitado (overhead zero off). `ProfilerWidget` com média móvel. Compõe com `debug-time-controls` no mesmo `tick`. |
 | `debug-scene-inspector` | `SceneInspectorWidget` (remote scene tree): lista a hierarquia viva, seleção por clique self-contained, painel das `@Inspect` + transform world do selecionado. Reflexão só do selecionado por frame; helper público reusando o padrão do `SceneLoader`. Read-only no MVP. |
+| `debug-ui-shell` | Mata sobreposição + inconsistência da UI de debug: `DebugTheme` (chrome única — fundo/borda/margens/escala de texto, absorve `DebugColors`) + `DebugDock`/`DockSlot` (layout por canto, empilhamento vertical, re-fluxo no resize) sobre `ScreenDebugWidget` ("widget reporta tamanho, dock dá o origin"); migra os 5 widgets de render imediato para `Panel`+`Label` temados. Sem input novo. |
 
 ## Planned
 
