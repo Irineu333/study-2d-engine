@@ -48,16 +48,25 @@ o deixa `FLOATING`.
 
 ### Requirement: Resolução de drop target durante o arrasto
 Enquanto um painel é arrastado, o subsistema SHALL computar a cada frame um drop
-target a partir da posição do ponteiro: ou um par `(slot, índice de inserção)` quando
-o ponteiro está sobre uma faixa de dock, ou nenhum (flutuar) quando está no miolo. O
-índice de inserção dentro do slot SHALL ser derivado comparando a posição do ponteiro
-com os painéis já empilhados naquele slot. O painel sendo arrastado SHALL ser excluído
-do cálculo de empilhamento do seu slot enquanto o arrasto dura, para não reservar
-espaço para si mesmo.
+target a partir do **retângulo da janela arrastada** (não apenas da posição do
+ponteiro/header): ou um par `(slot, índice de inserção)` quando uma borda da janela
+alcança uma faixa de dock, ou nenhum (flutuar) quando a janela inteira está contida
+no miolo. O magnetismo SHALL usar a borda superior da janela para a faixa de topo e
+a inferior para a faixa de base — empurrar a janela contra uma borda a encaixa mesmo
+com o ponteiro bem dentro do viewport; quando ambas as bordas alcançam faixas, a de
+maior penetração vence. O terço do slot SHALL ser escolhido pelo centro horizontal da
+janela. O índice de inserção dentro do slot SHALL ser derivado comparando a borda de
+ataque da janela (topo para slots de topo, base para slots de base) com os painéis já
+empilhados naquele slot. O painel sendo arrastado SHALL ser excluído do cálculo de
+empilhamento do seu slot enquanto o arrasto dura, para não reservar espaço para si mesmo.
 
-#### Scenario: Drop target acompanha o ponteiro
-- **WHEN** o ponteiro se move de uma faixa de borda para o miolo durante o arrasto
+#### Scenario: Drop target acompanha a janela
+- **WHEN** a janela arrastada deixa de tocar qualquer faixa de borda e fica contida no miolo
 - **THEN** o drop target deixa de ser um `(slot, índice)` e passa a indicar flutuar
+
+#### Scenario: Magnetismo considera a janela inteira, não o header
+- **WHEN** a borda inferior da janela alcança a faixa de base enquanto o header (e o ponteiro) seguem no miolo
+- **THEN** o drop target é `(slot de base, índice)` — a janela docka pela borda, não pelo header
 
 #### Scenario: Painel arrastado não reserva espaço para si
 - **WHEN** um painel é arrastado dentro do próprio slot de origem

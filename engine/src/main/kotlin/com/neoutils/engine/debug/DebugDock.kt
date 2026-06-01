@@ -136,8 +136,8 @@ class DebugDock {
         dropTarget = DropTarget.Floating
     }
 
-    internal fun updateDropTarget(widget: ScreenDebugWidget, pointer: Vec2) {
-        if (dragging === widget) dropTarget = resolveDropTarget(pointer)
+    internal fun updateDropTarget(widget: ScreenDebugWidget, panel: Rect) {
+        if (dragging === widget) dropTarget = resolveDropTarget(panel)
     }
 
     internal fun endDrag(widget: ScreenDebugWidget) {
@@ -148,28 +148,42 @@ class DebugDock {
     }
 
     /**
-     * Maps [pointer] to a [DropTarget] for the current [surface]: the top and
-     * bottom [DebugTheme.dockBandThickness] bands (each split into left/center/
-     * right thirds) dock; everything between floats. Inside a band the insertion
-     * index is the count of the target slot's stacked panels on the corner side
-     * of the pointer, so the drop slips into the gap the pointer is nearest.
+     * Maps the dragged [panel]'s rectangle to a [DropTarget] for the current
+     * [surface]. Magnetism considers the **whole window**, not the grabbed
+     * header: the panel docks to the top band when its top edge enters the band,
+     * or to the bottom band when its bottom edge does (so pushing a panel against
+     * an edge snaps it even though the header — and the pointer — stays well
+     * inside the viewport). When both edges reach a band (a panel taller than the
+     * miolo) the deeper-penetrating edge wins; otherwise it floats. The slot's
+     * third is chosen by the panel's horizontal center; the insertion index is
+     * taken from the leading edge (top edge for top slots, bottom edge for bottom
+     * slots), so the drop slips into the gap that edge is nearest.
      */
-    fun resolveDropTarget(pointer: Vec2): DropTarget {
+    fun resolveDropTarget(panel: Rect): DropTarget {
         if (surface.x <= 0f || surface.y <= 0f) return DropTarget.Floating
         val band = DebugTheme.dockBandThickness
+        val cx = panel.left + panel.size.x / 2f
+        val topPen = band - panel.top                  // > 0 when the top edge sits inside the top band
+        val botPen = panel.bottom - (surface.y - band) // > 0 when the bottom edge sits inside the bottom band
         val slot = when {
-            pointer.y < band -> topThird(pointer.x)
-            pointer.y >= surface.y - band -> bottomThird(pointer.x)
+            topPen > 0f && botPen > 0f -> if (topPen >= botPen) topThird(cx) else bottomThird(cx)
+            topPen > 0f -> topThird(cx)
+            botPen > 0f -> bottomThird(cx)
             else -> return DropTarget.Floating
         }
+        val refY = if (slot.isTop) panel.top else panel.bottom
         val others = stacked(slot)
         val index = if (slot.isTop) {
-            others.count { centerY(it) < pointer.y }
+            others.count { centerY(it) < refY }
         } else {
-            others.count { centerY(it) > pointer.y }
+            others.count { centerY(it) > refY }
         }
         return DropTarget.Dock(slot, index)
     }
+
+    /** Degenerate [resolveDropTarget] over a zero-size panel at [pointer]. */
+    fun resolveDropTarget(pointer: Vec2): DropTarget =
+        resolveDropTarget(Rect(pointer, Vec2.ZERO))
 
     private fun topThird(x: Float): DockSlot = when {
         x < surface.x / 3f -> DockSlot.TOP_LEFT

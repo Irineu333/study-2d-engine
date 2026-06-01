@@ -360,17 +360,19 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         val down = input.isMouseDown(MouseButton.Left)
         if (dragging) {
             val pointer = input.pointerPosition
+            // Magnetism is resolved against the whole window rect, not the grabbed
+            // header, so an edge reaching a band docks even with the pointer inside.
+            val dragged = clampToSurface(pointer - grabOffset, full, surface)
             if (!down) {
-                when (val drop = dock.resolveDropTarget(pointer)) {
+                when (val drop = dock.resolveDropTarget(Rect(dragged, full))) {
                     is DropTarget.Dock -> dock.dockWidget(this, drop.slot, drop.index)
-                    DropTarget.Floating ->
-                        floatingPosition = clampToSurface(pointer - grabOffset, full, surface)
+                    DropTarget.Floating -> floatingPosition = dragged
                 }
                 stopDrag()
                 return
             }
-            dragOrigin = clampToSurface(pointer - grabOffset, full, surface)
-            dock.updateDropTarget(this, pointer)
+            dragOrigin = dragged
+            dock.updateDropTarget(this, Rect(dragged, full))
             input.mouseDragConsumed = true
             return
         }

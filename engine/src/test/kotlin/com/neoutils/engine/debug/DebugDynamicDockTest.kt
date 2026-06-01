@@ -3,6 +3,7 @@ package com.neoutils.engine.debug
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.input.Key
 import com.neoutils.engine.input.MouseButton
+import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.RecordedEvent
 import com.neoutils.engine.render.RecordingRenderer
@@ -101,6 +102,23 @@ class DebugDynamicDockTest {
         val seam = 800f / 3f
         assertEquals(DockSlot.TOP_LEFT, (dock.resolveDropTarget(Vec2(seam - 1f, 10f)) as DropTarget.Dock).slot)
         assertEquals(DockSlot.TOP_CENTER, (dock.resolveDropTarget(Vec2(seam + 1f, 10f)) as DropTarget.Dock).slot)
+    }
+
+    @Test
+    fun `magnetism uses the whole window - an edge reaching a band docks while the header stays in the miolo`() {
+        val tree = startedTree()
+        tree.debug.dock.relayout(tree.size)
+        val dock = tree.debug.dock
+        val band = DebugTheme.dockBandThickness // 96 on a 600-tall surface → miolo is [96, 504]
+
+        // A panel whose top edge (the grabbed header) is in the miolo but whose
+        // bottom edge dips into the bottom band: it docks bottom.
+        val bottomReaching = Rect(Vec2(50f, 470f), Vec2(200f, 120f)) // bottom = 590 > 504
+        assertEquals(DropTarget.Dock(DockSlot.BOTTOM_LEFT, 0), dock.resolveDropTarget(bottomReaching))
+
+        // A panel fully inside the miolo (no edge in any band) floats.
+        val fullyInside = Rect(Vec2(50f, 250f), Vec2(200f, 120f)) // [250, 370] ⊂ miolo
+        assertEquals(DropTarget.Floating, dock.resolveDropTarget(fullyInside))
     }
 
     @Test
@@ -238,8 +256,8 @@ class DebugDynamicDockTest {
         val floating = DockWidget(DockSlot.TOP_RIGHT, title = "Floating")
         register(tree, docked, floating)
 
-        // Float the second panel near the bottom-right corner of the miolo.
-        dragAndRelease(tree, floating, releaseAt = Vec2(760f, 440f))
+        // Float the second panel toward the right, kept inside the miolo.
+        dragAndRelease(tree, floating, releaseAt = Vec2(760f, 300f))
         assertTrue(floating.isFloating)
 
         tree.resize(400f, 300f)

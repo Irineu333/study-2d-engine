@@ -147,9 +147,9 @@ class DebugDraggableTest {
         val input = DragInput(pointer = grabPoint, clicked = true, down = true)
         tick(tree, input)
         input.clicked = false
-        // Release deep in the miolo, far bottom-right but inside the central band
-        // gap (y < surface.y - dockBandThickness), so it floats (and clamps).
-        input.pointer = Vec2(760f, 440f)
+        // Release toward the right, but with the whole window kept inside the
+        // central band gap (no edge in a band), so it floats (and clamps).
+        input.pointer = Vec2(760f, 300f)
         tick(tree, input)
         input.down = false
         tick(tree, input)
