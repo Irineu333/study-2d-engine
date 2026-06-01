@@ -4,8 +4,9 @@
 
 Tornar os painéis de debug screen-space arrastáveis pelo usuário: pegar a zona
 de pega (topo/título) reposiciona o painel via polling de `Input`, com consumo
-de arrasto para não vazar ao gameplay, override de posição sobre o `DockSlot`,
-gesto de reset ao layout default e memória de posição dentro da sessão.
+de arrasto para não vazar ao gameplay, terminação por drop target (dockar num
+slot ou flutuar no miolo), gesto de reset ao layout default e memória de posição
+dentro da sessão.
 
 ## Requirements
 
@@ -17,7 +18,10 @@ desenhado à esquerda do título; os controles de janela (colapsar/fechar) SHALL
 ser desenhados no canto direito. A zona de pega SHALL recortar os retângulos do
 grip e dos controles, de modo que pressioná-los não inicie um arrasto. O arrasto
 SHALL usar polling de `Input` (`isMouseDown` + `pointerPosition`), sem depender de
-um modelo de eventos.
+um modelo de eventos. Ao soltar, o arrasto SHALL **resolver um drop target**: se o
+ponteiro está sobre uma faixa de dock, o painel é dockado no `(slot, índice)`
+resolvido (re-dock ou reordenação); se está no miolo, o painel passa a flutuar na
+posição em que foi solto.
 
 #### Scenario: Arrastar reposiciona o painel
 - **WHEN** o usuário pressiona a zona de pega de um painel de debug e move o ponteiro
@@ -30,6 +34,14 @@ um modelo de eventos.
 #### Scenario: Clique num controle do header não é arrasto
 - **WHEN** o usuário pressiona o controle de colapsar ou de fechar no header
 - **THEN** a ação do controle é executada e nenhum arrasto é iniciado
+
+#### Scenario: Soltar sobre faixa de dock encaixa o painel
+- **WHEN** o usuário solta um painel arrastado sobre uma faixa de dock
+- **THEN** o painel fica dockado no slot e índice resolvidos, sem ficar flutuante
+
+#### Scenario: Soltar no miolo deixa o painel flutuante
+- **WHEN** o usuário solta um painel arrastado no miolo do viewport
+- **THEN** o painel passa ao estado flutuante na posição em que foi solto
 
 ### Requirement: Consumo de arrasto
 Quando um painel de debug está sendo arrastado, o `Input` SHALL sinalizar o
@@ -45,42 +57,51 @@ não arraste a câmera nem o mundo. O sinal SHALL ser resetado a cada tick.
 - **WHEN** o arrasto do painel termina
 - **THEN** no tick seguinte o sinal de arrasto-consumido está limpo
 
-### Requirement: Override de posição sobre o slot
-Um painel arrastado SHALL guardar uma posição custom que sobrepõe o origin que
-o `DebugDock` daria pelo seu `DockSlot`. Enquanto sem override, o painel SHALL
-seguir o slot. O `DebugDock` SHALL empilhar no slot apenas os painéis sem override.
+### Requirement: Estado flutuante explícito sobre o dock
+Um painel SHALL estar em exatamente um de dois estados de posição: dockado num
+slot (posicionado pelo `DebugDock`) ou flutuante (posição livre que sobrepõe
+qualquer slot). O estado flutuante SHALL ser entrado **apenas** ao soltar um arrasto
+no miolo do viewport — não é mais o resultado default de qualquer arrasto. Enquanto
+flutuante, o painel SHALL ser desenhado na sua posição livre. O `DebugDock` SHALL
+empilhar num slot apenas os painéis dockados naquele slot, ignorando os flutuantes.
 
-#### Scenario: Override vence o slot
-- **WHEN** um painel tem posição custom (foi arrastado)
-- **THEN** ele é desenhado na posição custom, não no origin do slot
+#### Scenario: Painel flutuante vence o slot
+- **WHEN** um painel está no estado flutuante
+- **THEN** ele é desenhado na sua posição livre, não no origin de nenhum slot
 
-#### Scenario: Painéis sem override continuam fluindo no slot
-- **WHEN** um painel de um slot é arrastado para fora e outro do mesmo slot não
-- **THEN** o dock re-empilha o painel sem override sem reservar espaço para o arrastado
+#### Scenario: Painéis dockados continuam fluindo no slot
+- **WHEN** um painel de um slot é arrastado para o miolo (flutua) e outro do mesmo slot não
+- **THEN** o dock re-empilha o painel dockado sem reservar espaço para o flutuante
 
-### Requirement: Reset ao slot default
+#### Scenario: Arrasto não vira flutuante por padrão
+- **WHEN** o usuário arrasta um painel e solta sobre uma faixa de dock
+- **THEN** o painel permanece dockado e não entra no estado flutuante
+
+### Requirement: Reset ao layout default
 O subsistema SHALL oferecer um gesto para devolver um painel (e uma variante para
-todos) ao layout default do dock. O gesto SHALL limpar o override de posição e
-SHALL expandir o painel (limpar o estado `collapsed`), restaurando posição e
+todos) ao layout default do dock. O gesto SHALL devolver o painel ao seu `defaultSlot`
+com a ordem default do slot, SHALL limpar o estado flutuante (caso esteja flutuante),
+e SHALL expandir o painel (limpar o estado `collapsed`), restaurando slot, ordem e
 corpo numa única ação.
 
-#### Scenario: Reset devolve o painel ao slot
-- **WHEN** o usuário aciona o reset de um painel arrastado
-- **THEN** o override é limpo e o painel volta a ser posicionado pelo dock no seu slot
+#### Scenario: Reset devolve o painel ao slot default
+- **WHEN** o usuário aciona o reset de um painel que foi movido para outro slot ou está flutuante
+- **THEN** o painel volta ao seu `defaultSlot` com a ordem default, posicionado pelo dock
 
 #### Scenario: Reset expande painéis colapsados
 - **WHEN** o usuário aciona o reset com um ou mais painéis colapsados
 - **THEN** esses painéis voltam a expandir, mostrando o corpo novamente
 
 ### Requirement: Memória de posição na sessão
-A posição custom de um painel SHALL sobreviver ao toggle on/off do widget e ao
-`tree.resize` dentro da mesma execução, sendo re-clampada para dentro do
-viewport quando este encolhe. A posição custom SHALL NOT persistir entre execuções.
+O estado de posição de um painel (slot/ordem dockados ou posição flutuante) SHALL
+sobreviver ao toggle on/off do widget e ao `tree.resize` dentro da mesma execução;
+uma posição flutuante SHALL ser re-clampada para dentro do viewport quando este
+encolhe. O estado de posição SHALL NOT persistir entre execuções.
 
 #### Scenario: Posição sobrevive ao toggle
-- **WHEN** um painel arrastado é desabilitado e reabilitado
-- **THEN** ele reaparece na posição custom, não no slot
+- **WHEN** um painel movido ou flutuante é desabilitado e reabilitado
+- **THEN** ele reaparece no mesmo slot/ordem ou posição flutuante, não no layout default
 
 #### Scenario: Re-clamp no resize
-- **WHEN** o `tree.size` encolhe a ponto de a posição custom cair fora do viewport
+- **WHEN** o `tree.size` encolhe a ponto de a posição flutuante cair fora do viewport
 - **THEN** o painel é re-clampado para dentro do viewport, permanecendo visível
