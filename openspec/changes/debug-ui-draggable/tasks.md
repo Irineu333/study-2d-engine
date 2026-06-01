@@ -48,5 +48,6 @@
 - [x] 5.3 Teste: posição custom sobrevive ao toggle e é re-clampada no resize
 - [x] 5.4 Teste: reset limpa o override e o painel volta ao slot do dock
 - [x] 5.5 Teste: botão do Time HUD continua clicável (pega só no topo)
-- [ ] 5.6 Validação visual manual: arrastar, soltar, redimensionar janela, resetar
-  > Pendente: requer rodar um jogo (ex.: `:games:demos`) e validar à mão.
+- [x] 5.6 Validação visual manual: arrastar, soltar, redimensionar janela, resetar
+  > Validado à mão: arrasto pela barra de título, soltar, redimensionar e
+  > reset funcionando; painel do picker arrastável sem sumir.
