@@ -68,6 +68,10 @@ empilhamento do seu slot enquanto o arrasto dura, para não reservar espaço par
 - **WHEN** a borda inferior da janela alcança a faixa de base enquanto o header (e o ponteiro) seguem no miolo
 - **THEN** o drop target é `(slot de base, índice)` — a janela docka pela borda, não pelo header
 
+#### Scenario: Zona magnética acompanha a pilha ocupada do slot
+- **WHEN** um slot já tem painéis empilhados que se estendem além da espessura base da faixa, e uma segunda janela é arrastada para logo abaixo dessa pilha (borda de ataque dentro da região ocupada, sem precisar invadir o primeiro painel)
+- **THEN** o drop target é `(aquele slot, índice ao fim da pilha)` — a faixa magnética do slot se estende para cobrir a pilha ocupada, nunca encolhendo abaixo da espessura base
+
 #### Scenario: Painel arrastado não reserva espaço para si
 - **WHEN** um painel é arrastado dentro do próprio slot de origem
 - **THEN** os demais painéis do slot fluem como se ele não ocupasse posição até soltar

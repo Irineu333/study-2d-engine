@@ -122,6 +122,31 @@ class DebugDynamicDockTest {
     }
 
     @Test
+    fun `the magnetic zone follows the slot's occupied stack`() {
+        val tree = startedTree()
+        val a = DockWidget(DockSlot.TOP_LEFT, title = "A")
+        val b = DockWidget(DockSlot.TOP_LEFT, title = "B")
+        register(tree, a, b)
+        val dock = tree.debug.dock
+
+        // a occupies [12, 132] — already past the base band (96). Pretend b is the
+        // dragged panel, so the stack to dock against is just a.
+        dock.beginDrag(b)
+        dock.relayout(tree.size)
+
+        // b dropped just below a: its top edge is past the fixed band but inside
+        // a's occupied zone, so it still docks (below a), not floats.
+        val belowA = Rect(Vec2(50f, 135f), Vec2(200f, 120f))
+        assertEquals(DropTarget.Dock(DockSlot.TOP_LEFT, 1), dock.resolveDropTarget(belowA))
+
+        // The same rect in an empty slot's third (no occupied stack) floats.
+        val emptyThird = Rect(Vec2(400f, 135f), Vec2(200f, 120f))
+        assertEquals(DropTarget.Floating, dock.resolveDropTarget(emptyThird))
+
+        dock.endDrag(b)
+    }
+
+    @Test
     fun `insertion index follows the pointer past a stacked panel`() {
         val tree = startedTree()
         val a = DockWidget(DockSlot.TOP_LEFT)
