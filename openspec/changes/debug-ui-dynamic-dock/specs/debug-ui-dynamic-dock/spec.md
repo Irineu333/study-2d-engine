@@ -1,0 +1,77 @@
+## ADDED Requirements
+
+### Requirement: Estado de atribuição de dock por painel
+Cada painel de debug screen-space SHALL carregar um `defaultSlot` (constante,
+definido pela classe do widget) e um estado de atribuição runtime que é **ou**
+`DOCKED(currentSlot, orderInSlot)` **ou** `FLOATING(position)`. Painéis começam
+`DOCKED` no `defaultSlot`. O `currentSlot` SHALL ser independente do `defaultSlot`:
+mover um painel para outro slot altera o `currentSlot` sem perder o `defaultSlot`,
+que permanece o alvo do reset.
+
+#### Scenario: Painel inicia dockado no slot default
+- **WHEN** um painel de debug é registrado sem nenhuma interação de arrasto
+- **THEN** ele está `DOCKED` com `currentSlot` igual ao seu `defaultSlot`
+
+#### Scenario: Mover para outro slot preserva o default
+- **WHEN** um painel com `defaultSlot = TOP_LEFT` é arrastado e dockado em `TOP_RIGHT`
+- **THEN** seu `currentSlot` passa a `TOP_RIGHT` e seu `defaultSlot` permanece `TOP_LEFT`
+
+### Requirement: Ordem mutável dentro do slot
+O `DebugDock` SHALL manter, para cada slot, uma lista ordenada dos painéis `DOCKED`
+naquele `currentSlot`, e SHALL empilhá-los nessa ordem (não na ordem de registro/DFS).
+A ordem SHALL ser editável: inserir um painel num `orderInSlot` reposiciona os demais
+do slot de forma estável.
+
+#### Scenario: Empilhamento segue a ordem do slot, não o registro
+- **WHEN** dois painéis no mesmo slot têm `orderInSlot` que contraria a ordem de registro
+- **THEN** o dock os empilha na ordem dada por `orderInSlot`
+
+#### Scenario: Reordenar dentro do slot
+- **WHEN** o usuário arrasta um painel para uma posição acima de outro painel do mesmo slot
+- **THEN** ao soltar, o painel arrastado assume o `orderInSlot` daquela posição e o outro desloca
+
+### Requirement: Regiões de tela para dock vs flutuar
+O viewport SHALL ser mapeado em zonas de dock e zona livre. As bordas superior e
+inferior SHALL formar faixas de dock de espessura definida (uma constante de tema),
+e cada faixa SHALL ser fatiada em três terços horizontais correspondentes aos slots
+`*_LEFT` / `*_CENTER` / `*_RIGHT` daquela borda. A região central restante (o miolo)
+SHALL ser zona livre. Soltar um painel numa faixa o deixa `DOCKED`; soltar no miolo
+o deixa `FLOATING`.
+
+#### Scenario: Soltar numa faixa de borda docka
+- **WHEN** o usuário solta um painel arrastado dentro da faixa superior, terço esquerdo
+- **THEN** o painel fica `DOCKED` em `TOP_LEFT`
+
+#### Scenario: Soltar no miolo flutua
+- **WHEN** o usuário solta um painel arrastado no centro do viewport, longe das faixas
+- **THEN** o painel fica `FLOATING` na posição em que foi solto
+
+### Requirement: Resolução de drop target durante o arrasto
+Enquanto um painel é arrastado, o subsistema SHALL computar a cada frame um drop
+target a partir da posição do ponteiro: ou um par `(slot, índice de inserção)` quando
+o ponteiro está sobre uma faixa de dock, ou nenhum (flutuar) quando está no miolo. O
+índice de inserção dentro do slot SHALL ser derivado comparando a posição do ponteiro
+com os painéis já empilhados naquele slot. O painel sendo arrastado SHALL ser excluído
+do cálculo de empilhamento do seu slot enquanto o arrasto dura, para não reservar
+espaço para si mesmo.
+
+#### Scenario: Drop target acompanha o ponteiro
+- **WHEN** o ponteiro se move de uma faixa de borda para o miolo durante o arrasto
+- **THEN** o drop target deixa de ser um `(slot, índice)` e passa a indicar flutuar
+
+#### Scenario: Painel arrastado não reserva espaço para si
+- **WHEN** um painel é arrastado dentro do próprio slot de origem
+- **THEN** os demais painéis do slot fluem como se ele não ocupasse posição até soltar
+
+### Requirement: Indicador de inserção visual
+Enquanto há um drop target de dock, o subsistema SHALL desenhar um indicador de
+inserção que comunica o slot alvo e a posição (índice) em que o painel cairá ao soltar.
+Quando o drop target é flutuar (miolo), o indicador de inserção SHALL NOT ser desenhado.
+
+#### Scenario: Indicador aparece sobre faixa de dock
+- **WHEN** o ponteiro está sobre uma faixa de dock entre dois painéis durante o arrasto
+- **THEN** um indicador de inserção é desenhado no gap correspondente àquela posição
+
+#### Scenario: Sem indicador no miolo
+- **WHEN** o ponteiro está no miolo (drop target = flutuar) durante o arrasto
+- **THEN** nenhum indicador de inserção é desenhado
