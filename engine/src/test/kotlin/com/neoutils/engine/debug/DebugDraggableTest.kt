@@ -3,10 +3,12 @@ package com.neoutils.engine.debug
 import com.neoutils.engine.input.Input
 import com.neoutils.engine.input.Key
 import com.neoutils.engine.input.MouseButton
+import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.RecordingRenderer
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Button
+import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
@@ -212,6 +214,32 @@ class DebugDraggableTest {
         tick(tree, input) // release inside emits the press
         assertEquals(!pausedBefore, tree.paused, "the pause button still toggles the tree")
         assertNull(tc.customOrigin, "still no drag after a normal button click")
+    }
+
+    @Test
+    fun `clicking a debug panel is consumed and does not fall through to the picker`() {
+        // A world node under the cursor that the picker would otherwise select.
+        val target = ColorRect().apply {
+            name = "Target"
+            size = Vec2(300f, 300f)
+            transform = Transform(position = Vec2.ZERO)
+        }
+        val tree = SceneTree(Node().apply { addChild(target) })
+            .also { it.resize(800f, 600f); it.start() }
+        val panel = FixedScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f))
+        tree.debug.register(panel)
+        tree.debug.scenePicker.enabled = true
+        tree.debug.dock.relayout(tree.size)
+
+        // A point on the panel that also sits over the world target behind it.
+        val overPanel = panel.origin + Vec2(20f, 20f)
+        val input = DragInput(pointer = overPanel, clicked = true, down = true)
+        tree.input = input
+        tree.hitTestUI(input)
+        tree.hitTestPick(input)
+
+        assertTrue(input.mouseClickConsumed, "the panel absorbs the click")
+        assertNull(tree.debug.scenePicker.selected, "the picker must not pick the node behind the panel")
     }
 
     private fun findButton(node: Node, name: String): Button? {

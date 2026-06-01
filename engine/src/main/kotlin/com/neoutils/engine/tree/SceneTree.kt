@@ -207,7 +207,10 @@ class SceneTree(val root: Node) {
      * (sorted by `(layer desc, dfs-order desc)`); inside each layer subtree
      * the first enabled `Button` whose `screenRect()` contains the pointer
      * absorbs the click: it arms its internal press cycle and sets
-     * `input.mouseClickConsumed = true`, after which the walk stops.
+     * `input.mouseClickConsumed = true`, after which the walk stops. If no
+     * button absorbs it, a click landing on any enabled debug screen panel is
+     * still consumed (the panels are opaque UI), so it does not re-pick via
+     * [hitTestPick] nor reach gameplay.
      */
     fun hitTestUI(input: Input) {
         input.mouseClickConsumed = false
@@ -225,6 +228,11 @@ class SceneTree(val root: Node) {
                 return
             }
         }
+        // No button absorbed it: a click anywhere on an enabled debug panel is
+        // still consumed (panels are opaque UI), so it neither re-picks via
+        // hitTestPick nor reaches gameplay — and a header-drag can start in
+        // process without the same click clearing the panel's content.
+        if (debug.isOverScreenPanel(pointer)) input.mouseClickConsumed = true
     }
 
     /**

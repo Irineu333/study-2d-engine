@@ -1,5 +1,7 @@
 package com.neoutils.engine.debug
 
+import com.neoutils.engine.math.Rect
+import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
 
@@ -158,5 +160,21 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
      */
     fun resetAllPanelPositions() {
         for (widget in _widgets) (widget as? ScreenDebugWidget)?.resetPosition()
+    }
+
+    /**
+     * Whether [pointer] (screen pixels) lands on any enabled screen panel's
+     * full rect. `SceneTree.hitTestUI` uses this to consume clicks over a debug
+     * panel — the panels are opaque UI, so a click on one must not fall through
+     * to the scene picker or gameplay (and a header-drag can begin in `process`
+     * without the same click re-picking the world).
+     */
+    internal fun isOverScreenPanel(pointer: Vec2): Boolean {
+        for (widget in _widgets) {
+            if (widget !is ScreenDebugWidget || !widget.enabled) continue
+            val size = widget.contentSize()
+            if (size.x > 0f && size.y > 0f && Rect(widget.origin, size).contains(pointer)) return true
+        }
+        return false
     }
 }
