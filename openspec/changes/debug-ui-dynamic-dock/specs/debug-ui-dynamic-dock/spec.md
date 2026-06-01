@@ -68,9 +68,22 @@ empilhamento do seu slot enquanto o arrasto dura, para não reservar espaço par
 - **WHEN** a borda inferior da janela alcança a faixa de base enquanto o header (e o ponteiro) seguem no miolo
 - **THEN** o drop target é `(slot de base, índice)` — a janela docka pela borda, não pelo header
 
-#### Scenario: Zona magnética acompanha a pilha ocupada do slot
-- **WHEN** um slot já tem painéis empilhados que se estendem além da espessura base da faixa, e uma segunda janela é arrastada para logo abaixo dessa pilha (borda de ataque dentro da região ocupada, sem precisar invadir o primeiro painel)
-- **THEN** o drop target é `(aquele slot, índice ao fim da pilha)` — a faixa magnética do slot se estende para cobrir a pilha ocupada, nunca encolhendo abaixo da espessura base
+### Requirement: Pull magnético consistente independente da ocupação
+A força do magnetismo de um slot SHALL ser independente de quantos painéis já
+estão dockados nele. Um slot vazio SHALL ter a faixa base (`dockBandThickness`)
+medida da borda; um slot ocupado SHALL estender sua zona magnética para cobrir a
+pilha ocupada **mais uma faixa inteira** de área de pouso além do fim da pilha, de
+modo que a área de captura além da pilha tenha sempre ~uma faixa de espessura — o
+segundo painel encaixa com a mesma folga que o primeiro teve, sem precisar invadir
+os painéis já presentes.
+
+#### Scenario: Captura consistente do segundo painel em diante
+- **WHEN** um slot já tem um painel cujo corpo se estende bem além da faixa base, e uma segunda janela é arrastada para perto do fim dessa pilha (a até uma faixa de distância do fim, sem invadir o primeiro painel)
+- **THEN** o drop target é `(aquele slot, índice ao fim da pilha)` — a zona de captura além da pilha é tão espessa quanto a faixa base
+
+#### Scenario: Slot vazio mantém a faixa base
+- **WHEN** o terço alvo não tem nenhum painel dockado
+- **THEN** a zona magnética é a faixa base medida da borda da tela, inalterada
 
 #### Scenario: Painel arrastado não reserva espaço para si
 - **WHEN** um painel é arrastado dentro do próprio slot de origem

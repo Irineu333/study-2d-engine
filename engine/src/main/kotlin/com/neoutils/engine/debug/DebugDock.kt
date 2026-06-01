@@ -156,12 +156,12 @@ class DebugDock {
      * inside the viewport). When both edges reach a band the deeper-penetrating
      * edge wins; otherwise it floats.
      *
-     * Each band's reach **follows the slot's occupied stack**: a top slot already
-     * filled down to some `y` extends its magnetic zone to cover that stack (plus
-     * a gutter, so the next panel docks just below it), never shrinking below the
-     * base [DebugTheme.dockBandThickness]. Without this, stacking a second panel
-     * would require dragging it up *into* the first, since the first already
-     * reaches past the fixed band.
+     * Each band's reach **follows the slot's occupied stack** so the magnetic
+     * pull feels the same no matter how many panels are already docked: an empty
+     * slot has the base [DebugTheme.dockBandThickness] band; a filled slot extends
+     * its zone to cover the stack **plus another full band** of landing area past
+     * it, so the next panel snaps the moment it nears the stack's end instead of
+     * having to be dragged up *into* the panels already there.
      *
      * The slot's third is chosen by the panel's horizontal center; the insertion
      * index is taken from the leading edge (top edge for top slots, bottom edge
@@ -170,14 +170,13 @@ class DebugDock {
     fun resolveDropTarget(panel: Rect): DropTarget {
         if (surface.x <= 0f || surface.y <= 0f) return DropTarget.Floating
         val band = DebugTheme.dockBandThickness
-        val gutter = DebugTheme.gutter
         val cx = panel.left + panel.size.x / 2f
         val topSlot = topThird(cx)
         val bottomSlot = bottomThird(cx)
-        // Reach down past the top stack / up past the bottom stack (gutter slack),
-        // clamped so the zone never falls below the base band thickness.
-        val topReach = maxOf(band, occupiedBottom(topSlot) + gutter)
-        val bottomReach = minOf(surface.y - band, occupiedTop(bottomSlot) - gutter)
+        // A band-thick landing area below the top stack / above the bottom stack;
+        // empty slots fall back to the base band measured from the edge.
+        val topReach = maxOf(band, stackBottom(topSlot) + band)
+        val bottomReach = minOf(surface.y - band, stackTop(bottomSlot) - band)
         val topPen = topReach - panel.top         // > 0 when the top edge sits inside the top zone
         val botPen = panel.bottom - bottomReach   // > 0 when the bottom edge sits inside the bottom zone
         val slot = when {
@@ -196,19 +195,13 @@ class DebugDock {
         return DropTarget.Dock(slot, index)
     }
 
-    /** Bottom edge of [slot]'s occupied stack (top margin when empty). */
-    private fun occupiedBottom(slot: DockSlot): Float {
-        val list = stacked(slot)
-        if (list.isEmpty()) return DebugTheme.margin
-        return list.maxOf { it.dockOrigin.y + it.contentSize().y }
-    }
+    /** Bottom edge of [slot]'s occupied stack; `0` (screen top) when empty. */
+    private fun stackBottom(slot: DockSlot): Float =
+        stacked(slot).maxOfOrNull { it.dockOrigin.y + it.contentSize().y } ?: 0f
 
-    /** Top edge of [slot]'s occupied stack (bottom margin when empty). */
-    private fun occupiedTop(slot: DockSlot): Float {
-        val list = stacked(slot)
-        if (list.isEmpty()) return surface.y - DebugTheme.margin
-        return list.minOf { it.dockOrigin.y }
-    }
+    /** Top edge of [slot]'s occupied stack; `surface.y` (screen bottom) when empty. */
+    private fun stackTop(slot: DockSlot): Float =
+        stacked(slot).minOfOrNull { it.dockOrigin.y } ?: surface.y
 
     /** Degenerate [resolveDropTarget] over a zero-size panel at [pointer]. */
     fun resolveDropTarget(pointer: Vec2): DropTarget =

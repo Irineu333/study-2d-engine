@@ -134,13 +134,15 @@ class DebugDynamicDockTest {
         dock.beginDrag(b)
         dock.relayout(tree.size)
 
-        // b dropped just below a: its top edge is past the fixed band but inside
-        // a's occupied zone, so it still docks (below a), not floats.
-        val belowA = Rect(Vec2(50f, 135f), Vec2(200f, 120f))
+        // b dropped well below a (a band's worth past a's bottom, far beyond the
+        // fixed 96px band): it still docks below a — the catch zone is band-thick
+        // past the stack, so the pull is as strong as it was for the first panel.
+        val belowA = Rect(Vec2(50f, 200f), Vec2(200f, 120f))
         assertEquals(DropTarget.Dock(DockSlot.TOP_LEFT, 1), dock.resolveDropTarget(belowA))
 
-        // The same rect in an empty slot's third (no occupied stack) floats.
-        val emptyThird = Rect(Vec2(400f, 135f), Vec2(200f, 120f))
+        // The same rect in an empty slot's third (no occupied stack) floats: an
+        // empty slot keeps the base band measured from the edge.
+        val emptyThird = Rect(Vec2(400f, 200f), Vec2(200f, 120f))
         assertEquals(DropTarget.Floating, dock.resolveDropTarget(emptyThird))
 
         dock.endDrag(b)
