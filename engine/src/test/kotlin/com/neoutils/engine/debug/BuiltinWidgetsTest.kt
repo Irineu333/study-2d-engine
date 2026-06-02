@@ -19,34 +19,7 @@ import kotlin.test.assertTrue
 class BuiltinWidgetsTest {
 
     @Test
-    fun `FpsWidget emits no draw calls when disabled`() {
-        val tree = SceneTree(Node())
-        tree.start()
-        tree.debug.fps.enabled = false
-        val recorder = RecordingRenderer()
-        tree.render(recorder)
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Text })
-    }
-
-    @Test
-    fun `FpsWidget enabled draws an fps text`() {
-        val tree = SceneTree(Node())
-        tree.start()
-        tree.debug.fps.enabled = true
-        // Two onProcess ticks so the FpsCounter has at least two samples and
-        // can compute a non-zero rate.
-        tree.process(0.016f)
-        tree.process(0.016f)
-        val recorder = RecordingRenderer()
-        tree.render(recorder)
-        // Texts: the panel title-bar ("FPS") plus the body readout.
-        val body = recorder.events.filterIsInstance<RecordedEvent.Text>()
-            .single { it.text.startsWith("fps ") }
-        assertTrue(body.text.startsWith("fps "), "got '${body.text}'")
-    }
-
-    @Test
-    fun `ColliderWidget draws one rect per active CollisionShape2D`() {
+    fun `ColliderWidget in AABB mode draws one rect per active CollisionShape2D`() {
         val area = Area2D().apply { name = "Trigger" }
         area.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(20f, 20f) } })
         area.transform = Transform(position = Vec2(50f, 50f))
@@ -62,7 +35,10 @@ class BuiltinWidgetsTest {
         val tree = SceneTree(root)
         tree.physicsSystem = PhysicsSystem()
         tree.start()
-        tree.debug.colliders.enabled = true
+        tree.debug.colliders.apply {
+            mode = ColliderDrawMode.AABB
+            enabled = true
+        }
 
         val recorder = RecordingRenderer()
         tree.render(recorder)
@@ -88,73 +64,6 @@ class BuiltinWidgetsTest {
         tree.render(recorder)
         val outlines = recorder.events.filterIsInstance<RecordedEvent.Rect>().filter { !it.filled }
         assertEquals(0, outlines.size)
-    }
-
-    @Test
-    fun `MomentumWidget disabled produces no draw calls`() {
-        val tree = SceneTree(Node())
-        tree.start()
-        tree.debug.momentum.enabled = false
-        // Even after physicsProcess ticks, no samples should be recorded.
-        tree.physicsProcess(0.016f)
-        tree.physicsProcess(0.016f)
-        val recorder = RecordingRenderer()
-        tree.render(recorder)
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Text })
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Line })
-    }
-
-    @Test
-    fun `MomentumWidget enabled records on physicsProcess`() {
-        val rigid = RigidBody2D().apply {
-            mass = 2f
-            linearVelocity = Vec2(3f, 0f)
-        }
-        rigid.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(10f, 10f) } })
-        val root = Node().apply { addChild(rigid) }
-        val tree = SceneTree(root).also {
-            it.resize(800f, 600f)
-            it.physicsSystem = PhysicsSystem()
-            it.start()
-        }
-        tree.debug.momentum.enabled = true
-        // Two physics ticks to populate the ring buffer.
-        tree.physicsProcess(0.016f)
-        tree.physicsProcess(0.016f)
-        val recorder = RecordingRenderer()
-        tree.render(recorder)
-        // Three readout lines (Σp, ΣL, ΣKE) when samples exist, plus the
-        // title-bar text drawn by the shared panel chrome.
-        val readouts = recorder.events.filterIsInstance<RecordedEvent.Text>()
-            .count { it.text.startsWith("Σ") }
-        assertEquals(3, readouts)
-    }
-
-    @Test
-    fun `MomentumWidget reset on enable flip clears previous samples`() {
-        val rigid = RigidBody2D().apply {
-            mass = 1f
-            linearVelocity = Vec2(5f, 0f)
-        }
-        rigid.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(10f, 10f) } })
-        val root = Node().apply { addChild(rigid) }
-        val tree = SceneTree(root).also {
-            it.resize(800f, 600f)
-            it.physicsSystem = PhysicsSystem()
-            it.start()
-        }
-        tree.debug.momentum.enabled = true
-        // Fill some samples.
-        repeat(5) { tree.physicsProcess(0.016f) }
-        // Toggle off then on — buffer should reset.
-        tree.debug.momentum.enabled = false
-        tree.debug.momentum.enabled = true
-        // No physicsProcess between flip and draw — buffer is empty.
-        val recorder = RecordingRenderer()
-        tree.render(recorder)
-        // With size == 0 the widget emits nothing.
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Text })
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Line })
     }
 }
 

@@ -2,19 +2,16 @@ package com.neoutils.engine.debug
 
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
-import com.neoutils.engine.physics.Area2D
 import com.neoutils.engine.physics.CharacterBody2D
 import com.neoutils.engine.physics.CircleShape2D
 import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.PhysicsSystem
-import com.neoutils.engine.physics.RectangleShape2D
 import com.neoutils.engine.physics.RigidBody2D
 import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.RecordedEvent
 import com.neoutils.engine.render.RecordingRenderer
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.tree.SceneTree
-import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -26,55 +23,6 @@ class PhysicsGizmosTest {
     private val eps = 1e-3f
 
     private fun near(a: Float, b: Float): Boolean = kotlin.math.abs(a - b) < eps
-
-    // --- ShapeGizmoWidget ---
-
-    @Test
-    fun `ShapeGizmoWidget draws circle as outline at world center`() {
-        val area = Area2D().apply { transform = Transform(position = Vec2(50f, 50f)) }
-        area.addChild(CollisionShape2D().apply { shape = CircleShape2D().apply { radius = 7f } })
-        val tree = SceneTree(Node().apply { addChild(area) }).also { it.start() }
-        tree.debug.shapeGizmo.enabled = true
-
-        val recorder = RecordingRenderer()
-        tree.debug.shapeGizmo.drawDebug(recorder)
-
-        val circle = recorder.events.filterIsInstance<RecordedEvent.Circle>().single()
-        assertEquals(50f, circle.center.x, eps)
-        assertEquals(50f, circle.center.y, eps)
-        assertEquals(7f, circle.radius, eps)
-        assertTrue(!circle.filled, "shape circle must be a non-filled outline")
-        // No transform bookkeeping inside the widget — the world pass owns it.
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Push || it is RecordedEvent.Pop })
-    }
-
-    @Test
-    fun `ShapeGizmoWidget draws rotated rectangle as a non-axis-aligned quad`() {
-        val body = RigidBody2D().apply { transform = Transform(position = Vec2(100f, 80f), rotation = (PI / 6).toFloat()) }
-        body.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(30f, 30f) } })
-        val tree = SceneTree(Node().apply { addChild(body) }).also { it.start() }
-        tree.debug.shapeGizmo.enabled = true
-
-        val recorder = RecordingRenderer()
-        tree.debug.shapeGizmo.drawDebug(recorder)
-
-        val lines = recorder.events.filterIsInstance<RecordedEvent.Line>()
-        assertEquals(4, lines.size, "a rectangle outlines as four edges")
-        // A rotated quad has at least one diagonal edge (endpoints differ in
-        // both x and y) — impossible for an axis-aligned worldBounds() box.
-        assertTrue(lines.any { it.from.x != it.to.x && it.from.y != it.to.y })
-    }
-
-    @Test
-    fun `ShapeGizmoWidget disabled emits no draws`() {
-        val area = Area2D().apply { transform = Transform(position = Vec2(50f, 50f)) }
-        area.addChild(CollisionShape2D().apply { shape = CircleShape2D().apply { radius = 7f } })
-        val tree = SceneTree(Node().apply { addChild(area) }).also { it.start() }
-        // shapeGizmo defaults to disabled.
-        val recorder = RecordingRenderer()
-        tree.render(recorder)
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Circle })
-    }
 
     // --- VelocityGizmoWidget ---
 
@@ -301,18 +249,15 @@ class PhysicsGizmosTest {
     // --- Built-in registration ---
 
     @Test
-    fun `the three physics gizmos are world-hosted built-ins present in the registry`() {
+    fun `the two physics gizmos are world-hosted built-ins present in the registry`() {
         val root = Node()
         val tree = SceneTree(root).also { it.start() }
         val container = (root.findChild(DebugLayer.NODE_NAME) as DebugLayer).worldContainer
 
-        assertNotNull(tree.debug.shapeGizmo)
         assertNotNull(tree.debug.velocityGizmo)
         assertNotNull(tree.debug.contactGizmo)
-        assertSame(container, tree.debug.shapeGizmo.parent)
         assertSame(container, tree.debug.velocityGizmo.parent)
         assertSame(container, tree.debug.contactGizmo.parent)
-        assertTrue(tree.debug.shapeGizmo in tree.debug.widgets)
         assertTrue(tree.debug.velocityGizmo in tree.debug.widgets)
         assertTrue(tree.debug.contactGizmo in tree.debug.widgets)
     }

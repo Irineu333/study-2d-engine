@@ -68,12 +68,26 @@ class ProfilerWidgetTest {
         tree.debug.frameProfile.totalNanos = 8_000_000L
         repeat(5) { tree.process(0.016f) } // accumulate samples
         // Disable then enable: windows must reset, so with no sample taken yet
-        // the widget draws nothing.
+        // no per-phase rows are drawn (the fps line still shows — it does not
+        // depend on the phase window).
         profiler.enabled = false
         profiler.enabled = true
         val recorder = RecordingRenderer()
         tree.render(recorder)
-        assertEquals(0, recorder.events.count { it is RecordedEvent.Text }, "no stale averages drawn")
+        val texts = recorder.events.filterIsInstance<RecordedEvent.Text>()
+        assertEquals(0, texts.count { it.text.contains(" ms") }, "no stale averages drawn")
+    }
+
+    @Test
+    fun `fps line shows independent of the phase instrumentation window`() {
+        val tree = SceneTree(Node()).also { it.resize(800f, 600f); it.start() }
+        tree.debug.profiler.enabled = true
+        // No process() tick: the per-phase moving-average window is empty.
+        val recorder = RecordingRenderer()
+        tree.render(recorder)
+        val texts = recorder.events.filterIsInstance<RecordedEvent.Text>()
+        assertTrue(texts.any { it.text.startsWith("fps ") }, "fps line drawn from the widget's own counter")
+        assertTrue(texts.none { it.text.contains(" ms") }, "no per-phase rows before the window fills")
     }
 
     @Test

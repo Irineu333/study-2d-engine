@@ -8,6 +8,7 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `game-asteroids`    | Validador final da fundação Godot-style: `:games:asteroids` (Skiko + Python) com nave `CharacterBody2D` e wireframe `Polygon2D` rotacionando em tempo real, balas `Area2D`, N asteróides kinematic simultâneos e cascade de spawn dirigido por signal handler — sem código novo em `:engine`. |
 | `game-pool8`        | Validador do impulso elástico multi-corpo + damping calibrado: `:games:pool8` (Skiko + Lua) com 16 bolas `RigidBody2D` numa mesa de 4 `StaticBody2D` + 6 caçapas `Area2D`, input "puxar e soltar", FSM de turno por quiescência e remoção dinâmica de nodes durante gameplay. |
+| `trim-debug-tools`  | Enxuga o catálogo de debug: funde `ShapeGizmoWidget` no `ColliderWidget` (modo ciclável `ColliderDrawMode { AABB, REAL, BOTH }`), embute a leitura de `fps` no `ProfilerWidget` e remove o `MomentumWidget` — o HUD cai de 12 → 8 linhas togláveis. `MomentumDiagnostics` permanece como API pública de física. |
 
 ## Planned
 

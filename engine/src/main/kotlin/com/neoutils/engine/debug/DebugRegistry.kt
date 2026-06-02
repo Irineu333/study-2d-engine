@@ -7,13 +7,17 @@ import com.neoutils.engine.tree.SceneTree
 
 /**
  * Per-`SceneTree` runtime registry of debug widgets. Holds the engine
- * built-in widgets ([fps], [colliders], [momentum], [log], [hud],
- * [timeControls], [profiler], plus the physics gizmos [shapeGizmo],
- * [velocityGizmo], [contactGizmo]) and the
+ * built-in widgets ([colliders], [log], [hud], [timeControls], [profiler],
+ * plus the physics gizmos [velocityGizmo], [contactGizmo]) and the
  * immediate-draw facade ([draw], surfaced by an internal `"Debug Draw"`
  * toggle widget) as fields for ergonomic direct access, the per-tree contact
  * buffer ([contacts]) feeding [contactGizmo], plus a flat list of every
  * registered widget (built-ins + user-registered, in registration order).
+ *
+ * fps is folded into [profiler] (its own `fps` line), the real-geometry
+ * collider drawing into [colliders] (its `ColliderDrawMode`), and the momentum
+ * overlay was removed — so there are no `fps`, `shapeGizmo`, or `momentum`
+ * fields.
  *
  * Not a `Node`, never `@Serializable`, never shared across trees —
  * `SceneTree` owns one instance via its constructor.
@@ -27,14 +31,9 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
 
     private val _widgets: MutableList<DebugWidget> = mutableListOf()
 
-    val fps: FpsWidget = FpsWidget()
     val colliders: ColliderWidget = ColliderWidget()
-    val momentum: MomentumWidget = MomentumWidget()
     val log: LogOverlayWidget = LogOverlayWidget()
     val hud: DebugHud = DebugHud()
-
-    /** Real-geometry collider gizmo (circle outline / rotated-rect quad). */
-    val shapeGizmo: ShapeGizmoWidget = ShapeGizmoWidget()
 
     /** Per-body linear velocity arrows for `RigidBody2D`/`CharacterBody2D`. */
     val velocityGizmo: VelocityGizmoWidget = VelocityGizmoWidget()
@@ -101,22 +100,19 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
 
     /**
      * Called by `DebugLayer.onEnter`. Captures the container references and,
-     * on first attach, routes the five built-ins through [register]. On
-     * re-start (stop → start) the layer keeps its children — only the
-     * container refs are refreshed.
+     * on first attach, routes the built-ins through [register]. On re-start
+     * (stop → start) the layer keeps its children — only the container refs
+     * are refreshed.
      */
     internal fun bindLayer(layer: DebugLayer) {
         worldContainer = layer.worldContainer
         screenContainer = layer.screenContainer
         if (!builtinsAttached) {
             builtinsAttached = true
-            register(fps)
             register(colliders)
-            register(momentum)
             register(log)
             register(hud)
             register(drawToggle)
-            register(shapeGizmo)
             register(velocityGizmo)
             register(contactGizmo)
             register(timeControls)

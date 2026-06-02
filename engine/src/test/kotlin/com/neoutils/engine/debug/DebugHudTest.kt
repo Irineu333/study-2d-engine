@@ -26,24 +26,21 @@ class DebugHudTest {
         tree.process(0.016f)
         tree.applyPending()
         val panel = tree.debug.hud.children.filterIsInstance<Panel>().single()
-        // Built-ins listed in `widgets` are 12; HUD excludes itself → 11 rows
-        // (FPS, Colliders, Momentum, Log, Debug Draw, Shapes, Velocity,
-        // Contacts, Time, Profiler, Picker). The SelectionGizmo is the picker's
-        // world-space arm and has no row of its own.
+        // Built-ins listed in `widgets` are 9; HUD excludes itself → 8 rows
+        // (Colliders, Log, Debug Draw, Velocity, Contacts, Time, Profiler,
+        // Picker). The SelectionGizmo is the picker's world-space arm and has
+        // no row of its own.
         val buttons = panel.children.filterIsInstance<Button>()
-        assertEquals(11, buttons.size)
+        assertEquals(8, buttons.size)
         val labels = buttons.map { it.text }
-        assertEquals("[ ] FPS", labels[0])
-        assertEquals("[ ] Colliders", labels[1])
-        assertEquals("[ ] Momentum", labels[2])
-        assertEquals("[ ] Log", labels[3])
-        assertEquals("[ ] Debug Draw", labels[4])
-        assertEquals("[ ] Shapes", labels[5])
-        assertEquals("[ ] Velocity", labels[6])
-        assertEquals("[ ] Contacts", labels[7])
-        assertEquals("[ ] Time", labels[8])
-        assertEquals("[ ] Profiler", labels[9])
-        assertEquals("[ ] Picker", labels[10])
+        assertEquals("[ ] Colliders", labels[0])
+        assertEquals("[ ] Log", labels[1])
+        assertEquals("[ ] Debug Draw", labels[2])
+        assertEquals("[ ] Velocity", labels[3])
+        assertEquals("[ ] Contacts", labels[4])
+        assertEquals("[ ] Time", labels[5])
+        assertEquals("[ ] Profiler", labels[6])
+        assertEquals("[ ] Picker", labels[7])
         assertTrue(labels.none { it.contains("Selection") })
     }
 
@@ -54,15 +51,15 @@ class DebugHudTest {
         tree.process(0.016f)
         tree.applyPending()
         val panel = tree.debug.hud.children.filterIsInstance<Panel>().single()
-        val fpsButton = panel.children.filterIsInstance<Button>().first()
-        assertEquals("[ ] FPS", fpsButton.text)
+        val collidersButton = panel.children.filterIsInstance<Button>().first()
+        assertEquals("[ ] Colliders", collidersButton.text)
         // Emit the press signal directly — equivalent to a hit-tested click.
-        fpsButton.pressed.emit(Unit)
-        assertTrue(tree.debug.fps.enabled)
+        collidersButton.pressed.emit(Unit)
+        assertTrue(tree.debug.colliders.enabled)
         // Next process refreshes the label.
         tree.process(0.016f)
         tree.applyPending()
-        assertEquals("[x] FPS", fpsButton.text)
+        assertEquals("[x] Colliders", collidersButton.text)
     }
 
     @Test

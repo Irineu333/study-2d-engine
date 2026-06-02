@@ -11,10 +11,16 @@ import java.util.Locale
  * [enabled] is the single control: it drives `GameLoop.tick`'s instrumentation
  * (the loop only measures when this is on) and gates the widget's own sampling
  * and drawing. Each enabled frame [onProcess] reads the tree's [FrameProfile]
- * into a per-phase ring buffer (~60 samples, in the spirit of `MomentumWidget`
- * / `FpsCounter`) and `drawDebug` shows the smoothed milliseconds per phase
- * with the latest frame's `physicsSteps`. Flipping `enabled` from `false` to
- * `true` resets the windows so no stale averages survive a disabled gap.
+ * into a per-phase ring buffer (~60 samples, in the spirit of `FpsCounter`)
+ * and `drawDebug` shows the smoothed milliseconds per phase with the latest
+ * frame's `physicsSteps`. Flipping `enabled` from `false` to `true` resets the
+ * windows so no stale averages survive a disabled gap.
+ *
+ * The widget also owns an [FpsCounter] sampled from `System.nanoTime()` in
+ * [onProcess], independent of the heavy `FrameProfile` instrumentation. The
+ * `fps NN` line is drawn at the top of the panel as soon as the widget is
+ * enabled — even before the first per-phase window has accumulated — so
+ * opening the profiler surfaces the frame rate immediately.
  */
 class ProfilerWidget : ScreenDebugWidget() {
 
@@ -32,6 +38,9 @@ class ProfilerWidget : ScreenDebugWidget() {
     private var head: Int = 0
     private var lastSteps: Int = 0
 
+    /** Frame-rate counter, sampled in [onProcess] independent of [FrameProfile]. */
+    private val fpsCounter: FpsCounter = FpsCounter()
+
     init { name = "ProfilerWidget" }
 
     override var enabled: Boolean = false
@@ -48,6 +57,9 @@ class ProfilerWidget : ScreenDebugWidget() {
     override fun onProcess(dt: Float) {
         super.onProcess(dt)
         if (!enabled) return
+        // Cheap nanoTime sampling — fps does not depend on the heavy
+        // phase instrumentation, so it shows the moment the panel opens.
+        fpsCounter.record(System.nanoTime())
         val profile = tree?.debug?.frameProfile ?: return
         hitTestSamples[head] = profile.hitTestNanos
         physicsSamples[head] = profile.physicsNanos
@@ -60,12 +72,26 @@ class ProfilerWidget : ScreenDebugWidget() {
     }
 
     override fun bodySize(): Vec2 {
-        if (size == 0) return Vec2.ZERO
-        return Vec2(WIDTH, DebugTheme.padding * 2f + LINE_HEIGHT * ROW_COUNT)
+        // The fps line alone keeps the panel non-empty before any phase sample
+        // accumulates, so opening the profiler shows the frame rate immediately.
+        val rows = if (size == 0) 1f else ROW_COUNT + 1f
+        return Vec2(WIDTH, DebugTheme.padding * 2f + LINE_HEIGHT * rows)
     }
 
     override fun drawDebug(renderer: Renderer) {
+        val textSize = DebugTheme.bodyTextSize
+        val body = bodyOrigin
+        val x = body.x + DebugTheme.padding
+        var y = body.y + DebugTheme.padding
+        renderer.drawText(
+            text = "fps ${fpsCounter.current.toInt()}",
+            position = Vec2(x, y),
+            size = textSize,
+            color = DebugTheme.textColor,
+        )
+        y += LINE_HEIGHT
         if (size == 0) return
+
         val hitTest = avgMs(hitTestSamples)
         val physics = avgMs(physicsSamples)
         val process = avgMs(processSamples)
@@ -73,10 +99,6 @@ class ProfilerWidget : ScreenDebugWidget() {
         val total = avgMs(totalSamples)
         val other = (total - hitTest - physics - process - render).coerceAtLeast(0f)
 
-        val textSize = DebugTheme.bodyTextSize
-        val body = bodyOrigin
-        val x = body.x + DebugTheme.padding
-        var y = body.y + DebugTheme.padding
         row(renderer, "hitTest", hitTest, total, x, y, textSize); y += LINE_HEIGHT
         row(renderer, "physics ($lastSteps)", physics, total, x, y, textSize); y += LINE_HEIGHT
         row(renderer, "process", process, total, x, y, textSize); y += LINE_HEIGHT
@@ -128,7 +150,10 @@ class ProfilerWidget : ScreenDebugWidget() {
         private const val WIDTH: Float = 200f
         private const val LINE_HEIGHT: Float = 14f
 
-        /** Five phase rows (hitTest/physics/process/render/other) + the total. */
+        /**
+         * Five phase rows (hitTest/physics/process/render/other) + the total.
+         * The fps line is counted separately (`ROW_COUNT + 1`) in [bodySize].
+         */
         private const val ROW_COUNT: Float = 6f
     }
 }

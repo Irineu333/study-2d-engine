@@ -50,7 +50,7 @@ class DebugRegistryTest {
         val custom = TestWorldWidget()
         tree.debug.register(custom)
         assertSame(custom, tree.debug.find<TestWorldWidget>())
-        assertSame(tree.debug.fps, tree.debug.find<FpsWidget>())
+        assertSame(tree.debug.colliders, tree.debug.find<ColliderWidget>())
     }
 
     @Test
@@ -82,19 +82,19 @@ class DebugRegistryTest {
         val custom = TestScreenWidget()
         tree.debug.register(custom)
         val widgets = tree.debug.widgets
-        assertEquals(13, widgets.size)
-        assertSame(tree.debug.fps, widgets[0])
-        assertSame(custom, widgets[12])
+        assertEquals(10, widgets.size)
+        assertSame(tree.debug.colliders, widgets[0])
+        assertSame(custom, widgets[9])
     }
 
     @Test
     fun `two SceneTrees do not share registry state`() {
         val treeA = SceneTree(Node()).also { it.start() }
         val treeB = SceneTree(Node()).also { it.start() }
-        treeA.debug.momentum.enabled = true
-        assertTrue(treeA.debug.momentum.enabled)
-        assertTrue(!treeB.debug.momentum.enabled)
+        treeA.debug.colliders.enabled = true
+        assertTrue(treeA.debug.colliders.enabled)
+        assertTrue(!treeB.debug.colliders.enabled)
         // Distinct instances.
-        assertTrue(treeA.debug.momentum !== treeB.debug.momentum)
+        assertTrue(treeA.debug.colliders !== treeB.debug.colliders)
     }
 }

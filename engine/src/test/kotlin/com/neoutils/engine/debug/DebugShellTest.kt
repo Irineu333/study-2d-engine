@@ -94,8 +94,8 @@ class DebugShellTest {
     @Test
     fun `theme is applied so panel chrome is identical across widgets`() {
         val tree = startedTree()
-        tree.debug.fps.enabled = true
         tree.debug.profiler.enabled = true
+        tree.debug.timeControls.enabled = true
         tree.debug.frameProfile.apply {
             hitTestNanos = 1_000_000L
             physicsNanos = 1_000_000L
@@ -103,7 +103,7 @@ class DebugShellTest {
             renderNanos = 1_000_000L
             totalNanos = 4_000_000L
         }
-        // Two ticks: FpsCounter needs samples; profiler samples the FrameProfile.
+        // Two ticks so the profiler samples the FrameProfile into its window.
         tree.process(0.016f)
         tree.process(0.016f)
 
@@ -112,7 +112,7 @@ class DebugShellTest {
         val rects = recorder.events.filterIsInstance<RecordedEvent.Rect>()
         val fills = rects.filter { it.filled && it.color == DebugTheme.panelBackground }
         val borders = rects.filter { !it.filled && it.color == DebugTheme.panelBorderColor }
-        // FPS and Profiler each contribute one themed fill + one themed border.
+        // Profiler and Time each contribute one themed fill + one themed border.
         assertTrue(fills.size >= 2, "both panels share the theme background, got ${fills.size}")
         assertTrue(borders.size >= 2, "both panels share the theme border, got ${borders.size}")
     }
