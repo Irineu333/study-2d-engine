@@ -207,10 +207,13 @@ class SceneTree(val root: Node) {
      * (sorted by `(layer desc, dfs-order desc)`); inside each layer subtree
      * the first enabled `Button` whose `screenRect()` contains the pointer
      * absorbs the click: it arms its internal press cycle and sets
-     * `input.mouseClickConsumed = true`, after which the walk stops. If no
-     * button absorbs it, a click landing on any enabled debug screen panel is
-     * still consumed (the panels are opaque UI), so it does not re-pick via
-     * [hitTestPick] nor reach gameplay.
+     * `input.mouseClickConsumed = true`, after which the walk stops. A press over
+     * any enabled debug panel brings that panel to the front of the z-order —
+     * even when the press lands on a `Button` inside it (the button still acts;
+     * only the panel's stacking changes). When no `Button` absorbs the click, the
+     * top-most panel under the pointer additionally becomes the press owner (the
+     * sole panel that may arm a drag) and the click is consumed — the panels are
+     * opaque UI, so it does not re-pick via [hitTestPick] nor reach gameplay.
      */
     fun hitTestUI(input: Input) {
         input.mouseClickConsumed = false
@@ -219,6 +222,10 @@ class SceneTree(val root: Node) {
         if (!root.isLive) return
         if (!input.wasMouseClickedRaw(MouseButton.Left)) return
         val pointer = input.pointerPosition
+        // Bring-to-front first, independent of what absorbs the click: a press over
+        // a panel raises it even when a Button inside the panel handles the press.
+        val panel = debug.topPanelAt(pointer)
+        if (panel != null) debug.raisePanelToTop(panel)
         // collectCanvasLayers returns (layer asc, dfs-order asc) via stable sort;
         // reversing flips to (layer desc, dfs-order desc) — top-most-first.
         for (layer in collectCanvasLayers().asReversed()) {
@@ -229,16 +236,12 @@ class SceneTree(val root: Node) {
                 return
             }
         }
-        // No button absorbed it: resolve the top-most enabled debug panel under
-        // the pointer and make it the press owner — only that panel arms its drag
-        // (so a press on the overlap never arms two), and bring it to the front of
-        // the z-order so it paints on top from this frame on. A click on any panel
-        // is consumed regardless (panels are opaque UI) so it neither re-picks via
-        // hitTestPick nor reaches gameplay.
-        val panel = debug.topPanelAt(pointer)
+        // No button absorbed it: the top-most panel under the pointer owns the
+        // press — only that panel arms its drag (so a press on the overlap never
+        // arms two). A click on any panel is consumed regardless (panels are opaque
+        // UI) so it neither re-picks via hitTestPick nor reaches gameplay.
         if (panel != null) {
             debug.pressOwner = panel
-            debug.raisePanelToTop(panel)
             input.mouseClickConsumed = true
         }
     }

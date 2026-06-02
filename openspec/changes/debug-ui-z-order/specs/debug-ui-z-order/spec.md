@@ -23,12 +23,18 @@ distintos cujas áreas se cruzem.
 
 ### Requirement: Bring-to-front em qualquer press
 
-Um press em qualquer ponto de um painel de debug habilitado — header ou corpo — SHALL trazer esse painel à frente dos demais painéis de debug, movendo-o para o fim da lista de filhos do `ScreenDebugCanvas`. O bring-to-front SHALL ser
+Um press em qualquer ponto de um painel de debug habilitado SHALL trazer esse
+painel à frente dos demais painéis de debug — seja o ponto no header, no corpo,
+num window control (close/collapse) ou num `Button` interno —, movendo-o para o
+fim da lista de filhos do `ScreenDebugCanvas`. O bring-to-front SHALL ser
 aplicado uniformemente a todos os painéis, sem caso especial para docked ou
 flutuante; em painéis docked o efeito é visualmente inócuo por não haver
 sobreposição. O bring-to-front SHALL ocorrer no pré-passe `SceneTree.hitTestUI`,
 antes de `tree.process`, de modo que o painel já pinte no topo no mesmo frame e
-o gesto de arrasto subsequente ocorra sobre o painel à frente.
+o gesto de arrasto subsequente ocorra sobre o painel à frente. O bring-to-front
+SHALL ser independente de quem absorve o clique: um press sobre um `Button` ou
+window control do painel ainda o traz à frente, e o controle executa sua ação
+normalmente.
 
 #### Scenario: Press traz painel coberto para frente
 
@@ -40,6 +46,11 @@ o gesto de arrasto subsequente ocorra sobre o painel à frente.
 
 - **WHEN** o usuário pressiona o corpo (não o header) de um painel coberto por outro
 - **THEN** o painel pressionado SHALL ser trazido à frente, ainda que nenhum arrasto seja iniciado
+
+#### Scenario: Press num Button do painel também traz para frente
+
+- **WHEN** o usuário pressiona um `Button` interno de um painel de debug
+- **THEN** o painel SHALL ser trazido à frente e o `Button` SHALL emitir `pressed` normalmente, sem iniciar arrasto
 
 ### Requirement: Dono de press único no overlap
 

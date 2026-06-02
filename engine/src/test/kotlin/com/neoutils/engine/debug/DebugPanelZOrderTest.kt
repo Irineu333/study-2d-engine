@@ -181,6 +181,42 @@ class DebugPanelZOrderTest {
     }
 
     @Test
+    fun `pressing a Button inside a covered panel brings the panel to the front`() {
+        val tree = startedTree()
+        val covered = ZPanel("Covered", Vec2(200f, 100f))
+        val front = ZPanel("Front", Vec2(200f, 100f))
+        tree.debug.register(covered) // earlier child
+        tree.debug.register(front)   // later child → on top initially
+        covered.floatingPosition = Vec2(100f, 100f)
+        front.floatingPosition = Vec2(300f, 100f)
+        // A Button living inside the covered panel, in its exposed body region.
+        val button = Button().apply {
+            name = "PanelBtn"
+            transform = Transform(position = Vec2(130f, 100f + hh + 10f))
+            size = Vec2(40f, 30f)
+        }
+        covered.addChild(button)
+        tree.debug.dock.relayout(tree.size)
+
+        var fired = false
+        button.pressed.connect { fired = true }
+        val center = button.transform.position + Vec2(20f, 15f)
+        val input = ZInput(pointer = center, clicked = true, down = true)
+        tree.input = input
+        tree.hitTestUI(input)
+
+        assertTrue(input.mouseClickConsumed, "the Button absorbs the click")
+        assertNull(tree.debug.pressOwner, "a Button press does not make the panel a drag owner")
+        assertSame(covered, siblings(covered).last(), "pressing a panel's Button still raises the panel")
+
+        // Release inside: the button's press still emits — its behavior is intact.
+        input.clicked = false
+        input.down = false
+        tree.process(0f)
+        assertTrue(fired, "the Button's press fires normally after the panel was raised")
+    }
+
+    @Test
     fun `raising a panel does not disturb the docked layout`() {
         val tree = startedTree()
         val a = ZPanel("A", Vec2(200f, 100f))
