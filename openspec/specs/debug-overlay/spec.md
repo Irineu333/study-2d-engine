@@ -51,15 +51,15 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 - `fun unregister(widget: DebugWidget)` — removes the widget from its container and from the list.
 - `val widgets: List<DebugWidget>` — read-only listing of currently registered widgets in registration order.
 - `inline fun <reified T : DebugWidget> find(): T?` — first widget of the requested concrete type, or `null`.
-- Convenience fields for the five built-ins: `val fps: FpsWidget`, `val colliders: ColliderWidget`, `val momentum: MomentumWidget`, `val log: LogOverlayWidget`, `val hud: DebugHud`. These fields point at the engine-owned instances and exist solely as ergonomic shortcuts to flip `enabled`.
+- Convenience fields for the built-ins: `val colliders: ColliderWidget`, `val log: LogOverlayWidget`, `val hud: DebugHud`. These fields point at the engine-owned instances and exist solely as ergonomic shortcuts to flip `enabled`. `DebugRegistry` SHALL NOT expose `fps`, `momentum`, or `shapeGizmo` fields — those widgets no longer exist (fps is folded into the profiler, real-geometry drawing into `ColliderWidget`, and the momentum overlay is removed).
 
 `DebugRegistry` SHALL NOT be a `Node`, SHALL NOT be `@Serializable`, and SHALL NOT persist across `SceneTree` lifetimes — pure runtime state. Each `SceneTree` instance SHALL own its own `DebugRegistry` (no static or singleton sharing across trees).
 
 #### Scenario: Built-ins are accessible via convenience fields
 
 - **WHEN** a `SceneTree` is constructed and `start()` is called
-- **THEN** `tree.debug.fps`, `tree.debug.colliders`, `tree.debug.momentum`, `tree.debug.log`, and `tree.debug.hud` SHALL all be non-null
-- **AND** `tree.debug.widgets` SHALL contain at least these five instances
+- **THEN** `tree.debug.colliders`, `tree.debug.log`, and `tree.debug.hud` SHALL all be non-null
+- **AND** `tree.debug.widgets` SHALL contain at least these instances
 
 #### Scenario: register routes by subtype
 
@@ -85,9 +85,9 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 #### Scenario: Two SceneTrees do not share registry state
 
 - **GIVEN** two distinct `SceneTree` instances `treeA` and `treeB`
-- **WHEN** `treeA.debug.momentum.enabled = true` is set
-- **THEN** `treeB.debug.momentum.enabled` SHALL remain `false`
-- **AND** `treeA.debug.momentum` and `treeB.debug.momentum` SHALL be distinct instances
+- **WHEN** `treeA.debug.colliders.enabled = true` is set
+- **THEN** `treeB.debug.colliders.enabled` SHALL remain `false`
+- **AND** `treeA.debug.colliders` and `treeB.debug.colliders` SHALL be distinct instances
 
 ### Requirement: Engine auto-inserts DebugLayer with two sub-containers
 
@@ -96,7 +96,7 @@ The engine SHALL auto-insert a `DebugLayer` (a `Node`) as a child of `SceneTree.
 - `WorldDebugContainer` (a `Node2D` directly under `DebugLayer`) — hosts `WorldDebugWidget` instances. Participates in the world pass of `SceneTree.render`, receiving the active `Camera2D` view transform.
 - `ScreenDebugCanvas` (a `CanvasLayer` with `layer = Int.MAX_VALUE - 1`) — hosts `ScreenDebugWidget` instances. Painted in the UI pass on top of any game UI.
 
-The engine SHALL register the five built-in widgets — `FpsWidget`, `ColliderWidget`, `MomentumWidget`, `LogOverlayWidget`, `DebugHud` — during the auto-insertion, in that order. The engine SHALL additionally insert an internal `DebugToggleNode` inside `ScreenDebugCanvas` that polls input each tick (see "DebugHud opens and closes via debugHudKey").
+The engine SHALL register the built-in widgets during the auto-insertion. The catalog SHALL NOT include `FpsWidget`, `MomentumWidget`, or `ShapeGizmoWidget` (removed/folded). The engine SHALL additionally insert an internal `DebugToggleNode` inside `ScreenDebugCanvas` that polls input each tick (see "DebugHud opens and closes via debugHudKey").
 
 Re-inserting on a re-attached tree (stop → start) SHALL be idempotent — the engine SHALL skip the addition when a child named `"__debug"` is already present on root.
 
@@ -111,50 +111,53 @@ Re-inserting on a re-attached tree (stop → start) SHALL be idempotent — the 
 - **WHEN** a `SceneTree` is started, stopped, and started again on the same root
 - **THEN** root SHALL contain exactly one child named `"__debug"`
 
-#### Scenario: Screen-space built-ins are hosted in the screen container
+#### Scenario: Built-ins are hosted in the correct container
 
 - **WHEN** the engine has finished auto-inserting `DebugLayer`
 - **THEN** `tree.debug.colliders.parent` SHALL be the `WorldDebugContainer` instance
-- **AND** `tree.debug.fps.parent`, `tree.debug.momentum.parent`, `tree.debug.log.parent`, and `tree.debug.hud.parent` SHALL all be the `ScreenDebugCanvas` instance
+- **AND** `tree.debug.log.parent` and `tree.debug.hud.parent` SHALL both be the `ScreenDebugCanvas` instance
+- **AND** no `FpsWidget` or `MomentumWidget` instance SHALL exist anywhere under `DebugLayer`
 
-### Requirement: ColliderWidget draws world collider AABBs without manual transform
+### Requirement: ColliderWidget draws world colliders without manual transform
 
-`ColliderWidget` SHALL extend `WorldDebugWidget` and SHALL, when `enabled = true`, iterate `collectActiveCollisionShapes(tree)` and call `renderer.drawRect(shape.worldBounds(), color, filled = false)` for each entry. Colors SHALL be: green-ish (`Color(0f, 1f, 0f, 0.8f)`) for `Area2D` owners, red-ish (`Color(1f, 0.3f, 0.3f, 0.8f)`) for `PhysicsBody2D` owners. `ColliderWidget` SHALL NOT call `renderer.pushTransform` or `renderer.popTransform` — the active `Camera2D` view transform is applied by the world pass.
+`ColliderWidget` SHALL extend `WorldDebugWidget` and SHALL expose a draw mode `var mode: ColliderDrawMode` over `enum ColliderDrawMode { AABB, REAL }`, defaulting to `REAL`. When `enabled = true`, it SHALL iterate `collectActiveCollisionShapes(tree)` and, per entry, draw according to `mode`:
 
-#### Scenario: ColliderWidget calls drawRect once per active CollisionShape2D
+- `AABB` — the shape's broad-phase axis-aligned bounds via `renderer.drawRect(bounds, color, filled = false)`.
+- `REAL` — the shape's real geometry: a non-filled circle outline for `CircleShape2D` (world center and scaled radius) and the closed quad of `worldCorners` for `RectangleShape2D` (covering the rotated case).
 
-- **GIVEN** a tree with one `Area2D` and one `RigidBody2D`, each owning one `CollisionShape2D`
+Colors SHALL be green-ish (`Color(0f, 1f, 0f, 0.8f)`) for `Area2D` owners and red-ish (`Color(1f, 0.3f, 0.3f, 0.8f)`) for body owners. `ColliderWidget` SHALL NOT call `renderer.pushTransform` or `renderer.popTransform` — the active `Camera2D` view transform is applied by the world pass. `mode` SHALL be settable programmatically and selectable at runtime via an engine-internal screen-space control panel `ColliderModePanel` (a `ScreenDebugWidget`, segmented `AABB | REAL` with the active segment highlighted). The panel is the colliders tool's screen-space arm: its `enabled` SHALL proxy `colliders.enabled` (get and set, so toggling the HUD's "Colliders" row shows/hides the panel and the panel's close `[x]` disables the gizmo), and it SHALL be auto-inserted under `ScreenDebugCanvas` but kept out of `DebugRegistry.widgets`/HUD (no second "Colliders" row) — in the spirit of the `scenePicker` + `SelectionGizmoWidget` split.
+
+#### Scenario: The mode panel is the colliders tool's screen-space arm
+
+- **WHEN** `SceneTree.start()` has completed
+- **THEN** `tree.debug.colliderModePanel` SHALL be a child of the `ScreenDebugCanvas`
+- **AND** it SHALL NOT appear in `tree.debug.widgets` (no second HUD row)
+- **AND** `tree.debug.colliderModePanel.enabled` SHALL track `tree.debug.colliders.enabled`
+
+#### Scenario: Selecting a segment sets the mode; closing disables the gizmo
+
+- **GIVEN** `tree.debug.colliders.enabled = true` with the panel built
+- **WHEN** the `AABB` segment button is pressed
+- **THEN** `tree.debug.colliders.mode` SHALL become `ColliderDrawMode.AABB`
+- **AND** WHEN the panel's `enabled` is set to `false` (its close control), `tree.debug.colliders.enabled` SHALL become `false`
+
+#### Scenario: REAL mode draws real geometry per active shape
+
+- **GIVEN** a tree with one `Area2D` owning a `CircleShape2D` and one body owning a `RectangleShape2D`, with `tree.debug.colliders.mode = ColliderDrawMode.REAL`
 - **WHEN** `tree.debug.colliders.enabled = true` and a frame is rendered against a recording `Renderer`
-- **THEN** exactly two `drawRect(_, _, filled = false)` calls SHALL be observed
+- **THEN** a non-filled `drawCircle` SHALL be observed for the circle and the four `worldCorners` edges SHALL be drawn for the rectangle
 - **AND** zero `pushTransform`/`popTransform` calls SHALL be attributed to `ColliderWidget.drawDebug`
 
-#### Scenario: ColliderWidget rect aligns with projected world rect
+#### Scenario: AABB mode draws one rect per active shape
 
-- **GIVEN** a `Camera2D` with `bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))`, `tree.size = Vec2(1280f, 900f)`, FIT aspect
-- **AND** an `Area2D` with a `RectangleShape2D` whose `worldBounds()` is `Rect(Vec2(100f, 100f), Vec2(200f, 200f))`
-- **WHEN** `tree.debug.colliders.enabled = true` and a frame is rendered
-- **THEN** the `drawRect` call's rect argument SHALL be the world rect `Rect(Vec2(100f, 100f), Vec2(200f, 200f))` unchanged
-- **AND** the renderer's transform stack top at the moment of the call SHALL hold the FIT view transform for the camera
+- **GIVEN** a tree with one `Area2D` and one `RigidBody2D`, each owning one `CollisionShape2D`, with `tree.debug.colliders.mode = ColliderDrawMode.AABB`
+- **WHEN** `tree.debug.colliders.enabled = true` and a frame is rendered against a recording `Renderer`
+- **THEN** exactly two `drawRect(_, _, filled = false)` calls SHALL be observed
 
-### Requirement: MomentumWidget owns its ring buffer
+#### Scenario: Default mode is REAL
 
-`MomentumWidget` SHALL extend `ScreenDebugWidget` and SHALL own its sample storage as instance fields (four `FloatArray` of capacity 60: `pX`, `pY`, `angular`, `KE`; `head` and `size` indices). The widget SHALL override `physicsProcess(dt)` such that, when `enabled` is `true`, it records the current `tree.totalLinearMomentum()`, `tree.totalAngularMomentum()`, and `tree.totalKineticEnergy()` into the buffer. The widget SHALL override the `enabled` setter such that flipping from `false` to `true` resets `size = 0` and `head = 0` (cleared buffer), preventing stale sparklines from previous sessions.
-
-The engine SHALL NOT expose a process-wide `MomentumOverlay` singleton. `GameLoop.tick` SHALL NOT call into any momentum overlay sample method — sample collection happens inside the widget via the scene graph's `physicsProcess` dispatch.
-
-#### Scenario: Buffer is per-tree
-
-- **GIVEN** `treeA` and `treeB` exist concurrently with `momentum.enabled = true`
-- **WHEN** `physicsProcess(dt)` is dispatched on both for several ticks with distinct rigid body sets
-- **THEN** `treeA.debug.momentum`'s sample buffer SHALL contain only `treeA`'s sums
-- **AND** `treeB.debug.momentum`'s sample buffer SHALL contain only `treeB`'s sums
-
-#### Scenario: Toggling on resets the buffer
-
-- **GIVEN** `tree.debug.momentum.enabled = true` and several samples have been recorded
-- **WHEN** `tree.debug.momentum.enabled = false` is set, then `tree.debug.momentum.enabled = true` again
-- **THEN** the next `drawDebug` call SHALL see size == 1 (or 0 if no `physicsProcess` happened yet between the flip and the draw)
-- **AND** no samples from the prior enabled window SHALL appear
+- **WHEN** a `SceneTree` is started and `tree.debug.colliders` is read
+- **THEN** its `mode` SHALL be `ColliderDrawMode.REAL`
 
 ### Requirement: LogOverlayWidget tails recent log entries on screen
 
@@ -236,16 +239,16 @@ When `enabled = false`, the HUD SHALL emit zero draw calls and SHALL NOT consume
 
 #### Scenario: HUD lists one row per registered widget
 
-- **GIVEN** the five built-ins plus one user-registered `AxesWidget` are in `tree.debug.widgets`
+- **GIVEN** the built-ins plus one user-registered `AxesWidget` are in `tree.debug.widgets`
 - **WHEN** `tree.debug.hud.enabled = true` and a frame is rendered
-- **THEN** the rendered HUD `Panel` SHALL contain exactly five `Button` children (FPS, Colliders, Momentum, Log, Axes — the HUD itself excluded)
+- **THEN** the rendered HUD `Panel` SHALL contain exactly one `Button` child per registered widget (excluding the HUD itself), including an `Axes` row
 - **AND** the label order SHALL match registration order
 
 #### Scenario: Clicking a row flips the target widget's enabled
 
-- **GIVEN** `tree.debug.hud.enabled = true` and `tree.debug.fps.enabled = false`
-- **WHEN** the user clicks the row labeled `"[ ] FPS"` (simulated via `Input.wasMouseClicked(Left)` on the row's screen rect)
-- **THEN** by the next frame `tree.debug.fps.enabled` SHALL equal `true`
+- **GIVEN** `tree.debug.hud.enabled = true` and `tree.debug.colliders.enabled = false`
+- **WHEN** the user clicks the row labeled `"[ ] Colliders"` (simulated via `Input.wasMouseClicked(Left)` on the row's screen rect)
+- **THEN** by the next frame `tree.debug.colliders.enabled` SHALL equal `true`
 - **AND** the row's label SHALL begin with `"[x] "`
 
 #### Scenario: HUD off does not consume clicks

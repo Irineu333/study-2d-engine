@@ -2,14 +2,16 @@
 
 ## Purpose
 
-Per-phase frame profiler for the engine's tick. The `FpsWidget` gives an
-aggregate number — frames per second — but not **where the frame's time goes**.
-This capability times the four observable phases of `GameLoop.tick` (hitTest →
+Per-phase frame profiler for the engine's tick. A frames-per-second number
+gives an aggregate reading but not **where the frame's time goes**. This
+capability times the four observable phases of `GameLoop.tick` (hitTest →
 fixed-step physics loop → process → render) plus the whole-tick total, exposing
 them through a per-`SceneTree` `FrameProfile` and a built-in `ProfilerWidget`
-that smooths them with per-phase moving averages. Instrumentation is gated on
-the widget's `enabled` flag: disabled (the default), the tick runs its original
-un-instrumented path with zero timing overhead.
+that smooths them with per-phase moving averages. The `ProfilerWidget` also
+owns the engine's only frame-rate readout (an `fps` line sampled from its own
+`nanoTime` counter), so there is no standalone `FpsWidget`. Instrumentation is
+gated on the widget's `enabled` flag: disabled (the default), the tick runs its
+original un-instrumented path with zero timing overhead.
 
 ## Requirements
 
@@ -70,12 +72,34 @@ milliseconds per phase together with the latest frame's `physicsSteps`.
 Flipping `enabled` from `false` to `true` SHALL reset the moving-average
 windows so no stale averages from a previous enabled window are shown.
 
+The `ProfilerWidget` SHALL additionally own a frame-rate counter sampled from
+`System.nanoTime()` in `onProcess` (independent of the `FrameProfile`
+instrumentation) and SHALL display an `fps NN` line at the top of its panel.
+The fps line SHALL be shown as soon as the widget is enabled — including
+before any per-phase sample has accumulated (the moving-average window is
+empty) — so that opening the profiler immediately surfaces the frame rate
+without requiring the heavy phase instrumentation to warm up. The engine SHALL
+NOT ship a separate `FpsWidget`.
+
 #### Scenario: Widget is a registered built-in driving measurement
 
 - **WHEN** `SceneTree.start()` has completed
 - **THEN** the `DebugRegistry` convenience field for the profiler SHALL be non-null
 - **AND** it SHALL appear as a togglable row in the `DebugHud`
 - **AND** enabling it SHALL cause `GameLoop.tick` to begin measuring phases
+
+#### Scenario: fps line is shown independent of phase instrumentation
+
+- **GIVEN** the profiler was just enabled and no `FrameProfile` sample has accumulated yet
+- **WHEN** a frame is rendered against a recording `Renderer`
+- **THEN** an `fps` line SHALL be drawn from the widget's own `nanoTime` counter
+- **AND** the fps reading SHALL NOT depend on the per-phase moving-average window being non-empty
+
+#### Scenario: No standalone FpsWidget exists
+
+- **WHEN** `SceneTree.start()` has completed
+- **THEN** no `FpsWidget` instance SHALL exist under `DebugLayer`
+- **AND** `DebugRegistry` SHALL NOT expose an `fps` convenience field
 
 #### Scenario: Enabling resets the moving-average windows
 

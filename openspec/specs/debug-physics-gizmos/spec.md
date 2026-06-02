@@ -3,15 +3,17 @@
 ## Purpose
 
 Tornar o passo de colisão observável expondo o que o `PhysicsSystem` já
-calcula: a **geometria real** de cada collider (contorno de círculo, quad
-rotacionado de retângulo — não o AABB), os **vetores de velocidade** dos
-corpos, e os **pontos de contato e normais** — tanto os que o solver de impulso usou
-(`RigidBody2D`) quanto os resolvidos por `CharacterBody2D.moveAndCollide`
-(jogos cinemáticos como Pong/Snake). Três `WorldDebugWidget`
-(`ShapeGizmoWidget`, `VelocityGizmoWidget`, `ContactGizmoWidget`), um buffer
-de contatos por-`SceneTree` com staging para contatos cinemáticos consolidados
-no `PhysicsSystem.step` (custo zero quando desabilitado), e o registro dos três
-como built-ins togglável no `DebugHud`.
+calcula: os **vetores de velocidade** dos corpos e os **pontos de contato e
+normais** — tanto os que o solver de impulso usou (`RigidBody2D`) quanto os
+resolvidos por `CharacterBody2D.moveAndCollide` (jogos cinemáticos como
+Pong/Snake). Dois `WorldDebugWidget` (`VelocityGizmoWidget`,
+`ContactGizmoWidget`), um buffer de contatos por-`SceneTree` com staging para
+contatos cinemáticos consolidados no `PhysicsSystem.step` (custo zero quando
+desabilitado), e o registro dos dois como built-ins togglável no `DebugHud`. A
+**geometria real** de cada collider (contorno de círculo, quad rotacionado de
+retângulo) é desenhada pelo `ColliderWidget` no modo `REAL` (ver capability
+`debug-overlay`); o `RectangleShape2D.worldCorners` que ela usa permanece
+especificado aqui.
 
 ## Requirements
 
@@ -38,37 +40,6 @@ private helper to public API.
 - **WHEN** `worldCorners(world)` is called
 - **THEN** the four returned points SHALL NOT be axis-aligned
 - **AND** their centroid SHALL equal the rectangle's world center within float tolerance
-
-### Requirement: ShapeGizmoWidget draws real collider geometry
-
-`ShapeGizmoWidget` SHALL extend `WorldDebugWidget` and, when `enabled`,
-SHALL iterate `collectActiveCollisionShapes(tree)` and draw each shape's
-**real geometry** (not its AABB): a non-filled circle outline for
-`CircleShape2D` (world center and scaled radius), and the closed quad of
-`worldCorners` for `RectangleShape2D` (covering the rotated case). It SHALL
-NOT call `pushTransform`/`popTransform` — the world pass applies the
-`Camera2D` view transform. The existing `ColliderWidget` (AABB) SHALL remain
-unchanged and SHALL NOT be replaced by this widget.
-
-#### Scenario: Circle drawn as outline at world center
-
-- **GIVEN** an active `CircleShape2D` of radius `r` at world center `c`, with `tree.debug.find<ShapeGizmoWidget>()!!.enabled = true`
-- **WHEN** a frame is rendered against a recording `Renderer`
-- **THEN** a non-filled `drawCircle(c, r, _)` SHALL be observed
-- **AND** zero `pushTransform`/`popTransform` calls SHALL be attributed to the widget
-
-#### Scenario: Rotated rectangle drawn as a rotated quad
-
-- **GIVEN** an active `RectangleShape2D` with non-zero world rotation and the widget enabled
-- **WHEN** a frame is rendered
-- **THEN** the four edges between consecutive `worldCorners` SHALL be drawn as lines
-- **AND** the drawn quad SHALL NOT coincide with the shape's axis-aligned `worldBounds()`
-
-#### Scenario: Disabled widget draws nothing
-
-- **GIVEN** `ShapeGizmoWidget.enabled = false`
-- **WHEN** a frame is rendered
-- **THEN** zero draw calls SHALL be attributed to the widget
 
 ### Requirement: VelocityGizmoWidget draws body velocity vectors
 
@@ -223,20 +194,23 @@ nothing and incur no recording cost.
 
 ### Requirement: Physics gizmos are registered built-ins toggled via the HUD
 
-The engine SHALL register `ShapeGizmoWidget`, `VelocityGizmoWidget`, and
-`ContactGizmoWidget` as built-in widgets during `DebugLayer` auto-insertion,
-hosted in the `WorldDebugContainer`, and SHALL expose them as convenience
-fields on `DebugRegistry`. Each SHALL appear as its own togglable row in the
-`DebugHud`. All three SHALL default to `enabled = false`.
+The engine SHALL register `VelocityGizmoWidget` and `ContactGizmoWidget` as
+built-in widgets during `DebugLayer` auto-insertion, hosted in the
+`WorldDebugContainer`, and SHALL expose them as convenience fields on
+`DebugRegistry`. Each SHALL appear as its own togglable row in the `DebugHud`.
+Both SHALL default to `enabled = false`. The engine SHALL NOT register a
+separate `ShapeGizmoWidget` — real collider geometry is drawn by
+`ColliderWidget` via its `REAL` mode (see capability `debug-overlay`).
 
-#### Scenario: The three gizmos are present and world-hosted
+#### Scenario: The two gizmos are present and world-hosted
 
 - **WHEN** `SceneTree.start()` has completed
-- **THEN** the `DebugRegistry` convenience fields for the three gizmos SHALL be non-null
+- **THEN** the `DebugRegistry` convenience fields for the velocity and contact gizmos SHALL be non-null
 - **AND** each gizmo's `parent` SHALL be the `WorldDebugContainer` instance
 - **AND** each SHALL appear in `tree.debug.widgets`
+- **AND** no `ShapeGizmoWidget` instance SHALL exist under `DebugLayer`
 
 #### Scenario: HUD lists a row per gizmo
 
 - **WHEN** the `DebugHud` is opened
-- **THEN** rows for the shape, velocity, and contact gizmos SHALL each be present and individually togglable
+- **THEN** rows for the velocity and contact gizmos SHALL each be present and individually togglable
