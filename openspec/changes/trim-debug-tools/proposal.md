@@ -11,10 +11,11 @@ ganha um propósito distinto.
 ## What Changes
 
 - **Fundir `ColliderWidget` + `ShapeGizmoWidget`** num único `ColliderWidget`
-  (world gizmo) com um modo ciclável `enum ColliderDrawMode { AABB, REAL, BOTH }`,
-  default `REAL`. Um controle no painel cicla os três modos. O `ShapeGizmoWidget`
-  e o campo `DebugRegistry.shapeGizmo` deixam de existir. Resultado: 1 toggle
-  cobre tanto a forma real quanto o envelope do broad-phase (e ambos juntos).
+  (world gizmo) com um modo `enum ColliderDrawMode { AABB, REAL }`,
+  default `REAL`. Um segmented control no painel companheiro escolhe entre os
+  dois modos. O `ShapeGizmoWidget` e o campo `DebugRegistry.shapeGizmo` deixam
+  de existir. Resultado: 1 toggle cobre tanto a forma real quanto o envelope do
+  broad-phase.
 - **Fundir `FpsWidget` no `ProfilerWidget`**: o Profiler ganha uma linha
   `fps NN` no topo, amostrada de forma barata via `nanoTime` (como o
   `FpsCounter` já fazia) — **não** depende da instrumentação pesada do
@@ -46,8 +47,8 @@ Contacts, Time, Profiler, Log, Picker, Debug Draw — mais o próprio Debug HUD)
   semântica de modo no `colliders`; o auto-insert de `DebugLayer` deixa de
   registrar `FpsWidget` e `MomentumWidget`; a requirement "MomentumWidget owns
   its ring buffer" é **removida**; a requirement do `ColliderWidget` passa a
-  cobrir o modo ciclável `{AABB, REAL, BOTH}` (incorporando o desenho de
-  geometria real).
+  cobrir o modo `{AABB, REAL}` (incorporando o desenho de geometria real),
+  selecionado por um painel companheiro `ColliderModePanel`.
 - `debug-profiler`: `ProfilerWidget` passa a exibir uma linha `fps`,
   amostrada independente da instrumentação de fases.
 - `debug-physics-gizmos`: a requirement "ShapeGizmoWidget draws real collider

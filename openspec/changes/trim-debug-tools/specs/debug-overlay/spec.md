@@ -77,13 +77,26 @@ Re-inserting on a re-attached tree (stop → start) SHALL be idempotent — the 
 
 ### Requirement: ColliderWidget draws world colliders without manual transform
 
-`ColliderWidget` SHALL extend `WorldDebugWidget` and SHALL expose a draw mode `var mode: ColliderDrawMode` over `enum ColliderDrawMode { AABB, REAL, BOTH }`, defaulting to `REAL`. When `enabled = true`, it SHALL iterate `collectActiveCollisionShapes(tree)` and, per entry, draw according to `mode`:
+`ColliderWidget` SHALL extend `WorldDebugWidget` and SHALL expose a draw mode `var mode: ColliderDrawMode` over `enum ColliderDrawMode { AABB, REAL }`, defaulting to `REAL`. When `enabled = true`, it SHALL iterate `collectActiveCollisionShapes(tree)` and, per entry, draw according to `mode`:
 
 - `AABB` — the shape's broad-phase axis-aligned bounds via `renderer.drawRect(bounds, color, filled = false)`.
 - `REAL` — the shape's real geometry: a non-filled circle outline for `CircleShape2D` (world center and scaled radius) and the closed quad of `worldCorners` for `RectangleShape2D` (covering the rotated case).
-- `BOTH` — the AABB first, then the real geometry on top.
 
-Colors SHALL be green-ish (`Color(0f, 1f, 0f, 0.8f)`) for `Area2D` owners and red-ish (`Color(1f, 0.3f, 0.3f, 0.8f)`) for body owners. `ColliderWidget` SHALL NOT call `renderer.pushTransform` or `renderer.popTransform` — the active `Camera2D` view transform is applied by the world pass. `mode` SHALL be settable programmatically and cyclable at runtime via an engine-internal shortcut node (in the spirit of the existing time/layout shortcut nodes).
+Colors SHALL be green-ish (`Color(0f, 1f, 0f, 0.8f)`) for `Area2D` owners and red-ish (`Color(1f, 0.3f, 0.3f, 0.8f)`) for body owners. `ColliderWidget` SHALL NOT call `renderer.pushTransform` or `renderer.popTransform` — the active `Camera2D` view transform is applied by the world pass. `mode` SHALL be settable programmatically and selectable at runtime via an engine-internal screen-space control panel `ColliderModePanel` (a `ScreenDebugWidget`, segmented `AABB | REAL` with the active segment highlighted). The panel is the colliders tool's screen-space arm: its `enabled` SHALL proxy `colliders.enabled` (get and set, so toggling the HUD's "Colliders" row shows/hides the panel and the panel's close `[x]` disables the gizmo), and it SHALL be auto-inserted under `ScreenDebugCanvas` but kept out of `DebugRegistry.widgets`/HUD (no second "Colliders" row) — in the spirit of the `scenePicker` + `SelectionGizmoWidget` split.
+
+#### Scenario: The mode panel is the colliders tool's screen-space arm
+
+- **WHEN** `SceneTree.start()` has completed
+- **THEN** `tree.debug.colliderModePanel` SHALL be a child of the `ScreenDebugCanvas`
+- **AND** it SHALL NOT appear in `tree.debug.widgets` (no second HUD row)
+- **AND** `tree.debug.colliderModePanel.enabled` SHALL track `tree.debug.colliders.enabled`
+
+#### Scenario: Selecting a segment sets the mode; closing disables the gizmo
+
+- **GIVEN** `tree.debug.colliders.enabled = true` with the panel built
+- **WHEN** the `AABB` segment button is pressed
+- **THEN** `tree.debug.colliders.mode` SHALL become `ColliderDrawMode.AABB`
+- **AND** WHEN the panel's `enabled` is set to `false` (its close control), `tree.debug.colliders.enabled` SHALL become `false`
 
 #### Scenario: REAL mode draws real geometry per active shape
 
@@ -97,13 +110,6 @@ Colors SHALL be green-ish (`Color(0f, 1f, 0f, 0.8f)`) for `Area2D` owners and re
 - **GIVEN** a tree with one `Area2D` and one `RigidBody2D`, each owning one `CollisionShape2D`, with `tree.debug.colliders.mode = ColliderDrawMode.AABB`
 - **WHEN** `tree.debug.colliders.enabled = true` and a frame is rendered against a recording `Renderer`
 - **THEN** exactly two `drawRect(_, _, filled = false)` calls SHALL be observed
-
-#### Scenario: BOTH mode draws AABB and real geometry
-
-- **GIVEN** a tree with one body owning a `RectangleShape2D`, with `tree.debug.colliders.mode = ColliderDrawMode.BOTH`
-- **WHEN** `tree.debug.colliders.enabled = true` and a frame is rendered
-- **THEN** both the broad-phase `drawRect` and the rotated `worldCorners` quad SHALL be observed
-- **AND** the AABB SHALL be drawn before the real geometry
 
 #### Scenario: Default mode is REAL
 

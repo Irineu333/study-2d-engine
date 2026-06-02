@@ -8,7 +8,7 @@ built-in widgets during `DebugLayer` auto-insertion, hosted in the
 `DebugRegistry`. Each SHALL appear as its own togglable row in the `DebugHud`.
 Both SHALL default to `enabled = false`. The engine SHALL NOT register a
 separate `ShapeGizmoWidget` — real collider geometry is drawn by
-`ColliderWidget` via its `REAL`/`BOTH` mode (see capability `debug-overlay`).
+`ColliderWidget` via its `REAL` mode (see capability `debug-overlay`).
 
 #### Scenario: The two gizmos are present and world-hosted
 
@@ -27,6 +27,6 @@ separate `ShapeGizmoWidget` — real collider geometry is drawn by
 
 ### Requirement: ShapeGizmoWidget draws real collider geometry
 
-**Reason**: O desenho de geometria real foi absorvido pelo `ColliderWidget` através do modo ciclável `ColliderDrawMode { AABB, REAL, BOTH }` (default `REAL`), eliminando o toggle duplicado "Shapes" no HUD. Manter um widget separado para a forma real e outro para o AABB confundia o catálogo sem ganho pedagógico — agora um único `ColliderWidget` mostra forma real, envelope, ou ambos.
+**Reason**: O desenho de geometria real foi absorvido pelo `ColliderWidget` através do modo `ColliderDrawMode { AABB, REAL }` (default `REAL`), eliminando o toggle duplicado "Shapes" no HUD. Manter um widget separado para a forma real e outro para o AABB confundia o catálogo sem ganho pedagógico — agora um único `ColliderWidget` mostra forma real ou envelope, alternados por um painel companheiro.
 
-**Migration**: Trocar `tree.debug.find<ShapeGizmoWidget>()!!.enabled = true` por `tree.debug.colliders.apply { mode = ColliderDrawMode.REAL; enabled = true }`. Para ver forma real e AABB lado a lado, use `mode = ColliderDrawMode.BOTH`. O campo `DebugRegistry.shapeGizmo` deixa de existir.
+**Migration**: Trocar `tree.debug.find<ShapeGizmoWidget>()!!.enabled = true` por `tree.debug.colliders.apply { mode = ColliderDrawMode.REAL; enabled = true }`. Para ver o envelope do broad-phase, use `mode = ColliderDrawMode.AABB`. O campo `DebugRegistry.shapeGizmo` deixa de existir.

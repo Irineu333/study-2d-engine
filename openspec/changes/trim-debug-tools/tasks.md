@@ -1,9 +1,9 @@
 ## 1. ColliderWidget ganha modo ciclável (funde Shapes)
 
-- [x] 1.1 Adicionar `enum ColliderDrawMode { AABB, REAL, BOTH }` no pacote `com.neoutils.engine.debug`
-- [x] 1.2 Adicionar `var mode: ColliderDrawMode = REAL` ao `ColliderWidget` e refatorar `drawDebug` para despachar por modo (AABB = `broadPhaseBounds` via `drawRect`; REAL = círculo outline / quad de `worldCorners`; BOTH = AABB primeiro, real por cima)
+- [x] 1.1 Adicionar `enum ColliderDrawMode { AABB, REAL }` no pacote `com.neoutils.engine.debug`
+- [x] 1.2 Adicionar `var mode: ColliderDrawMode = REAL` ao `ColliderWidget` e refatorar `drawDebug` para despachar por modo (AABB = `broadPhaseBounds` via `drawRect`; REAL = círculo outline / quad de `worldCorners`)
 - [x] 1.3 Portar a lógica de geometria real do `ShapeGizmoWidget` (círculo escalado, `worldCorners`) para o caminho REAL do `ColliderWidget`
-- [x] 1.4 Criar node interno `ColliderModeShortcutNode` (no espírito de `TimeControlShortcutNode`/`DebugLayoutShortcutNode`) que cicla `colliders.mode`, e inseri-lo no `ScreenDebugCanvas` via `DebugLayer`
+- [x] 1.4 Expor a seleção de `colliders.mode` via `ColliderModePanel` — painel screen-space companheiro (segmented `AABB | REAL`, segmento ativo destacado) que faz proxy de `colliders.enabled` e vive fora do HUD (braço screen-space do colliders, no espírito do par `scenePicker`/`SelectionGizmoWidget`), auto-inserido no `ScreenDebugCanvas` via `DebugRegistry.bindLayer`. (Substitui a ideia inicial de um `ColliderModeShortcutNode` por atalho de teclado, que se mostrou pouco intuitiva.)
 - [x] 1.5 Remover o arquivo `ShapeGizmoWidget.kt`
 
 ## 2. ProfilerWidget absorve fps (funde FPS)
@@ -21,7 +21,7 @@
 
 - [x] 4.1 Remover os campos `fps`, `momentum` e `shapeGizmo` do `DebugRegistry`
 - [x] 4.2 Ajustar `DebugRegistry.bindLayer` para registrar o catálogo novo (sem `fps`/`momentum`/`shapeGizmo`), preservando a ordem de linhas do HUD
-- [x] 4.3 Inserir o `ColliderModeShortcutNode` na construção da `DebugLayer`
+- [x] 4.3 Auto-inserir o `ColliderModePanel` no `ScreenDebugCanvas` via `bindLayer` (docado para layout, fora de `_widgets`/HUD)
 - [x] 4.4 Verificar que `register`/`unregister` e `find<T>()` seguem funcionando com o catálogo reduzido
 
 ## 5. Testes
@@ -29,8 +29,8 @@
 - [x] 5.1 Reescrever `DebugRegistryTest` removendo referências a `momentum`/`fps`; cobrir não-compartilhamento via `colliders`
 - [x] 5.2 Reescrever `DebugLayerTest` para o catálogo novo (sem `FpsWidget`/`MomentumWidget`); validar containers corretos
 - [x] 5.3 Reescrever `BuiltinWidgetsTest` removendo casos de `MomentumWidget`
-- [x] 5.4 Ajustar `PhysicsGizmosTest` removendo `ShapeGizmoWidget`; adicionar/mover casos de geometria real para o `ColliderWidget` (modos REAL/BOTH)
-- [x] 5.5 Adicionar teste do modo do `ColliderWidget` (AABB/REAL/BOTH, default REAL, ciclo via shortcut)
+- [x] 5.4 Ajustar `PhysicsGizmosTest` removendo `ShapeGizmoWidget`; adicionar/mover casos de geometria real para o `ColliderWidget` (modo REAL)
+- [x] 5.5 Adicionar teste do modo do `ColliderWidget` (AABB/REAL, default REAL) e do `ColliderModePanel` (visível só com colliders on, clique no segmento seta o modo, segmento ativo destacado, fechar desliga o gizmo)
 - [x] 5.6 Adicionar teste da linha de fps do `ProfilerWidget` (aparece com `size == 0`, independente da instrumentação)
 - [x] 5.7 Rodar a suíte completa do `:engine` e garantir verde
 

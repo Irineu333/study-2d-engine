@@ -34,14 +34,17 @@ class DebugLayerTest {
     }
 
     @Test
-    fun `ScreenDebugCanvas hosts DebugHud, ProfilerWidget, DebugToggleNode`() {
+    fun `ScreenDebugCanvas hosts DebugHud, ProfilerWidget, DebugToggleNode, ColliderModePanel`() {
         val tree = SceneTree(Node())
         tree.start()
         val canvas = (tree.root.findChild(DebugLayer.NODE_NAME) as DebugLayer).screenContainer
         assertSame(tree.debug.hud, canvas.children.filterIsInstance<DebugHud>().single())
         assertSame(tree.debug.profiler, canvas.children.filterIsInstance<ProfilerWidget>().single())
+        // The collider mode panel is the colliders tool's screen-space arm:
+        // hosted here but kept out of the HUD widget list.
+        assertSame(tree.debug.colliderModePanel, canvas.children.filterIsInstance<ColliderModePanel>().single())
+        assertTrue(tree.debug.colliderModePanel !in tree.debug.widgets)
         assertTrue(canvas.children.any { it::class.simpleName == "DebugToggleNode" })
-        assertTrue(canvas.children.any { it::class.simpleName == "ColliderModeShortcutNode" })
     }
 
     @Test

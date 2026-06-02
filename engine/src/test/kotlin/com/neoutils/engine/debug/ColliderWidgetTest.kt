@@ -1,8 +1,5 @@
 package com.neoutils.engine.debug
 
-import com.neoutils.engine.input.Input
-import com.neoutils.engine.input.Key
-import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.Area2D
@@ -12,21 +9,14 @@ import com.neoutils.engine.physics.RectangleShape2D
 import com.neoutils.engine.physics.RigidBody2D
 import com.neoutils.engine.render.RecordedEvent
 import com.neoutils.engine.render.RecordingRenderer
+import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Node
+import com.neoutils.engine.scene.Panel
 import com.neoutils.engine.tree.SceneTree
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-
-private class ColliderKeyInput(var pressedKey: Key? = null) : Input {
-    override val pointerPosition: Vec2 get() = Vec2.ZERO
-    override var mouseClickConsumed: Boolean = false
-    override fun isKeyDown(key: Key): Boolean = false
-    override fun wasKeyPressed(key: Key): Boolean = pressedKey == key
-    override fun isMouseDown(button: MouseButton): Boolean = false
-    override fun wasMouseClickedRaw(button: MouseButton): Boolean = false
-}
 
 class ColliderWidgetTest {
 
@@ -92,50 +82,78 @@ class ColliderWidgetTest {
     }
 
     @Test
-    fun `BOTH mode draws the AABB before the real geometry`() {
+    fun `AABB mode draws the broad-phase rect and no real geometry for a rectangle`() {
         val body = RigidBody2D().apply { transform = Transform(position = Vec2(100f, 80f)) }
         body.addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { size = Vec2(30f, 30f) } })
         val tree = SceneTree(Node().apply { addChild(body) }).also { it.start() }
-        tree.debug.colliders.apply { mode = ColliderDrawMode.BOTH; enabled = true }
+        tree.debug.colliders.apply { mode = ColliderDrawMode.AABB; enabled = true }
 
         val recorder = RecordingRenderer()
         tree.debug.colliders.drawDebug(recorder)
 
-        val firstRect = recorder.events.indexOfFirst { it is RecordedEvent.Rect && !it.filled }
-        val firstLine = recorder.events.indexOfFirst { it is RecordedEvent.Line }
-        assertTrue(firstRect >= 0, "BOTH must draw the broad-phase rect")
-        assertEquals(4, recorder.events.count { it is RecordedEvent.Line }, "BOTH must draw the real quad")
-        assertTrue(firstRect < firstLine, "the AABB must be drawn before the real geometry")
+        assertEquals(1, recorder.events.count { it is RecordedEvent.Rect && !it.filled })
+        assertEquals(0, recorder.events.count { it is RecordedEvent.Line }, "AABB must not draw the real quad")
     }
 
+    // --- ColliderModePanel: the screen-space control surface ---
+
     @Test
-    fun `the shortcut node cycles the mode while the collider gizmo is enabled`() {
-        val input = ColliderKeyInput()
-        val tree = SceneTree(Node()).also {
-            it.start()
-            it.input = input
-        }
+    fun `the mode panel is hidden until the collider gizmo is enabled`() {
+        val tree = SceneTree(Node()).also { it.resize(800f, 600f); it.start() }
+        val panel = tree.debug.colliderModePanel
+        // colliders off (default): the panel mirrors its enabled and draws nothing.
+        tree.process(0f)
+        assertTrue(!panel.enabled, "panel follows colliders.enabled")
+        assertEquals(0, panel.children.filterIsInstance<Panel>().size)
+
         tree.debug.colliders.enabled = true
-        assertEquals(ColliderDrawMode.REAL, tree.debug.colliders.mode)
-
-        input.pressedKey = Key.C
+        assertTrue(panel.enabled, "enabling colliders shows the panel")
         tree.process(0f)
-        assertEquals(ColliderDrawMode.BOTH, tree.debug.colliders.mode)
-        tree.process(0f)
-        assertEquals(ColliderDrawMode.AABB, tree.debug.colliders.mode)
-        tree.process(0f)
-        assertEquals(ColliderDrawMode.REAL, tree.debug.colliders.mode, "cycles back to REAL")
+        tree.applyPending()
+        assertEquals(1, panel.children.filterIsInstance<Panel>().size)
     }
 
     @Test
-    fun `the shortcut node is inert while the collider gizmo is disabled`() {
-        val input = ColliderKeyInput(pressedKey = Key.C)
-        val tree = SceneTree(Node()).also {
-            it.start()
-            it.input = input
-        }
-        // colliders left disabled (the production default).
+    fun `clicking a segment sets the collider mode`() {
+        val tree = SceneTree(Node()).also { it.resize(800f, 600f); it.start() }
+        tree.debug.colliders.enabled = true
         tree.process(0f)
-        assertEquals(ColliderDrawMode.REAL, tree.debug.colliders.mode, "mode must not cycle when the gizmo is off")
+        tree.applyPending()
+        val buttons = segmentButtons(tree)
+        assertEquals(2, buttons.size, "one segment per ColliderDrawMode")
+
+        buttons.single { it.text == "AABB" }.pressed.emit(Unit)
+        assertEquals(ColliderDrawMode.AABB, tree.debug.colliders.mode)
+        buttons.single { it.text == "REAL" }.pressed.emit(Unit)
+        assertEquals(ColliderDrawMode.REAL, tree.debug.colliders.mode)
     }
+
+    @Test
+    fun `the active segment is highlighted`() {
+        val tree = SceneTree(Node()).also { it.resize(800f, 600f); it.start() }
+        tree.debug.colliders.apply { mode = ColliderDrawMode.REAL; enabled = true }
+        tree.process(0f)
+        tree.applyPending()
+        tree.process(0f) // a tick so refreshSegments recolors
+        val buttons = segmentButtons(tree)
+        val real = buttons.single { it.text == "REAL" }
+        val aabb = buttons.single { it.text == "AABB" }
+        assertTrue(real.normalColor != aabb.normalColor, "the active segment reads differently from the inactive ones")
+    }
+
+    @Test
+    fun `closing the panel disables the collider gizmo`() {
+        val tree = SceneTree(Node()).also { it.resize(800f, 600f); it.start() }
+        tree.debug.colliders.enabled = true
+        // The panel's [x] sets enabled = false, which proxies back to colliders.
+        tree.debug.colliderModePanel.enabled = false
+        assertTrue(!tree.debug.colliders.enabled, "closing the panel turns the gizmo off")
+    }
+
+    private fun segmentButtons(tree: SceneTree): List<Button> =
+        tree.debug.colliderModePanel.children
+            .filterIsInstance<Panel>()
+            .single()
+            .children
+            .filterIsInstance<Button>()
 }

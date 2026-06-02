@@ -61,6 +61,14 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     val selectionGizmo: SelectionGizmoWidget = SelectionGizmoWidget()
 
     /**
+     * Screen-space segmented control (`AABB | REAL`) for [colliders]. The
+     * colliders tool's screen-space arm — driven by `colliders.enabled`,
+     * auto-inserted under the screen canvas but intentionally absent from
+     * [widgets]/HUD (so there is no second "Colliders" row).
+     */
+    val colliderModePanel: ColliderModePanel = ColliderModePanel()
+
+    /**
      * Per-tree buffer of resolved contacts captured during the last physics
      * step. Recording is gated by `contactGizmo.enabled` (mirrored onto
      * [PhysicsContactBuffer.recording]).
@@ -123,6 +131,12 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             // pass, but keep it out of `_widgets`/HUD — `scenePicker.enabled`
             // drives it (see SelectionGizmoWidget.enabled).
             layer.worldContainer.addChild(selectionGizmo)
+            // Likewise the collider mode panel is the colliders tool's
+            // screen-space arm: docked for layout but kept out of `_widgets`/HUD
+            // so it never adds a second "Colliders" row — `colliders.enabled`
+            // drives it (see ColliderModePanel.enabled).
+            layer.screenContainer.addChild(colliderModePanel)
+            dock.add(colliderModePanel)
         }
     }
 

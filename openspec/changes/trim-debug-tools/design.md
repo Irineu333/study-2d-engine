@@ -21,8 +21,8 @@ este design fixa **como** sem quebrar invariantes nem a API dos jogos.
 
 - Reduzir o HUD de 12 → 8 toggles sem perder nenhuma lição que tenha valor
   pedagógico único.
-- Fundir Colliders+Shapes num widget com modo ciclável, preservando as três
-  visões (AABB, forma real, ambas).
+- Fundir Colliders+Shapes num widget com modo selecionável, preservando as
+  duas visões (AABB, forma real).
 - Mover fps para dentro do Profiler sem acoplá-lo à instrumentação pesada.
 - Manter a API pública de física (`MomentumDiagnostics`) intacta.
 
@@ -30,21 +30,20 @@ este design fixa **como** sem quebrar invariantes nem a API dos jogos.
 
 - Não mexer em `Debug Draw`, `Time`, `Log`, `Picker`, `Contacts`, `Velocity`.
 - Não tocar no z-order de painéis (change `debug-ui-z-order`, eixo separado).
-- Não introduzir um framework de "modo" genérico para widgets — o ciclo de
-  modo do `ColliderWidget` é específico dele.
+- Não introduzir um framework de "modo" genérico para widgets — o modo do
+  `ColliderWidget` é específico dele.
 
 ## Decisions
 
 ### 1. Fusão Colliders+Shapes: modo no `ColliderWidget`, não um novo tipo
 
-`ColliderWidget` ganha `enum ColliderDrawMode { AABB, REAL, BOTH }` e um
+`ColliderWidget` ganha `enum ColliderDrawMode { AABB, REAL }` e um
 `var mode: ColliderDrawMode = REAL`. `drawDebug` despacha:
 
 - `AABB` → comportamento atual do `ColliderWidget` (`shape.broadPhaseBounds()`
   via `drawRect filled=false`).
 - `REAL` → comportamento atual do `ShapeGizmoWidget` (outline de círculo /
   quad de `worldCorners`).
-- `BOTH` → desenha os dois (AABB primeiro, geometria por cima).
 
 **Default `REAL`**: é a forma que o jogador raramente vê e a mais informativa;
 o AABB vira a visão "avançada" que explica o broad-phase.
@@ -55,13 +54,16 @@ Absorver a geometria real para dentro dele mantém o campo e mata o
 `shapeGizmo` — alternativa (criar `CollidersWidget` novo) renomearia o campo
 público à toa.
 
-**Controle de ciclo do modo:** o `ColliderWidget` é um `WorldDebugWidget`
-(`Node2D`), não tem chrome de painel screen-space onde encaixar um botão. O
-ciclo será exposto como uma **tecla/atalho** polled por um node interno (no
-espírito do `TimeControlShortcutNode`/`DebugLayoutShortcutNode` já existentes),
-**e** `mode` continua sendo `var` público para scripts/jogos ciclarem
-programaticamente. Decisão registrada como aberta abaixo caso se prefira um
-mini-controle screen-space acoplado.
+**Controle de modo:** o `ColliderWidget` é um `WorldDebugWidget` (`Node2D`),
+sem chrome de painel screen-space onde encaixar um controle. A seleção do modo
+vive num painel screen-space companheiro `ColliderModePanel` (segmented control
+`AABB | REAL`, segmento ativo destacado), braço screen-space do colliders
+no espírito do par `scenePicker`/`SelectionGizmoWidget`: seu `enabled` faz proxy
+de `colliders.enabled` (ligar o Colliders no HUD mostra o painel; fechar o painel
+desliga o gizmo), e ele fica fora do `widgets`/HUD (sem segunda linha
+"Colliders"). `mode` continua `var` público para jogos setarem
+programaticamente. (Resolvido na fase de apply — ver Open Questions: optou-se
+pelo controle visual em vez do atalho de teclado, por ser mais descobrível.)
 
 ### 2. fps dentro do `ProfilerWidget`, amostrado independente da instrumentação
 
@@ -126,7 +128,9 @@ o commit restaura os três widgets sem migração de dados (nada é serializado)
 
 ## Open Questions
 
-- **Controle de modo do `ColliderWidget`:** atalho de teclado (consistente com
-  os shortcut nodes existentes) vs. um mini-controle screen-space. A proposta
-  assume **atalho + `var mode` público**; confirmar na fase de apply se o
-  atalho é suficiente ou se vale um controle visual.
+- ~~**Controle de modo do `ColliderWidget`:** atalho de teclado vs. um
+  mini-controle screen-space.~~ **Resolvido na fase de apply:** optou-se pelo
+  mini-controle screen-space (`ColliderModePanel`, segmented `AABB | REAL`)
+  por ser mais descobrível — a versão com atalho de teclado (tecla `C`) ciclando
+  o modo se mostrou pouco intuitiva (sem feedback visual do modo ativo, keybind
+  escondido). `mode` permanece `var` público para uso programático.

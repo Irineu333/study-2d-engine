@@ -28,7 +28,6 @@ class DebugLayer : Node() {
         screenContainer.addChild(DebugToggleNode())
         screenContainer.addChild(TimeControlShortcutNode())
         screenContainer.addChild(DebugLayoutShortcutNode())
-        screenContainer.addChild(ColliderModeShortcutNode())
         // Backing nodes for the immediate-draw facade: one per space, flushing
         // tree.debug.draw.world/screen during the respective render pass.
         worldContainer.addChild(ImmediateWorldDrawNode())
