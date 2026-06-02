@@ -376,8 +376,11 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
             input.mouseDragConsumed = true
             return
         }
-        // Act only on the press edge.
-        if (!(down && input.wasMouseClickedRaw(MouseButton.Left))) return
+        // Act only on the press edge, and only when `hitTestUI` elected this panel
+        // as the press owner (the top-most panel under the pointer). Reading the
+        // owner instead of the raw click is what keeps a press on the overlap of
+        // two panels from arming both — the lower one is never the owner.
+        if (!down || this !== tree?.debug?.pressOwner) return
         val pointer = input.pointerPosition
         // Window controls take precedence over starting a drag (and are carved
         // out of inHeader, so the drag path never fires over them).

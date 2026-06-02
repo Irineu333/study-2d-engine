@@ -91,6 +91,15 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     private var builtinsAttached: Boolean = false
 
     /**
+     * Panel elected by `SceneTree.hitTestUI` as the owner of the current press —
+     * the top-most enabled panel under the pointer on a raw left click. Read by
+     * `ScreenDebugWidget.updateDrag` so that only the owner arms its drag, so a
+     * press over two overlapping panels never arms both. Cleared at the start of
+     * every tick (in `hitTestUI`), so it is non-null only on the press-edge tick.
+     */
+    internal var pressOwner: ScreenDebugWidget? = null
+
+    /**
      * Called by `DebugLayer.onEnter`. Captures the container references and,
      * on first attach, routes the five built-ins through [register]. On
      * re-start (stop → start) the layer keeps its children — only the
@@ -170,12 +179,28 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
      * to the scene picker or gameplay (and a header-drag can begin in `process`
      * without the same click re-picking the world).
      */
-    internal fun isOverScreenPanel(pointer: Vec2): Boolean {
-        for (widget in _widgets) {
-            if (widget !is ScreenDebugWidget || !widget.enabled) continue
-            val size = widget.contentSize()
-            if (size.x > 0f && size.y > 0f && Rect(widget.origin, size).contains(pointer)) return true
+    internal fun isOverScreenPanel(pointer: Vec2): Boolean = topPanelAt(pointer) != null
+
+    /**
+     * The top-most enabled screen panel whose full rect contains [pointer]
+     * (screen pixels), or `null` when none does. Resolved in the
+     * `ScreenDebugCanvas`'s child order reversed — last child paints on top, so
+     * walking children back-to-front yields the painted top-most panel first.
+     * Backs both the press-owner election in `SceneTree.hitTestUI` and the
+     * opaque-UI click consumption ([isOverScreenPanel]).
+     */
+    internal fun topPanelAt(pointer: Vec2): ScreenDebugWidget? {
+        val screen = screenContainer ?: return null
+        for (child in screen.children.asReversed()) {
+            if (child !is ScreenDebugWidget || !child.enabled) continue
+            val size = child.contentSize()
+            if (size.x > 0f && size.y > 0f && Rect(child.origin, size).contains(pointer)) return child
         }
-        return false
+        return null
+    }
+
+    /** Moves [widget] to the top of the `ScreenDebugCanvas` z-order (front-most). */
+    internal fun raisePanelToTop(widget: ScreenDebugWidget) {
+        screenContainer?.raiseChildToTop(widget)
     }
 }

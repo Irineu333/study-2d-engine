@@ -100,11 +100,14 @@ class DebugDraggableTest {
         val tree = startedTree()
         val widget = FixedScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f))
         tree.debug.register(widget)
-        // Consumer added after the widget so it processes once the panel has
-        // already claimed the drag this tick.
+        // Consumer lives under the root, after the auto-inserted DebugLayer, so it
+        // processes once the panel (inside that layer) has already claimed the drag
+        // this tick. Pressing the panel raises it to the end of the canvas children
+        // (bring-to-front), so a consumer placed as a canvas sibling would run
+        // first; rooting it after the whole debug subtree keeps the panel ahead.
         val consumer = GameplayDragConsumer()
         tree.debug.dock.relayout(tree.size)
-        widget.parent!!.addChild(consumer)
+        tree.root.addChild(consumer)
         tree.applyPending()
 
         val grabPoint = widget.dockOrigin + Vec2(40f, 8f)

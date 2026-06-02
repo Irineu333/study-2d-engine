@@ -215,6 +215,7 @@ class SceneTree(val root: Node) {
     fun hitTestUI(input: Input) {
         input.mouseClickConsumed = false
         input.mouseDragConsumed = false
+        debug.pressOwner = null
         if (!root.isLive) return
         if (!input.wasMouseClickedRaw(MouseButton.Left)) return
         val pointer = input.pointerPosition
@@ -228,11 +229,18 @@ class SceneTree(val root: Node) {
                 return
             }
         }
-        // No button absorbed it: a click anywhere on an enabled debug panel is
-        // still consumed (panels are opaque UI), so it neither re-picks via
-        // hitTestPick nor reaches gameplay — and a header-drag can start in
-        // process without the same click clearing the panel's content.
-        if (debug.isOverScreenPanel(pointer)) input.mouseClickConsumed = true
+        // No button absorbed it: resolve the top-most enabled debug panel under
+        // the pointer and make it the press owner — only that panel arms its drag
+        // (so a press on the overlap never arms two), and bring it to the front of
+        // the z-order so it paints on top from this frame on. A click on any panel
+        // is consumed regardless (panels are opaque UI) so it neither re-picks via
+        // hitTestPick nor reaches gameplay.
+        val panel = debug.topPanelAt(pointer)
+        if (panel != null) {
+            debug.pressOwner = panel
+            debug.raisePanelToTop(panel)
+            input.mouseClickConsumed = true
+        }
     }
 
     /**

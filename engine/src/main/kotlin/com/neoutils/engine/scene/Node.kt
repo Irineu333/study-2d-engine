@@ -65,6 +65,9 @@ open class Node {
     @Transient
     private val pendingRemove: MutableList<Node> = mutableListOf()
 
+    @Transient
+    private val pendingRaise: MutableList<Node> = mutableListOf()
+
     fun addChild(child: Node) {
         require(child.parent == null) { "Node '${child.name}' already has a parent" }
         require(child !== this) { "Cannot add a node as its own child" }
@@ -92,6 +95,38 @@ open class Node {
             return
         }
         applyRemove(child)
+    }
+
+    /**
+     * Moves an existing direct [child] to the end of the children list — the top
+     * of the paint and DFS order among its siblings. No-op when [child] is not a
+     * direct child. Does not change `child.parent` nor fire lifecycle hooks
+     * (`onEnter`/`onExit`); the relative order of the other children is preserved.
+     *
+     * Governed by the same mutation-during-traversal contract as
+     * [addChild]/[removeChild]: applied immediately outside traversal, deferred to
+     * the next drain when called while a `SceneTree` traversal is in progress, and
+     * logged-and-dropped when called during `onDraw`.
+     */
+    fun raiseChildToTop(child: Node) {
+        if (child.parent !== this) return
+        val owningTree = tree
+        if (owningTree != null && owningTree.isMutationDeferred) {
+            if (owningTree.isRendering) {
+                Log.w(TAG, "raiseChildToTop called during onDraw; ignored ('${child.name}' in '$name')")
+                return
+            }
+            pendingRaise += child
+            return
+        }
+        applyRaise(child)
+    }
+
+    private fun applyRaise(child: Node) {
+        if (child.parent !== this) return
+        if (_children.lastOrNull() === child) return
+        _children.remove(child)
+        _children.add(child)
     }
 
     private fun applyAdd(child: Node) {
@@ -151,6 +186,14 @@ open class Node {
             pendingAdd.clear()
             for (child in drained) {
                 if (child.parent == null) applyAdd(child)
+            }
+        }
+        // Raises last so a reorder lands on top of nodes added in the same drain.
+        if (pendingRaise.isNotEmpty()) {
+            val drained = pendingRaise.toList()
+            pendingRaise.clear()
+            for (child in drained) {
+                if (child.parent === this) applyRaise(child)
             }
         }
     }
