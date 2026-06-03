@@ -30,24 +30,27 @@ def _physics_process(self, dt):
     # automatically. We sweep this frame's motion with moveAndCollide so the
     # ball stops exactly at the contact (no tunneling at high speed) and we
     # bounce off the resolved normal here, instead of reacting one frame late
-    # in _on_body_entered. Solid targets (walls, paddles) are StaticBody2D and
-    # are picked up by the sweep; the goals are Area2D sensors and stay on the
-    # _on_area_entered path (moveAndCollide ignores areas).
+    # in _on_body_entered. Solid targets are picked up by the sweep — walls are
+    # StaticBody2D, paddles are CharacterBody2D, both PhysicsBody2D — while the
+    # goals are Area2D sensors and stay on the _on_area_entered path
+    # (moveAndCollide ignores areas).
     v = self.velocity
     collision = self.moveAndCollide(Vec2(v.x * dt, v.y * dt))
     if collision is None:
         return
     body = collision.collider
     n = collision.normal
-    # Only the paddle's *face* (a near-horizontal contact normal) gets the
-    # angle-based bounce. A hit on the paddle's top/bottom edge has a vertical
-    # normal — treating that as a face bounce would drive the ball back into
-    # the paddle and trap it, so it reflects across the normal like a wall.
-    if body.isInGroup("paddles") and abs(n.x) > abs(n.y):
+    # Only the paddle's *face* gets the angle-based bounce. We classify face vs.
+    # corner/edge geometrically — by whether the ball center-y falls within the
+    # paddle's vertical span — instead of from the contact normal. On a corner
+    # hit the normal is diagonal (|n.x| ≈ |n.y|), so the old `abs(n.x) > abs(n.y)`
+    # test was a coin flip that could trap the ball; the geometric test is
+    # deterministic. Corners and top/bottom edges reflect across the normal.
+    if body.isInGroup("paddles") and _ball_within_paddle_face(self, body):
         _bounce_off_paddle(self, body)
     else:
-        # Walls and paddle top/bottom edges: reflect velocity across the
-        # contact normal — v' = v - 2(v·n)n.
+        # Walls, paddle corners and top/bottom edges: reflect velocity across
+        # the contact normal — v' = v - 2(v·n)n.
         dot = v.x * n.x + v.y * n.y
         self.velocity = Vec2(v.x - 2.0 * dot * n.x, v.y - 2.0 * dot * n.y)
 
@@ -84,8 +87,18 @@ def _on_area_entered(self, area):
         _reset(self, -1.0)
 
 
+def _ball_within_paddle_face(self, paddle):
+    # Face hit iff the ball center-y sits inside the paddle's vertical span.
+    # Same data `_bounce_off_paddle` uses (paddle world pos + script `size`).
+    paddle_wrapper = script_of(paddle)
+    paddle_pos = paddle.world().position
+    paddle_size = paddle_wrapper.size
+    ball_center_y = self.position.y + self.ballSize / 2.0
+    return paddle_pos.y <= ball_center_y <= paddle_pos.y + paddle_size.y
+
+
 def _bounce_off_paddle(self, paddle):
-    # `paddle` is the Kotlin StaticBody2D Node — `size` lives on the paddle
+    # `paddle` is the Kotlin CharacterBody2D Node — `size` lives on the paddle
     # script's export, so reach it via `script_of` rather than the raw node.
     paddle_wrapper = script_of(paddle)
     paddle_pos = paddle.world().position

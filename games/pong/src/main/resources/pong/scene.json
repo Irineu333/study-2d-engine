@@ -30,7 +30,7 @@
         "children": []
       },
       {
-        "type": "com.neoutils.engine.physics.StaticBody2D",
+        "type": "com.neoutils.engine.physics.CharacterBody2D",
         "name": "left",
         "properties": {
           "transform": {
@@ -63,7 +63,7 @@
         ]
       },
       {
-        "type": "com.neoutils.engine.physics.StaticBody2D",
+        "type": "com.neoutils.engine.physics.CharacterBody2D",
         "name": "right",
         "properties": {
           "transform": {

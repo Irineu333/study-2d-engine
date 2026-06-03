@@ -1,4 +1,4 @@
-# extends StaticBody2D
+# extends CharacterBody2D
 
 from typing import Optional
 
@@ -49,16 +49,15 @@ def _physics_process(self, dt):
         dy = _compute_human(self, dt)
     if dy == 0.0:
         return
-    pos = self.position
-    new_y = pos.y + dy
-    tree = self.tree
-    play_field_height = tree.viewport.size.y if tree is not None else 0.0
-    max_y = play_field_height - self.size.y
-    if new_y < 0.0:
-        new_y = 0.0
-    elif new_y > max_y:
-        new_y = max_y
-    self.position = Vec2(pos.x, new_y)
+    # CharacterBody2D moved by the script: sweep the vertical motion so the
+    # paddle stops at the contact (against ball or walls) instead of teleporting
+    # into it. The walls bound the travel via the sweep, so there's no manual
+    # clamp. moveAndCollide may depenetrate diagonally on a transient ball
+    # overlap, drifting us off the column — re-pin x to discard that horizontal
+    # component while keeping the vertical stop-at-contact.
+    target_x = self.position.x
+    self.moveAndCollide(Vec2(0.0, dy))
+    self.position = Vec2(target_x, self.position.y)
 
 
 def _draw(self, renderer):
