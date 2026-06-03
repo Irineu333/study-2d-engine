@@ -43,10 +43,10 @@ Each tick the paddle SHALL compute its desired vertical displacement `dy` (from 
 
 The Ball SHALL be a `com.neoutils.engine.physics.CharacterBody2D` whose collision shape is a `CircleShape2D`. Each tick the Ball SHALL advance its motion with `moveAndCollide(velocity * dt)` (Godot-style kinematic sweep), so it stops exactly at the first contact with no tunneling at high speed; the engine does NOT integrate `velocity` automatically. On a resolved contact the Ball SHALL react in script by classifying the contact:
 
-- **Paddle face** — the contact is a paddle (group `paddles`) AND the ball's center lies within the paddle's vertical face span. The Ball applies the angle-based "english" bounce: the horizontal direction flips away from the paddle and the vertical component is derived from where the ball struck the face, with the speed allowed to increase modestly per hit up to a configured maximum.
-- **Paddle top/bottom edge, paddle corner, or wall** — every other contact. The Ball reflects its velocity across the contact normal (`v' = v - 2(v·n)n`).
+- **Paddle face** — the contact is a paddle (group `paddles`) AND the ball's center lies **beside** the paddle (its center-x is outside the paddle's horizontal span, i.e. the ball is pressing on a vertical face, front corners included). The Ball applies the angle-based "english" bounce: the horizontal direction flips to the side the ball is on (its center-x vs the paddle center-x) and the vertical component is derived from where the ball struck the face, with the speed allowed to increase modestly per hit up to a configured maximum.
+- **Paddle top/bottom edge, or wall** — every other contact (including a contact whose ball center-x is within the paddle's horizontal span, i.e. a true top/bottom edge). The Ball reflects its velocity across the contact normal (`v' = v - 2(v·n)n`).
 
-Classification MUST be geometric (ball center within the paddle's vertical face span), NOT a comparison of the contact normal's dominant axis (`abs(n.x) > abs(n.y)`), so that a diagonal corner normal (`|n.x| ≈ |n.y|`) is resolved deterministically and never traps the ball. Walls and goals keep their current roles: walls are solid bodies picked up by the sweep; goals are `Area2D` sensors handled on the `_on_area_entered` path.
+Classification MUST be geometric by the ball center's **horizontal** position relative to the paddle (beside the paddle ⇒ face; within the paddle's horizontal span ⇒ top/bottom edge), NOT a comparison of the contact normal's dominant axis (`abs(n.x) > abs(n.y)`). The diagonal normal at a front corner (`|n.x| ≈ |n.y|`) is then resolved deterministically as a face hit (x reversed decisively), never as a weak diagonal reflection that the chasing paddle could pin. Because `moveAndCollide` discards the intended motion on a starting overlap (`toi == 0`) and only depenetrates, the Ball, after bouncing on such an overlap with an outward-pointing velocity, additionally advances itself one frame along that velocity so a paddle pressing a marginal overlap cannot freeze it. Walls and goals keep their current roles: walls are solid bodies picked up by the sweep; goals are `Area2D` sensors handled on the `_on_area_entered` path.
 
 #### Scenario: Ball reflects off top wall
 
@@ -63,6 +63,6 @@ Classification MUST be geometric (ball center within the paddle's vertical face 
 
 #### Scenario: Ball corner hit does not trap
 
-- **WHEN** the ball contacts a paddle corner, producing a near-diagonal contact normal
-- **THEN** the contact is classified by the ball-center-vs-face-span geometry, not by `abs(n.x) > abs(n.y)`
-- **AND** the resulting velocity carries the ball away from the paddle, never oscillating in place at the corner
+- **WHEN** the ball contacts a paddle front corner, producing a near-diagonal contact normal, while the AI paddle chases and re-presses the contact
+- **THEN** the contact is classified by the ball center's horizontal position (beside the paddle ⇒ face), not by `abs(n.x) > abs(n.y)`, so the horizontal velocity reverses decisively
+- **AND** even though `moveAndCollide` discards the motion on the resulting starting overlap, the ball advances along its outward bounce velocity and leaves, never oscillating or freezing in place at the corner

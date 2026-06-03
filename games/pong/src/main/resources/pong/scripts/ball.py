@@ -40,19 +40,45 @@ def _physics_process(self, dt):
         return
     body = collision.collider
     n = collision.normal
-    # Only the paddle's *face* gets the angle-based bounce. We classify face vs.
-    # corner/edge geometrically — by whether the ball center-y falls within the
-    # paddle's vertical span — instead of from the contact normal. On a corner
-    # hit the normal is diagonal (|n.x| ≈ |n.y|), so the old `abs(n.x) > abs(n.y)`
-    # test was a coin flip that could trap the ball; the geometric test is
-    # deterministic. Corners and top/bottom edges reflect across the normal.
-    if body.isInGroup("paddles") and _ball_within_paddle_face(self, body):
+    # Classify the contact by the ball's position relative to the paddle's
+    # *horizontal* span, NOT by the contact normal or the vertical span. A hit is
+    # a "face" hit whenever the ball center sits beside the paddle (its center-x
+    # is outside the paddle's left/right edges) — it is pressing on a vertical
+    # face and must have its x reversed (the english bounce). Only when the ball
+    # center-x is within the paddle's horizontal span is the contact a genuine
+    # top/bottom edge, which reflects vertically.
+    #
+    # The earlier center-y-within-vertical-span test mis-classified the FRONT
+    # corner: there the ball center-y is a hair above/below the span, so it fell
+    # into the reflect branch — but the corner normal is diagonal and nearly
+    # tangent to the incoming velocity, so reflecting barely touched the x
+    # component that was driving the ball into the face. moveAndCollide does not
+    # slide on a starting overlap (toi == 0), so the ball froze in the corner,
+    # pinned by the chasing paddle. Keying off center-x fixes that: a front-corner
+    # hit is a face hit and the x reverses decisively, carrying the ball away.
+    if body.isInGroup("paddles") and _ball_beside_paddle(self, body):
         _bounce_off_paddle(self, body)
     else:
-        # Walls, paddle corners and top/bottom edges: reflect velocity across
-        # the contact normal — v' = v - 2(v·n)n.
+        # Walls and paddle top/bottom edges: reflect velocity across the contact
+        # normal — v' = v - 2(v·n)n.
         dot = v.x * n.x + v.y * n.y
         self.velocity = Vec2(v.x - 2.0 * dot * n.x, v.y - 2.0 * dot * n.y)
+
+    # Starting-overlap escape. moveAndCollide discards the intended motion on a
+    # starting overlap (toi == 0, remainder == motion) and only applies the
+    # depenetration. When the chasing AI paddle keeps re-pressing a marginal
+    # overlap at its corner, the ball can never spend its (already outward)
+    # bounce velocity and freezes pinned in place. Detect toi ≈ 0 (remainder ≈
+    # motion) and, when the new velocity points away from the contact, carry the
+    # ball out along it by hand for one frame. The step starts from the contact
+    # surface and points away from the paddle, so it cannot tunnel into it.
+    rem = collision.remainder
+    motion_len = math.hypot(v.x, v.y) * dt
+    rem_len = math.hypot(rem.x, rem.y)
+    if motion_len > 1e-4 and rem_len / motion_len > 0.95:
+        nv = self.velocity
+        if nv.x * n.x + nv.y * n.y > 0.0:
+            self.position = Vec2(self.position.x + nv.x * dt, self.position.y + nv.y * dt)
 
 
 def _process(self, dt):
@@ -87,14 +113,16 @@ def _on_area_entered(self, area):
         _reset(self, -1.0)
 
 
-def _ball_within_paddle_face(self, paddle):
-    # Face hit iff the ball center-y sits inside the paddle's vertical span.
-    # Same data `_bounce_off_paddle` uses (paddle world pos + script `size`).
+def _ball_beside_paddle(self, paddle):
+    # Face hit iff the ball center-x sits outside the paddle's horizontal span
+    # (the ball is beside the paddle, pressing on a vertical face — including the
+    # front corners). Same data `_bounce_off_paddle` uses (paddle world pos +
+    # script `size`).
     paddle_wrapper = script_of(paddle)
     paddle_pos = paddle.world().position
     paddle_size = paddle_wrapper.size
-    ball_center_y = self.position.y + self.ballSize / 2.0
-    return paddle_pos.y <= ball_center_y <= paddle_pos.y + paddle_size.y
+    ball_center_x = self.position.x + self.ballSize / 2.0
+    return ball_center_x < paddle_pos.x or ball_center_x > paddle_pos.x + paddle_size.x
 
 
 def _bounce_off_paddle(self, paddle):
@@ -115,7 +143,15 @@ def _bounce_off_paddle(self, paddle):
     new_speed = vlen * self.speedupPerHit
     if new_speed > self.maxSpeed:
         new_speed = self.maxSpeed
-    h_sign = -1.0 if v.x > 0.0 else 1.0
+    # Outgoing horizontal direction is the side of the paddle the ball is on
+    # (its center-x vs the paddle center-x), NOT the incoming v.x nor the contact
+    # normal. Keying off the side is stable frame-to-frame: a sustained or
+    # corner contact can flip the incoming v.x or wobble a diagonal normal, but
+    # the side the ball sits on does not — so the ball is always sent away from
+    # the paddle and never trapped pressing into it.
+    paddle_center_x = paddle_pos.x + paddle_size.x / 2.0
+    ball_center_x = self.position.x + self.ballSize / 2.0
+    h_sign = 1.0 if ball_center_x >= paddle_center_x else -1.0
     max_angle = math.pi / 3.0
     angle = rel * max_angle
     self.velocity = Vec2(
