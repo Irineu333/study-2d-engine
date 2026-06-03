@@ -14,6 +14,6 @@
 
 - [x] 3.1 Build do módulo do jogo: `./gradlew :games:pong:build` (ou compile/check equivalente) passa.
 - [x] 3.2 Suíte de testes da engine intacta: `./gradlew :engine:test` continua verde (mudança é só em resources do jogo).
-- [ ] 3.3 Rodar o Pong e reproduzir os cenários do bug: confirmar que o squeeze contra a parede **sumiu** (paddle para na bola, não esmaga) e que a bola **não prende na quina**.
-- [ ] 3.4 Confirmar que o rebote/feel está idêntico (ângulo do english preservado), o paddle **não desliza em x** (cinta D2), a AI ainda rastreia a bola e o humano (W/S) responde igual.
+- [x] 3.3 Rodar o Pong e reproduzir os cenários do bug: confirmar que o squeeze contra a parede **sumiu** (paddle para na bola, não esmaga) e que a bola **não prende na quina**.
+- [x] 3.4 Confirmar que o rebote/feel está idêntico (ângulo do english preservado), o paddle **não desliza em x** (cinta D2), a AI ainda rastreia a bola e o humano (W/S) responde igual.
 - [x] 3.5 Atualizar `# extends` nos stubs/comentários se houver referência ao tipo antigo; rodar `openspec validate fix-pong-paddle-as-characterbody`.
