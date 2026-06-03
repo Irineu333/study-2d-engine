@@ -52,10 +52,11 @@ def _physics_process(self, dt):
     # corner: there the ball center-y is a hair above/below the span, so it fell
     # into the reflect branch — but the corner normal is diagonal and nearly
     # tangent to the incoming velocity, so reflecting barely touched the x
-    # component that was driving the ball into the face. moveAndCollide does not
-    # slide on a starting overlap (toi == 0), so the ball froze in the corner,
-    # pinned by the chasing paddle. Keying off center-x fixes that: a front-corner
-    # hit is a face hit and the x reverses decisively, carrying the ball away.
+    # component that was driving the ball into the face. Keying off center-x fixes
+    # that: a front-corner hit is a face hit and the x reverses decisively. The
+    # engine then carries the ball out of the overlap (moveAndCollide's
+    # starting-overlap recovery), so a chasing paddle re-pressing the corner can
+    # no longer pin it — no script-side nudge needed.
     if body.isInGroup("paddles") and _ball_beside_paddle(self, body):
         _bounce_off_paddle(self, body)
     else:
@@ -63,22 +64,10 @@ def _physics_process(self, dt):
         # normal — v' = v - 2(v·n)n.
         dot = v.x * n.x + v.y * n.y
         self.velocity = Vec2(v.x - 2.0 * dot * n.x, v.y - 2.0 * dot * n.y)
-
-    # Starting-overlap escape. moveAndCollide discards the intended motion on a
-    # starting overlap (toi == 0, remainder == motion) and only applies the
-    # depenetration. When the chasing AI paddle keeps re-pressing a marginal
-    # overlap at its corner, the ball can never spend its (already outward)
-    # bounce velocity and freezes pinned in place. Detect toi ≈ 0 (remainder ≈
-    # motion) and, when the new velocity points away from the contact, carry the
-    # ball out along it by hand for one frame. The step starts from the contact
-    # surface and points away from the paddle, so it cannot tunnel into it.
-    rem = collision.remainder
-    motion_len = math.hypot(v.x, v.y) * dt
-    rem_len = math.hypot(rem.x, rem.y)
-    if motion_len > 1e-4 and rem_len / motion_len > 0.95:
-        nv = self.velocity
-        if nv.x * n.x + nv.y * n.y > 0.0:
-            self.position = Vec2(self.position.x + nv.x * dt, self.position.y + nv.y * dt)
+    # No starting-overlap nudge: moveAndCollide now applies the ball's outward
+    # (separating) motion on a starting overlap itself, so a paddle re-pressing a
+    # marginal corner overlap can no longer pin the ball in place. The engine
+    # carries it out — the script only sets the bounce velocity above.
 
 
 def _process(self, dt):

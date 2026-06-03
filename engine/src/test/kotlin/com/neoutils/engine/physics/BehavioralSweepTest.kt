@@ -16,6 +16,7 @@ import kotlin.test.assertTrue
 
 private const val FRAME_NANOS = 16_666_666L // 60 Hz
 private const val DT = 1f / 60f
+private const val EPS_MOVE = 0.01f
 
 private fun runFrames(tree: SceneTree, count: Int, dtNanos: Long = FRAME_NANOS) {
     val loop = GameLoop(tree, NoopRenderer, NoopInput, PhysicsSystem())
@@ -68,6 +69,13 @@ private fun makeWall(position: Vec2, size: Vec2, rotation: Float = 0f): StaticBo
 }
 
 private fun rectShape(size: Vec2): RectangleShape2D = RectangleShape2D().apply { this.size = size }
+
+private fun makeWallessCharacter(position: Vec2, size: Vec2): CharacterBody2D {
+    return CharacterBody2D().apply {
+        transform = Transform(position = position)
+        addChild(CollisionShape2D().apply { shape = RectangleShape2D().apply { this.size = size } })
+    }
+}
 
 class BehavioralSweepTest {
 
@@ -144,6 +152,46 @@ class BehavioralSweepTest {
             !aRect.intersects(bRect),
             "expected bodies to separate within 5 frames; a=${a.position}, b=${b.position}",
         )
+    }
+
+    @Test
+    fun `a body re-pressed into another still escapes within a few frames`() {
+        // The corner-freeze guard: a peer (B) re-presses a marginal overlap into
+        // A at the start of every frame, while A is driven away from B each
+        // frame. Without the starting-overlap recovery in moveAndCollide, A's
+        // outward velocity is discarded every frame (toi == 0) and A freezes
+        // pinned against B. With it, A separates and keeps moving away. No game
+        // scripts involved — pure engine behavior.
+        val root = Node()
+        val a = makeWallessCharacter(position = Vec2(0f, 0f), size = Vec2(10f, 10f))
+        val b = makeWallessCharacter(position = Vec2(8f, 0f), size = Vec2(10f, 10f)) // overlaps A by 2 on x
+        root.addChild(a); root.addChild(b)
+        val tree = SceneTree(root)
+        tree.start()
+
+        val outwardSpeed = 200f // A driven in -x, away from B
+        val xs = ArrayList<Float>()
+        xs += a.position.x
+        repeat(20) {
+            // Sustained re-press: shove B back into A by a fixed marginal amount.
+            b.position = Vec2(a.position.x + 8f, 0f)
+            a.moveAndCollide(Vec2(-outwardSpeed * DT, 0f))
+            xs += a.position.x
+        }
+
+        // A must have separated and kept moving away — its final x is clearly
+        // negative (it left the overlap, not frozen near 0).
+        assertTrue(
+            a.position.x < -20f,
+            "expected A to escape the sustained re-press; xs=$xs",
+        )
+        // And the trajectory is monotonically leaving (no freeze/oscillation).
+        for (i in 2 until xs.size) {
+            assertTrue(
+                xs[i] <= xs[i - 1] + EPS_MOVE,
+                "expected A to never move back toward B at frame $i; xs=$xs",
+            )
+        }
     }
 
     // --- kinematic-rotated-sweep behavioral scenarios ---
