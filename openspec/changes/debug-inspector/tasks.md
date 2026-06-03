@@ -44,3 +44,7 @@
 - [x] 6.3 Renomear/estender testes: `ScenePickerWidgetTest`→`NodeInspectorWidgetTest`, `ScenePickerRegistrationTest`→registro do Inspector, `SelectionGizmoWidgetTest`, `SceneTreeHitTestPickTest`, `DebugRegistryTest`, `DebugLayerTest`.
 - [x] 6.4 Novos testes da árvore: build de linhas em DFS com indentação, filtro de `__debug`, hit-test de linha → `select`, destaque do `selected`, overflow "+N more", e `select` resetando o cycling.
 - [x] 6.5 Rodar a suíte de `:engine` e `openspec validate debug-inspector --strict`.
+
+## 7. Correções pós-apply
+
+- [x] 7.1 Bug de magnetismo do dock: o `nodeInspector` escravo fica `enabled` (deriva do mestre) mas com `contentSize` zero enquanto não há seleção; entrava no `DebugDock.stacked()` e seu `dockOrigin` stale (≈0) corrompia `stackTop`/`stackBottom`, deixando todo o terço inferior direito magnético em qualquer altura. Fix: `stacked()` (e o filtro de reordenação em `dockWidget`) passam a excluir painéis que não ocupam espaço via o helper `occupiesSpace()`. Teste de regressão em `DebugDynamicDockTest` (painel `enabled` de tamanho zero não atrai um drop no miolo).

@@ -86,15 +86,26 @@ class DebugDock {
 
     /**
      * The docked widgets of [slot] in stacking order (ascending `orderInSlot`),
-     * excluding floating panels and the one under drag.
+     * excluding floating panels, the one under drag, and panels that occupy no
+     * space. A panel can be [ScreenDebugWidget.enabled] yet report a zero
+     * [ScreenDebugWidget.contentSize] (e.g. the Inspector's detail panel while
+     * nothing is selected); such a panel is never laid out, so its stale
+     * `dockOrigin` must not feed [stackTop]/[stackBottom] (which would corrupt
+     * the slot's magnetic reach) nor reserve an insertion slot.
      */
     private fun stacked(slot: DockSlot): List<ScreenDebugWidget> =
         widgets
             .filter {
                 it.currentSlot == slot && it.enabled &&
-                    it.floatingPosition == null && it !== dragging
+                    it.floatingPosition == null && it !== dragging && it.occupiesSpace()
             }
             .sortedBy { it.orderInSlot }
+
+    /** Whether [this] currently reports a non-empty [ScreenDebugWidget.contentSize]. */
+    private fun ScreenDebugWidget.occupiesSpace(): Boolean {
+        val size = contentSize()
+        return size.x > 0f && size.y > 0f
+    }
 
     private fun layoutSlot(
         slot: DockSlot,
@@ -235,7 +246,10 @@ class DebugDock {
         // out and [resolveDropTarget] indexes against); disabled panels in the
         // slot keep their order and rejoin when re-enabled.
         val ordered = widgets
-            .filter { it !== widget && it.enabled && it.floatingPosition == null && it.currentSlot == slot }
+            .filter {
+                it !== widget && it.enabled && it.floatingPosition == null &&
+                    it.currentSlot == slot && it.occupiesSpace()
+            }
             .sortedBy { it.orderInSlot }
             .toMutableList()
         ordered.add(index.coerceIn(0, ordered.size), widget)

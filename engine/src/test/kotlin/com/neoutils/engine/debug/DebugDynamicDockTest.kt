@@ -149,6 +149,31 @@ class DebugDynamicDockTest {
     }
 
     @Test
+    fun `an enabled zero-size panel does not corrupt a slot's magnetism`() {
+        // Regression: the Inspector's detail panel is enabled (it follows the
+        // master) yet reports a zero contentSize while nothing is selected. Such
+        // a panel must not enter the slot's stack — otherwise its stale
+        // dockOrigin (≈0) drove `stackTop(BOTTOM_RIGHT)` to the screen top and
+        // made the whole bottom-right third magnetic everywhere.
+        val tree = startedTree()
+        val ghost = object : ScreenDebugWidget() {
+            override val defaultSlot: DockSlot = DockSlot.BOTTOM_RIGHT
+            override val title: String = "Ghost"
+            init { enabled = true }
+            override fun bodySize(): Vec2 = Vec2.ZERO
+            override fun drawDebug(renderer: Renderer) {}
+        }
+        tree.debug.register(ghost)
+        tree.debug.dock.relayout(tree.size)
+        val dock = tree.debug.dock
+
+        // A panel fully inside the miolo over the bottom-right third must float;
+        // the zero-size ghost docked there must exert no pull.
+        val fullyInside = Rect(Vec2(550f, 250f), Vec2(200f, 120f)) // [250,370] ⊂ miolo
+        assertEquals(DropTarget.Floating, dock.resolveDropTarget(fullyInside))
+    }
+
+    @Test
     fun `insertion index follows the pointer past a stacked panel`() {
         val tree = startedTree()
         val a = DockWidget(DockSlot.TOP_LEFT)
