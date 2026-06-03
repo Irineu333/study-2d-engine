@@ -50,13 +50,26 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
     /** Per-phase profiler HUD; its `enabled` drives the loop's measurement. */
     val profiler: ProfilerWidget = ProfilerWidget()
 
-    /** Owns the world-space pick selection (breadcrumb + read-only property panel). */
-    val scenePicker: ScenePickerWidget = ScenePickerWidget()
+    /**
+     * Master arm of the Inspector tool: the navigable scene-tree view. Owns the
+     * selection (`selected` + `select`), the `enabled` state and the single
+     * Inspector HUD row.
+     */
+    val inspector: SceneTreeWidget = SceneTreeWidget()
 
     /**
-     * Oriented-box highlight of `scenePicker.selected` in world space. The
-     * picker's world-space arm — driven by `scenePicker.enabled`, auto-inserted
-     * under the world container but intentionally absent from [widgets]/HUD.
+     * Read-only detail panel of `inspector.selected`. The Inspector's
+     * screen-space slave arm — driven by `inspector.enabled`, auto-inserted
+     * under the screen canvas (docked) but intentionally absent from
+     * [widgets]/HUD so it adds no second row.
+     */
+    val nodeInspector: NodeInspectorWidget = NodeInspectorWidget()
+
+    /**
+     * Oriented-box highlight of `inspector.selected` in world space. The
+     * Inspector's world-space slave arm — driven by `inspector.enabled`,
+     * auto-inserted under the world container but intentionally absent from
+     * [widgets]/HUD.
      */
     val selectionGizmo: SelectionGizmoWidget = SelectionGizmoWidget()
 
@@ -125,11 +138,17 @@ class DebugRegistry internal constructor(private val tree: SceneTree) {
             register(contactGizmo)
             register(timeControls)
             register(profiler)
-            register(scenePicker)
-            // The gizmo is the picker's world-space arm, not a standalone
-            // widget: attach it to the world container so it draws in the world
-            // pass, but keep it out of `_widgets`/HUD — `scenePicker.enabled`
-            // drives it (see SelectionGizmoWidget.enabled).
+            register(inspector)
+            // The detail panel is the Inspector's screen-space slave arm: docked
+            // for layout but kept out of `_widgets`/HUD so it never adds a second
+            // "Inspector" row — `inspector.enabled` drives it (see
+            // NodeInspectorWidget.enabled).
+            layer.screenContainer.addChild(nodeInspector)
+            dock.add(nodeInspector)
+            // The gizmo is the Inspector's world-space slave arm: attach it to
+            // the world container so it draws in the world pass, but keep it out
+            // of `_widgets`/HUD — `inspector.enabled` drives it (see
+            // SelectionGizmoWidget.enabled).
             layer.worldContainer.addChild(selectionGizmo)
             // Likewise the collider mode panel is the colliders tool's
             // screen-space arm: docked for layout but kept out of `_widgets`/HUD

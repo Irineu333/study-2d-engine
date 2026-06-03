@@ -41,6 +41,23 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     override var enabled: Boolean = false
 
     /**
+     * Whether the header draws and hit-tests the close (`[x]`) control. Default
+     * `true`; a subclass that declares `false` (the Inspector's slave detail
+     * panel) drops the control from the header — it is not drawn, the press over
+     * its former area falls through to the normal drag/header path, and the panel
+     * can only be turned off by whoever governs its [enabled].
+     */
+    open val closable: Boolean = true
+
+    /**
+     * Whether the header draws and hit-tests the collapse (`[_]`) control.
+     * Default `true`; a subclass that declares `false` stays always-expanded and
+     * the press over its former area falls through to the normal drag/header
+     * path.
+     */
+    open val collapsible: Boolean = true
+
+    /**
      * Corner/center this widget docks to by default — the class-declared anchor
      * and the target of a reset. Independent of [currentSlot], which the user
      * may move; the `DebugDock` stacks every enabled widget sharing a slot, so
@@ -196,8 +213,8 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
             size = DebugTheme.titleTextSize,
             color = DebugTheme.textColor,
         )
-        drawCollapseGlyph(renderer)
-        drawCloseGlyph(renderer)
+        if (collapsible) drawCollapseGlyph(renderer)
+        if (closable) drawCloseGlyph(renderer)
         renderer.drawRect(Rect(o, full), DebugTheme.panelBorderColor, filled = false)
     }
 
@@ -383,13 +400,14 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         if (!down || this !== tree?.debug?.pressOwner) return
         val pointer = input.pointerPosition
         // Window controls take precedence over starting a drag (and are carved
-        // out of inHeader, so the drag path never fires over them).
-        if (closeRect().contains(pointer)) {
+        // out of inHeader, so the drag path never fires over them). A suppressed
+        // control is not hit-tested, so its former area drags like the header.
+        if (closable && closeRect().contains(pointer)) {
             enabled = false
             consumePress(input)
             return
         }
-        if (collapseRect().contains(pointer)) {
+        if (collapsible && collapseRect().contains(pointer)) {
             toggleCollapsed()
             consumePress(input)
             return
@@ -424,8 +442,9 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     private fun inHeader(pointer: Vec2, full: Vec2): Boolean {
         if (!Rect(origin, Vec2(full.x, DebugTheme.headerHeight)).contains(pointer)) return false
         if (gripRect().contains(pointer)) return false
-        if (collapseRect().contains(pointer)) return false
-        if (closeRect().contains(pointer)) return false
+        // A suppressed control occupies no carve-out, so its area drags normally.
+        if (collapsible && collapseRect().contains(pointer)) return false
+        if (closable && closeRect().contains(pointer)) return false
         return true
     }
 

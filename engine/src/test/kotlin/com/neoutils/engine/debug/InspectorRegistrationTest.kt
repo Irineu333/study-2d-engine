@@ -17,49 +17,60 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class ScenePickerRegistrationTest {
+class InspectorRegistrationTest {
 
     @Test
-    fun `picker is a single widget, gizmo is its world-space arm`() {
+    fun `inspector is the single widget, detail and gizmo are its arms`() {
         val tree = SceneTree(Node()).also { it.start() }
         val layer = tree.root.findChild(DebugLayer.NODE_NAME) as DebugLayer
 
-        assertNotNull(tree.debug.scenePicker)
+        assertNotNull(tree.debug.inspector)
+        assertNotNull(tree.debug.nodeInspector)
         assertNotNull(tree.debug.selectionGizmo)
-        // Picker is a real toggle widget on the screen container.
-        assertTrue(tree.debug.scenePicker in tree.debug.widgets)
-        assertSame(layer.screenContainer, tree.debug.scenePicker.parent)
-        // Gizmo lives in the world container so it draws in the world pass, but
-        // is NOT a standalone widget — controlled through the picker.
+        // The tree view (master) is the real toggle widget on the screen container.
+        assertTrue(tree.debug.inspector in tree.debug.widgets)
+        assertSame(layer.screenContainer, tree.debug.inspector.parent)
+        // The detail panel is a screen-space slave arm: docked but NOT a widget.
+        assertSame(layer.screenContainer, tree.debug.nodeInspector.parent)
+        assertTrue(tree.debug.nodeInspector !in tree.debug.widgets)
+        // The gizmo lives in the world container so it draws in the world pass,
+        // but is NOT a standalone widget — controlled through the master.
         assertSame(layer.worldContainer, tree.debug.selectionGizmo.parent)
         assertTrue(tree.debug.selectionGizmo !in tree.debug.widgets)
     }
 
     @Test
-    fun `picker default disabled and gizmo derives its enabled`() {
+    fun `inspector default disabled and arms derive their enabled`() {
         val tree = SceneTree(Node()).also { it.start() }
-        assertEquals(false, tree.debug.scenePicker.enabled)
+        assertEquals(false, tree.debug.inspector.enabled)
+        assertEquals(false, tree.debug.nodeInspector.enabled)
         assertEquals(false, tree.debug.selectionGizmo.enabled)
-        // Enabling the picker enables the gizmo; disabling disables it.
-        tree.debug.scenePicker.enabled = true
+        // Enabling the master enables both arms; disabling disables them.
+        tree.debug.inspector.enabled = true
+        assertEquals(true, tree.debug.nodeInspector.enabled)
         assertEquals(true, tree.debug.selectionGizmo.enabled)
-        tree.debug.scenePicker.enabled = false
+        tree.debug.inspector.enabled = false
+        assertEquals(false, tree.debug.nodeInspector.enabled)
         assertEquals(false, tree.debug.selectionGizmo.enabled)
-        // The gizmo's own setter is a no-op — it cannot desync from the picker.
+        // The arms' own setters are no-ops — they cannot desync from the master.
+        tree.debug.nodeInspector.enabled = true
         tree.debug.selectionGizmo.enabled = true
+        assertEquals(false, tree.debug.nodeInspector.enabled)
         assertEquals(false, tree.debug.selectionGizmo.enabled)
     }
 
     @Test
-    fun `only the picker surfaces as a HUD row`() {
+    fun `only the master surfaces as a HUD row`() {
         val tree = SceneTree(Node()).also { it.resize(800f, 600f); it.start() }
         tree.debug.hud.enabled = true
         tree.process(0f)      // buildPanel enqueues the panel + row buttons
         tree.applyPending()   // drain the deferred mutations so rows attach
 
         val rowNames = collectButtonNames(tree.root)
-        assertTrue("DebugHudRow_Picker" in rowNames, rowNames.toString())
+        assertTrue("DebugHudRow_Inspector" in rowNames, rowNames.toString())
         assertFalse("DebugHudRow_Selection" in rowNames, rowNames.toString())
+        // Exactly one "Inspector" row — the detail panel adds none.
+        assertEquals(1, rowNames.count { it == "DebugHudRow_Inspector" }, rowNames.toString())
     }
 
     @Test
@@ -70,12 +81,12 @@ class ScenePickerRegistrationTest {
             transform = Transform(position = Vec2(100f, 100f))
         }
         val tree = SceneTree(Node().apply { addChild(target) }).also { it.resize(800f, 600f); it.start() }
-        // Picker default-disabled → gizmo derived-disabled.
+        // Inspector default-disabled → arms derived-disabled.
         val input = FakeInput(pointer = Vec2(110f, 110f), leftClicked = true)
         input.mouseClickConsumed = false
         tree.hitTestPick(input)
-        assertNull(tree.debug.scenePicker.selected, "no walk while disabled")
-        assertEquals(false, input.mouseClickConsumed, "disabled picker leaves the flag untouched")
+        assertNull(tree.debug.inspector.selected, "no walk while disabled")
+        assertEquals(false, input.mouseClickConsumed, "disabled inspector leaves the flag untouched")
 
         val recorder = RecordingRenderer()
         tree.render(recorder)

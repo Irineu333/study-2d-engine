@@ -32,14 +32,14 @@ class SceneTreeHitTestPickTest {
         val target = box("Target", Vec2(100f, 100f))
         val tree = SceneTree(Node().apply { addChild(target) })
         tree.start()
-        tree.debug.scenePicker.enabled = false
+        tree.debug.inspector.enabled = false
         val input = FakeInput(pointer = Vec2(110f, 110f), leftClicked = true)
         input.mouseClickConsumed = false
 
         tree.hitTestPick(input)
 
         assertFalse(input.mouseClickConsumed, "flag must be untouched while disabled")
-        assertNull(tree.debug.scenePicker.selected)
+        assertNull(tree.debug.inspector.selected)
     }
 
     @Test
@@ -47,12 +47,12 @@ class SceneTreeHitTestPickTest {
         val target = box("Target", Vec2(100f, 100f))
         val tree = SceneTree(Node().apply { addChild(target) })
         tree.start()
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         val input = FakeInput(pointer = Vec2(120f, 120f), leftClicked = true)
 
         tree.hitTestPick(input)
 
-        assertSame(target, tree.debug.scenePicker.selected)
+        assertSame(target, tree.debug.inspector.selected)
         assertTrue(input.mouseClickConsumed)
     }
 
@@ -62,12 +62,12 @@ class SceneTreeHitTestPickTest {
         val target = box("Rot", Vec2(0f, 0f), size = Vec2(100f, 100f), rot = (PI / 4.0).toFloat())
         val tree = SceneTree(Node().apply { addChild(target) })
         tree.start()
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
 
         // Center of the rotated square: local (50,50) → world (0, ~70.7). Inside.
         val inside = FakeInput(pointer = Vec2(0f, 70.7f), leftClicked = true)
         tree.hitTestPick(inside)
-        assertSame(target, tree.debug.scenePicker.selected, "click inside the rotated box must select")
+        assertSame(target, tree.debug.inspector.selected, "click inside the rotated box must select")
 
         // (-60, 5): inside the AABB (x∈[-70.7,70.7], y∈[0,141.4]) but outside the
         // rotated square (applyInverse → local x < 0). A click here finds no
@@ -76,7 +76,7 @@ class SceneTreeHitTestPickTest {
         // Confirm the point really is inside the loose AABB.
         assertTrue(target.worldBounds()!!.contains(Vec2(-60f, 5f)))
         tree.hitTestPick(emptyCorner)
-        assertNull(tree.debug.scenePicker.selected, "empty AABB corner must not select the rotated node")
+        assertNull(tree.debug.inspector.selected, "empty AABB corner must not select the rotated node")
     }
 
     @Test
@@ -85,12 +85,12 @@ class SceneTreeHitTestPickTest {
         plain.transform = Transform(position = Vec2(100f, 100f))
         val tree = SceneTree(Node().apply { addChild(plain) })
         tree.start()
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         val input = FakeInput(pointer = Vec2(100f, 100f), leftClicked = true)
 
         tree.hitTestPick(input)
 
-        assertNull(tree.debug.scenePicker.selected)
+        assertNull(tree.debug.inspector.selected)
     }
 
     @Test
@@ -100,12 +100,12 @@ class SceneTreeHitTestPickTest {
         canvas.addChild(uiBox)
         val tree = SceneTree(Node().apply { addChild(canvas) })
         tree.start()
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         val input = FakeInput(pointer = Vec2(120f, 120f), leftClicked = true)
 
         tree.hitTestPick(input)
 
-        assertNull(tree.debug.scenePicker.selected, "nodes under a CanvasLayer are not pickable")
+        assertNull(tree.debug.inspector.selected, "nodes under a CanvasLayer are not pickable")
     }
 
     @Test
@@ -116,8 +116,8 @@ class SceneTreeHitTestPickTest {
         val front = box("Front", Vec2(100f, 100f))
         val tree = SceneTree(Node().apply { addChild(back); addChild(mid); addChild(front) })
         tree.start()
-        tree.debug.scenePicker.enabled = true
-        val picker = tree.debug.scenePicker
+        tree.debug.inspector.enabled = true
+        val picker = tree.debug.inspector
 
         // Fresh click selects front-most.
         tree.hitTestPick(FakeInput(pointer = Vec2(110f, 110f), leftClicked = true))
@@ -142,13 +142,13 @@ class SceneTreeHitTestPickTest {
         val root = Node().apply { addChild(target) }
         val tree = SceneTree(root)
         tree.start()
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         val before = countNodes(root)
 
         tree.hitTestPick(FakeInput(pointer = Vec2(110f, 110f), leftClicked = true))
         tree.applyPending()
 
-        assertSame(target, tree.debug.scenePicker.selected)
+        assertSame(target, tree.debug.inspector.selected)
         kotlin.test.assertEquals(before, countNodes(root), "node count must be unchanged")
         assertSame(root, target.parent)
     }
@@ -164,13 +164,13 @@ class SceneTreeHitTestPickTest {
         }
         val tree = SceneTree(Node().apply { addChild(target); addChild(gameplay) })
         tree.start()
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         val input = FakeInput(pointer = Vec2(110f, 110f), leftClicked = true)
         val loop = GameLoop(tree, NoDrawRenderer, input)
 
         loop.tick(16_000_000L)
 
-        assertSame(target, tree.debug.scenePicker.selected)
+        assertSame(target, tree.debug.inspector.selected)
         assertFalse(sawClick, "gameplay must not see a click claimed by the picker")
     }
 

@@ -12,7 +12,7 @@ import com.neoutils.engine.scene.Panel
  * segment highlighted so the current mode is always on screen.
  *
  * This is the **screen-space arm of the one colliders tool**, mirroring the
- * `scenePicker` + `SelectionGizmoWidget` split: its [enabled] proxies
+ * Inspector's master/slave split (`inspector` + `SelectionGizmoWidget`): its [enabled] proxies
  * `colliders.enabled` (get and set), so toggling the HUD's "Colliders" row
  * shows/hides this panel, and the panel's close `[x]` turns the gizmo off.
  * Auto-inserted under `ScreenDebugCanvas` but kept out of

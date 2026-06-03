@@ -238,7 +238,7 @@ class DebugDraggableTest {
             .also { it.resize(800f, 600f); it.start() }
         val panel = FixedScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f))
         tree.debug.register(panel)
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         tree.debug.dock.relayout(tree.size)
 
         // A point on the panel that also sits over the world target behind it.
@@ -249,7 +249,7 @@ class DebugDraggableTest {
         tree.hitTestPick(input)
 
         assertTrue(input.mouseClickConsumed, "the panel absorbs the click")
-        assertNull(tree.debug.scenePicker.selected, "the picker must not pick the node behind the panel")
+        assertNull(tree.debug.inspector.selected, "the picker must not pick the node behind the panel")
     }
 
     @Test

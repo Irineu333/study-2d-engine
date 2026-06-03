@@ -11,11 +11,12 @@ import com.neoutils.engine.tree.FakeInput
 import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class ScenePickerWidgetTest {
+class NodeInspectorWidgetTest {
 
     private fun treeWithSelectedTarget(): Triple<SceneTree, ColorRect, RecordingRenderer> {
         val target = ColorRect().apply {
@@ -32,9 +33,9 @@ class ScenePickerWidgetTest {
             it.textMeasurer = TextMeasurer { text, size -> Vec2(text.length * size * 0.5f, size) }
             it.start()
         }
-        tree.debug.scenePicker.enabled = true
+        tree.debug.inspector.enabled = true
         tree.hitTestPick(FakeInput(pointer = Vec2(120f, 110f), leftClicked = true))
-        assertSame(target, tree.debug.scenePicker.selected)
+        assertSame(target, tree.debug.inspector.selected)
         return Triple(tree, target, RecordingRenderer())
     }
 
@@ -42,18 +43,21 @@ class ScenePickerWidgetTest {
         recorder.events.filterIsInstance<RecordedEvent.Text>().map { it.text }
 
     @Test
-    fun `panel anchors to the bottom-right corner`() {
-        val (tree, _, recorder) = treeWithSelectedTarget() // surface 800x600
-        tree.render(recorder)
-        // The DebugDock places the BOTTOM_RIGHT widget a theme margin from the
-        // bottom-right; its panel rect's far corner sits at (size - margin).
-        val margin = DebugTheme.margin
-        val anchored = recorder.events.filterIsInstance<RecordedEvent.Rect>().any {
-            val right = it.rect.origin.x + it.rect.size.x
-            val bottom = it.rect.origin.y + it.rect.size.y
-            kotlin.math.abs(right - (800f - margin)) < 0.5f && kotlin.math.abs(bottom - (600f - margin)) < 0.5f
-        }
-        assertTrue(anchored, "expected a panel rect anchored to the bottom-right margin")
+    fun `detail derives its enabled from the inspector master`() {
+        val (tree, _, _) = treeWithSelectedTarget()
+        assertTrue(tree.debug.nodeInspector.enabled, "enabled follows the master")
+        tree.debug.inspector.enabled = false
+        assertFalse(tree.debug.nodeInspector.enabled, "disabling the master disables the detail")
+        // The slave's own setter is a no-op — it cannot desync from the master.
+        tree.debug.nodeInspector.enabled = true
+        assertFalse(tree.debug.nodeInspector.enabled)
+    }
+
+    @Test
+    fun `detail carries no window controls`() {
+        val (tree, _, _) = treeWithSelectedTarget()
+        assertFalse(tree.debug.nodeInspector.closable, "the slave detail panel is not closable")
+        assertFalse(tree.debug.nodeInspector.collapsible, "the slave detail panel is not collapsible")
     }
 
     @Test
@@ -70,11 +74,14 @@ class ScenePickerWidgetTest {
     }
 
     @Test
-    fun `breadcrumb shows the ancestor chain root to selected`() {
+    fun `detail panel draws no breadcrumb`() {
         val (tree, _, recorder) = treeWithSelectedTarget()
         tree.render(recorder)
         val lines = textLines(recorder)
-        assertTrue(lines.any { it == "Root / Group / Target" }, lines.toString())
+        assertFalse(
+            lines.any { it.contains(" / ") },
+            "the detail panel must not draw a root→selected breadcrumb: $lines",
+        )
     }
 
     @Test
@@ -88,25 +95,28 @@ class ScenePickerWidgetTest {
     }
 
     @Test
-    fun `selection cleared when the node detaches`() {
-        val (tree, target, _) = treeWithSelectedTarget()
-        target.parent!!.removeChild(target)
-        tree.process(0f) // ScenePickerWidget.onProcess clears a dead selection
-        assertNull(tree.debug.scenePicker.selected)
+    fun `empty size when nothing is selected`() {
+        val tree = SceneTree(Node()).also {
+            it.resize(800f, 600f)
+            it.textMeasurer = TextMeasurer { text, size -> Vec2(text.length * size * 0.5f, size) }
+            it.start()
+        }
+        tree.debug.inspector.enabled = true // master on, but no selection
+        assertNull(tree.debug.inspector.selected)
+        assertEquals(Vec2.ZERO, tree.debug.nodeInspector.bodySize(), "no selection → no body")
     }
 
     @Test
     fun `panel is read-only - emits no interactive children`() {
-        val (tree, _, recorder) = treeWithSelectedTarget()
-        tree.render(recorder)
+        val (tree, _, _) = treeWithSelectedTarget()
         // The widget draws plain text; it never builds Panel/Button children.
-        assertEquals(0, tree.debug.scenePicker.children.size)
+        assertEquals(0, tree.debug.nodeInspector.children.size)
     }
 
     @Test
-    fun `disabled picker draws nothing`() {
+    fun `disabled inspector draws nothing`() {
         val (tree, _, recorder) = treeWithSelectedTarget()
-        tree.debug.scenePicker.enabled = false
+        tree.debug.inspector.enabled = false
         tree.render(recorder)
         assertEquals(0, recorder.events.count { it is RecordedEvent.Text })
     }

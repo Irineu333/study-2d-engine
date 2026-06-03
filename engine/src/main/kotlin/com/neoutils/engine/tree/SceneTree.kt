@@ -273,7 +273,7 @@ class SceneTree(val root: Node) {
     /**
      * Scene-pick hit-test phase. Runs in `GameLoop.tick` right after
      * [hitTestUI] and before `tree.process`, gated on
-     * `debug.scenePicker.enabled`. When disabled it is a strict no-op — no tree
+     * `debug.inspector.enabled`. When disabled it is a strict no-op — no tree
      * walk, no selection change, [Input.mouseClickConsumed] untouched — so the
      * picker costs nothing while off.
      *
@@ -289,7 +289,7 @@ class SceneTree(val root: Node) {
      * clicks. Never mutates the tree (invariant #1).
      */
     fun hitTestPick(input: Input) {
-        val picker = debug.scenePicker
+        val picker = debug.inspector
         if (!picker.enabled) return
         if (!root.isLive) return
         if (input.mouseClickConsumed) return

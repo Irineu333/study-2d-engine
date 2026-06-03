@@ -85,9 +85,10 @@ class DebugLayerTest {
         assertSame(tree.debug.contactGizmo, widgets[5])
         assertSame(tree.debug.timeControls, widgets[6])
         assertSame(tree.debug.profiler, widgets[7])
-        assertSame(tree.debug.scenePicker, widgets[8])
-        // selectionGizmo is the picker's world-space arm — NOT a standalone
-        // widget, so it is absent from `widgets`.
+        assertSame(tree.debug.inspector, widgets[8])
+        // selectionGizmo is the Inspector's world-space arm — NOT a standalone
+        // widget, so it is absent from `widgets`. So is the detail panel.
         assertTrue(tree.debug.selectionGizmo !in widgets)
+        assertTrue(tree.debug.nodeInspector !in widgets)
     }
 }

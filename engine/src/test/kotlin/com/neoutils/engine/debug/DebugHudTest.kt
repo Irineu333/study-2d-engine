@@ -28,8 +28,8 @@ class DebugHudTest {
         val panel = tree.debug.hud.children.filterIsInstance<Panel>().single()
         // Built-ins listed in `widgets` are 9; HUD excludes itself → 8 rows
         // (Colliders, Log, Debug Draw, Velocity, Contacts, Time, Profiler,
-        // Picker). The SelectionGizmo is the picker's world-space arm and has
-        // no row of its own.
+        // Inspector). The SelectionGizmo and the detail panel are the
+        // Inspector's slave arms and have no row of their own.
         val buttons = panel.children.filterIsInstance<Button>()
         assertEquals(8, buttons.size)
         val labels = buttons.map { it.text }
@@ -40,7 +40,7 @@ class DebugHudTest {
         assertEquals("[ ] Contacts", labels[4])
         assertEquals("[ ] Time", labels[5])
         assertEquals("[ ] Profiler", labels[6])
-        assertEquals("[ ] Picker", labels[7])
+        assertEquals("[ ] Inspector", labels[7])
         assertTrue(labels.none { it.contains("Selection") })
     }
 

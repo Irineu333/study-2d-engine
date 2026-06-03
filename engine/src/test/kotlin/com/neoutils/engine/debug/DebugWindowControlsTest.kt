@@ -22,6 +22,8 @@ private class ControlsScreenWidget(
     override val defaultSlot: DockSlot,
     private val size: Vec2,
     override val title: String = "Fixed",
+    override val closable: Boolean = true,
+    override val collapsible: Boolean = true,
 ) : ScreenDebugWidget() {
     init { enabled = true }
     override fun bodySize(): Vec2 = size
@@ -207,6 +209,48 @@ class DebugWindowControlsTest {
         assertFalse(widget.collapsed, "reset expands the panel")
         assertFalse(widget.isDragging, "reset ends the drag")
         assertNull(widget.floatingPosition, "reset un-floats the panel")
+    }
+
+    @Test
+    fun `a non-closable panel does not draw or hit-test the close control`() {
+        val tree = startedTree()
+        val widget = ControlsScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f), closable = false)
+        docked(tree, widget)
+
+        // No close glyph is drawn: the two crossed diagonals would land inside
+        // closeRect — assert no control-colored line sits there.
+        val recorder = RecordingRenderer()
+        tree.render(recorder)
+        val close = widget.closeRect()
+        val closeLines = recorder.events.filterIsInstance<RecordedEvent.Line>().count {
+            it.color == DebugTheme.headerControlColor &&
+                close.contains(Vec2((it.from.x + it.to.x) / 2f, (it.from.y + it.to.y) / 2f))
+        }
+        assertEquals(0, closeLines, "a non-closable header draws no [x]")
+
+        // Clicking where the [x] would be does not disable the panel.
+        tick(tree, ControlsInput(pointer = center(close), clicked = true, down = true))
+        assertTrue(widget.enabled, "a click where [x] would be must not disable a non-closable panel")
+    }
+
+    @Test
+    fun `a non-collapsible panel does not draw or hit-test the collapse control`() {
+        val tree = startedTree()
+        val widget = ControlsScreenWidget(DockSlot.TOP_LEFT, Vec2(200f, 100f), collapsible = false)
+        docked(tree, widget)
+
+        val recorder = RecordingRenderer()
+        tree.render(recorder)
+        val collapse = widget.collapseRect()
+        val collapseLines = recorder.events.filterIsInstance<RecordedEvent.Line>().count {
+            it.color == DebugTheme.headerControlColor &&
+                collapse.contains(Vec2((it.from.x + it.to.x) / 2f, (it.from.y + it.to.y) / 2f))
+        }
+        assertEquals(0, collapseLines, "a non-collapsible header draws no [_]")
+
+        // Clicking where the [_] would be does not collapse the panel.
+        tick(tree, ControlsInput(pointer = center(collapse), clicked = true, down = true))
+        assertFalse(widget.collapsed, "a click where [_] would be must not collapse a non-collapsible panel")
     }
 
     private fun countButtons(node: Node): Int {
