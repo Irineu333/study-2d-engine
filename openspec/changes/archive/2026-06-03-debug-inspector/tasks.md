@@ -39,7 +39,7 @@
 
 ## 6. Specs, docs e testes finais
 
-- [ ] 6.1 Remover `openspec/specs/debug-scene-picker/` no archive (a capability foi superada por `debug-inspector`).
+- [x] 6.1 Remover `openspec/specs/debug-scene-picker/` no archive (a capability foi superada por `debug-inspector`).
 - [x] 6.2 Atualizar `CLAUDE.md` invariante #6 (citações a `scenePicker`/`SelectionGizmoWidget` → catálogo do Inspector) e a seção de debug em `README.md`/`ROADMAP.md`.
 - [x] 6.3 Renomear/estender testes: `ScenePickerWidgetTest`→`NodeInspectorWidgetTest`, `ScenePickerRegistrationTest`→registro do Inspector, `SelectionGizmoWidgetTest`, `SceneTreeHitTestPickTest`, `DebugRegistryTest`, `DebugLayerTest`.
 - [x] 6.4 Novos testes da árvore: build de linhas em DFS com indentação, filtro de `__debug`, hit-test de linha → `select`, destaque do `selected`, overflow "+N more", e `select` resetando o cycling.
