@@ -39,6 +39,12 @@ object DebugTheme {
     /** Color of the header window-control glyphs (collapse `[_]` / close `[x]`). */
     val headerControlColor: Color = Color(0.80f, 0.80f, 0.86f, 1f)
 
+    /** Fill of the scrollbar track behind the grabber. */
+    val scrollTrackColor: Color = Color(0.20f, 0.20f, 0.24f, 0.6f)
+
+    /** Fill of the scrollbar grabber (the draggable thumb). */
+    val scrollGrabberColor: Color = Color(0.55f, 0.55f, 0.62f, 0.95f)
+
     /** Outer inset between a docked panel and the screen edge. */
     val margin: Float = 12f
 

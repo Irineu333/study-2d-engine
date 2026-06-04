@@ -48,6 +48,7 @@ class LwjglHost : GameHost {
             GLFW.glfwSetKeyCallback(window) { _, key, _, action, _ -> input.onGlfwKey(key, action) }
             GLFW.glfwSetMouseButtonCallback(window) { _, button, action, _ -> input.onGlfwMouseButton(button, action) }
             GLFW.glfwSetCursorPosCallback(window) { _, x, y -> input.onGlfwCursorPos(x.toFloat(), y.toFloat()) }
+            GLFW.glfwSetScrollCallback(window) { _, xoffset, yoffset -> input.onGlfwScroll(xoffset.toFloat(), yoffset.toFloat()) }
 
             val renderer = LwjglRenderer()
             renderer.init()

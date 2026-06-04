@@ -50,4 +50,28 @@ interface Renderer {
      * [IllegalStateException] when called on an empty stack.
      */
     fun popTransform()
+
+    /**
+     * Pushes a rectangular clip region onto a LIFO clip stack — the natural
+     * pair of [pushTransform]/[popTransform]. [rect] is interpreted under the
+     * **current transform stack** (the same composition that `draw*` calls
+     * see). Every subsequent `draw*` is restricted to the intersection of all
+     * clip rects currently on the stack: a deeper [pushClip] intersects with
+     * (never widens) the current clip.
+     *
+     * The clip stack starts empty (no clip) at every backend-defined frame
+     * boundary, exactly like the transform stack, and every [pushClip] issued
+     * during a frame MUST be matched by a [popClip] before the frame ends.
+     * Clip and transform pushes/pops MUST nest correctly when interleaved
+     * (e.g. `pushClip` → `pushTransform` → `popTransform` → `popClip`), since
+     * backends MAY share a single native save/restore stack for both.
+     */
+    fun pushClip(rect: Rect)
+
+    /**
+     * Pops the top entry of the clip stack, restoring the clip to the state
+     * before the matching [pushClip]. Throws [IllegalStateException] when
+     * called on an empty stack.
+     */
+    fun popClip()
 }

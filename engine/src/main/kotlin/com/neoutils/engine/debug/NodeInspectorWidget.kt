@@ -49,12 +49,11 @@ class NodeInspectorWidget : ScreenDebugWidget() {
     override fun bodySize(): Vec2 {
         val node = selected
         val measurer = tree?.textMeasurer
-        val surface = tree?.size
-        if (node == null || measurer == null || surface == null) {
+        if (node == null || measurer == null) {
             layout = null
             return Vec2.ZERO
         }
-        val computed = computeLayout(node, measurer, surface)
+        val computed = computeLayout(node, measurer)
         layout = computed
         return computed.size
     }
@@ -71,34 +70,19 @@ class NodeInspectorWidget : ScreenDebugWidget() {
     }
 
     /**
-     * Builds the visible row list and panel size for [node]. Fits vertically:
-     * the tail that would spill past the screen collapses into a single
-     * overflow row rather than overflowing.
+     * Builds the full row list and content extent for [node] — every row, no
+     * truncation. The base bounds the viewport and scrolls when the extent
+     * overflows, so this reports the intrinsic height.
      */
-    private fun computeLayout(node: Node, measurer: TextMeasurer, surface: Vec2): PanelLayout {
+    private fun computeLayout(node: Node, measurer: TextMeasurer): PanelLayout {
         val rows = buildRows(node)
-        // Leave room for the title-bar header drawn above the body.
-        val maxHeight = surface.y - DebugTheme.margin * 2f - DebugTheme.headerHeight
-        val shown = mutableListOf<Row>()
         var contentHeight = DebugTheme.padding * 2f
-        var hidden = 0
-        for ((index, row) in rows.withIndex()) {
-            if (contentHeight + row.height > maxHeight) {
-                hidden = rows.size - index
-                break
-            }
-            shown += row
-            contentHeight += row.height
-        }
-        if (hidden > 0) {
-            shown += Row.Section("… (+$hidden more)")
-            contentHeight += SECTION_H
-        }
-        val panelWidth = shown.maxOf { it.width(measurer) } + DebugTheme.padding * 2f
+        for (row in rows) contentHeight += row.height
+        val panelWidth = rows.maxOf { it.width(measurer) } + DebugTheme.padding * 2f
         // The last row carries a trailing LINE_GAP it does not need; drop it so
         // the bottom inset equals the top (and the sides).
         val panelHeight = contentHeight - LINE_GAP
-        return PanelLayout(shown, Vec2(panelWidth, panelHeight))
+        return PanelLayout(rows, Vec2(panelWidth, panelHeight))
     }
 
     private fun buildRows(node: Node): List<Row> {

@@ -196,9 +196,12 @@ internal class FakeInput(
     var pointer: Vec2 = Vec2.ZERO,
     var leftClicked: Boolean = false,
     var leftDown: Boolean = false,
+    override var scrollDelta: Vec2 = Vec2.ZERO,
 ) : Input {
     override val pointerPosition: Vec2 get() = pointer
     override var mouseClickConsumed: Boolean = false
+    override var mouseDragConsumed: Boolean = false
+    override var scrollConsumed: Boolean = false
     override fun isKeyDown(key: Key): Boolean = false
     override fun wasKeyPressed(key: Key): Boolean = false
     override fun isMouseDown(button: MouseButton): Boolean =

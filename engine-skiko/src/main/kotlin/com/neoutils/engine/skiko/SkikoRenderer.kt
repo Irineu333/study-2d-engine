@@ -33,17 +33,23 @@ class SkikoRenderer : Renderer {
     private val textLineCache: HashMap<TextLineKey, TextLine> = HashMap()
     private val sharedPaint: Paint = Paint().apply { isAntiAlias = true }
     private var transformDepth: Int = 0
+    private var clipDepth: Int = 0
 
     fun bind(canvas: Canvas) {
         this.canvas = canvas
         transformDepth = 0
+        clipDepth = 0
     }
 
     fun unbind() {
-        val leaked = transformDepth
+        val leakedTransform = transformDepth
+        val leakedClip = clipDepth
         canvas = null
-        check(leaked == 0) {
-            "SkikoRenderer.unbind() with $leaked unmatched pushTransform call(s); every push MUST be matched by pop within a frame."
+        check(leakedTransform == 0) {
+            "SkikoRenderer.unbind() with $leakedTransform unmatched pushTransform call(s); every push MUST be matched by pop within a frame."
+        }
+        check(leakedClip == 0) {
+            "SkikoRenderer.unbind() with $leakedClip unmatched pushClip call(s); every push MUST be matched by pop within a frame."
         }
     }
 
@@ -125,6 +131,19 @@ class SkikoRenderer : Renderer {
         check(transformDepth > 0) { "popTransform on empty transform stack (SkikoRenderer)" }
         required().restore()
         transformDepth--
+    }
+
+    override fun pushClip(rect: Rect) {
+        val c = required()
+        c.save()
+        c.clipRect(SkRect.makeXYWH(rect.origin.x, rect.origin.y, rect.size.x, rect.size.y), antiAlias = true)
+        clipDepth++
+    }
+
+    override fun popClip() {
+        check(clipDepth > 0) { "popClip on empty clip stack (SkikoRenderer)" }
+        required().restore()
+        clipDepth--
     }
 }
 

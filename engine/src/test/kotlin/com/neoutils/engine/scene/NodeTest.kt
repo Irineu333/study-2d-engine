@@ -241,4 +241,6 @@ private object NoopRenderer : com.neoutils.engine.render.Renderer {
     override fun drawPolygon(points: List<Vec2>, color: com.neoutils.engine.render.Color) {}
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {}
     override fun popTransform() {}
+    override fun pushClip(rect: com.neoutils.engine.math.Rect) {}
+    override fun popClip() {}
 }

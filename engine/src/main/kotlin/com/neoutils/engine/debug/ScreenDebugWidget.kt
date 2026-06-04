@@ -162,25 +162,75 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     val bodyOrigin: Vec2 get() = origin + Vec2(0f, DebugTheme.headerHeight)
 
     /**
-     * Size in screen pixels of the widget's **body** (excluding the header);
-     * `(0, 0)` when there is nothing to show. Widgets of variable height
-     * recompute it from current state, so the dock re-flows as they grow.
+     * The **content extent** in screen pixels — the intrinsic size of the
+     * widget's full body (every row), excluding the header; `(0, 0)` when there
+     * is nothing to show. The base derives the bounded viewport from this (see
+     * [contentSize]) and scrolls when the extent exceeds the viewport, so the
+     * subclass always reports the full height and never truncates. Widgets of
+     * variable height recompute it from current state.
      */
     open fun bodySize(): Vec2 = Vec2.ZERO
+
+    // Single piece of scroll state: the logical offset, clamped on read against
+    // the current frame's extent/viewport. Grabber and bar are derived per frame
+    // from (extent, viewport, offset), never stored — so resize/redock re-clamp
+    // and re-derive automatically, with no resize-specific code path.
+    private var rawScrollOffset: Float = 0f
+
+    // Cached from the last contentSize() so scroll math outside the draw (the
+    // wheel routing in hitTestUI, the row hit-test in onProcess) sees the same
+    // extent/viewport the body was last drawn with.
+    private var measuredExtent: Vec2 = Vec2.ZERO
+    private var measuredViewportY: Float = 0f
+
+    private var scrollbarDragging: Boolean = false
+    private var scrollbarGrabDy: Float = 0f
+
+    /** Whether a scrollbar-grabber drag is currently in flight on this panel. */
+    val isScrollbarDragging: Boolean get() = scrollbarDragging
+
+    /**
+     * Bounded viewport height for a body of intrinsic height [extentY]:
+     * `min(extentY, maxBodyHeight)`, where `maxBodyHeight` leaves room for the
+     * header and the screen margins. Below the cap the panel auto-sizes (small
+     * panels are unaffected); above it the panel claims only the viewport and the
+     * remainder is reached by scrolling.
+     */
+    private fun viewportHeight(extentY: Float): Float {
+        val surface = tree?.size ?: return extentY
+        val maxH = surface.y - DebugTheme.margin * 2f - DebugTheme.headerHeight
+        return if (maxH <= 0f) extentY else minOf(extentY, maxH)
+    }
+
+    /** Scroll offset clamped to `0 .. max(0, extentY - viewportY)` for this frame. */
+    private fun effectiveOffset(extentY: Float, viewportY: Float): Float =
+        rawScrollOffset.coerceIn(0f, (extentY - viewportY).coerceAtLeast(0f))
+
+    /**
+     * Effective (clamped) scroll offset for the current frame, derived from the
+     * last measured extent/viewport. Subclasses whose body rows are interactive
+     * subtract this from the drawn `y` so the hit-test matches the drawing.
+     */
+    protected val scrollOffset: Float get() = effectiveOffset(measuredExtent.y, measuredViewportY)
 
     /**
      * Full panel size the `DebugDock` stacks by. `(0, 0)` (the dock skips it and
      * no chrome is drawn) when the body has no width. When [collapsed] only the
      * header is reported — same width as the body keeps the panel coherent
      * across states — so the dock re-flows the reduced height; otherwise it is
-     * header + body.
+     * header + the bounded viewport (NOT the full content extent, so an
+     * overflowing panel claims only its viewport in the dock).
      */
     fun contentSize(): Vec2 {
         val body = bodySize()
+        measuredExtent = body
+        measuredViewportY = 0f
         if (body.x <= 0f) return Vec2.ZERO
         if (!bodyVisible) return Vec2(body.x, DebugTheme.headerHeight)
         if (body.y <= 0f) return Vec2.ZERO
-        return Vec2(body.x, DebugTheme.headerHeight + body.y)
+        val vp = viewportHeight(body.y)
+        measuredViewportY = vp
+        return Vec2(body.x, DebugTheme.headerHeight + vp)
     }
 
     private var dragging: Boolean = false
@@ -191,7 +241,65 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         val full = contentSize()
         if (full.x <= 0f || full.y <= 0f) return
         drawChrome(renderer, full)
-        if (bodyVisible) drawDebug(renderer)
+        if (bodyVisible) drawBody(renderer, full)
+    }
+
+    /**
+     * Composes the scroll around the subclass draw: clip to the viewport (so
+     * overflow does not paint over neighbors/header), translate by `-offset`
+     * (so the content slides), then draw the scrollbar outside the clip. Clip
+     * sits outside the transform so the LIFO native save/restore stays balanced.
+     */
+    private fun drawBody(renderer: Renderer, full: Vec2) {
+        val extentY = measuredExtent.y
+        val vp = measuredViewportY
+        val offset = effectiveOffset(extentY, vp)
+        renderer.pushClip(Rect(bodyOrigin, Vec2(full.x, vp)))
+        renderer.pushTransform(Vec2(0f, -offset), 0f, Vec2(1f, 1f))
+        drawDebug(renderer)
+        renderer.popTransform()
+        renderer.popClip()
+        if (extentY - vp > 0f) drawScrollbar(renderer, full, extentY, vp, offset)
+    }
+
+    /** Track + proportional grabber at the panel's right edge; only when scrollable. */
+    private fun drawScrollbar(renderer: Renderer, full: Vec2, extentY: Float, vp: Float, offset: Float) {
+        val trackX = origin.x + full.x - SCROLLBAR_WIDTH
+        renderer.drawRect(
+            Rect(Vec2(trackX, bodyOrigin.y), Vec2(SCROLLBAR_WIDTH, vp)),
+            DebugTheme.scrollTrackColor,
+            filled = true,
+        )
+        val grabber = grabberRect(full, extentY, vp, offset) ?: return
+        renderer.drawRect(grabber, DebugTheme.scrollGrabberColor, filled = true)
+    }
+
+    /** Derived grabber rect for this frame, or `null` when the panel is not scrollable. */
+    private fun grabberRect(full: Vec2, extentY: Float, vp: Float, offset: Float): Rect? {
+        val scrollable = extentY - vp
+        if (scrollable <= 0f) return null
+        val grabberH = (vp * (vp / extentY)).coerceIn(MIN_GRABBER_H, vp)
+        val grabberY = bodyOrigin.y + (vp - grabberH) * (offset / scrollable)
+        val trackX = origin.x + full.x - SCROLLBAR_WIDTH
+        return Rect(Vec2(trackX, grabberY), Vec2(SCROLLBAR_WIDTH, grabberH))
+    }
+
+    /**
+     * Applies a wheel [deltaY] (positive = scroll down) to the offset when the
+     * panel is scrollable and [pointer] is inside the viewport; returns whether
+     * it scrolled. Called by the `SceneTree.hitTestUI` scroll routing, which sets
+     * `input.scrollConsumed` on a `true` return.
+     */
+    fun applyScroll(pointer: Vec2, deltaY: Float): Boolean {
+        if (!bodyVisible) return false
+        val extent = bodySize()
+        if (extent.x <= 0f) return false
+        val vp = viewportHeight(extent.y)
+        val scrollable = extent.y - vp
+        if (scrollable <= 0f) return false
+        if (!Rect(bodyOrigin, Vec2(extent.x, vp)).contains(pointer)) return false
+        rawScrollOffset = (rawScrollOffset + deltaY * WHEEL_STEP).coerceIn(0f, scrollable)
+        return true
     }
 
     /** Background + title-bar header (grip + title + window controls) + border. */
@@ -331,6 +439,8 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         if (dragging) tree?.debug?.dock?.endDrag(this)
         dragging = false
         dragOrigin = null
+        scrollbarDragging = false
+        rawScrollOffset = 0f
         movedSlot = null
         orderInSlot = defaultOrder
         floatingPosition = null
@@ -364,6 +474,7 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
     private fun updateDrag() {
         if (!enabled) {
             stopDrag()
+            stopScrollbarDrag()
             return
         }
         val input = tree?.input ?: return
@@ -372,9 +483,21 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         val full = contentSize()
         if (full.x <= 0f || full.y <= 0f) {
             stopDrag()
+            stopScrollbarDrag()
             return
         }
         val down = input.isMouseDown(MouseButton.Left)
+        // A scrollbar-grabber drag is the second drag consumer on this panel; it
+        // is resolved before the header drag and writes the offset proportionally.
+        if (scrollbarDragging) {
+            if (!down) {
+                stopScrollbarDrag()
+                return
+            }
+            applyScrollbarDrag(input.pointerPosition, full)
+            input.mouseDragConsumed = true
+            return
+        }
         if (dragging) {
             val pointer = input.pointerPosition
             // Magnetism is resolved against the whole window rect, not the grabbed
@@ -412,6 +535,15 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
             consumePress(input)
             return
         }
+        // A press landing on the grabber starts a scrollbar drag (only when the
+        // panel is scrollable), distinguished from the header drag by the rect.
+        val grabber = if (bodyVisible) grabberRect(full, measuredExtent.y, measuredViewportY, scrollOffset) else null
+        if (grabber != null && grabber.contains(pointer)) {
+            scrollbarDragging = true
+            scrollbarGrabDy = pointer.y - grabber.top
+            consumePress(input)
+            return
+        }
         if (inHeader(pointer, full)) {
             dragging = true
             grabOffset = pointer - origin
@@ -426,6 +558,32 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
         if (dragging) tree?.debug?.dock?.endDrag(this)
         dragging = false
         dragOrigin = null
+    }
+
+    /** Ends an in-flight scrollbar-grabber drag. */
+    private fun stopScrollbarDrag() {
+        scrollbarDragging = false
+    }
+
+    /**
+     * Maps the dragged grabber's top to a proportional offset: the grabber top
+     * tracks the pointer (minus the grab anchor), clamped within the track, and
+     * the offset is its fraction of the scrollable range.
+     */
+    private fun applyScrollbarDrag(pointer: Vec2, full: Vec2) {
+        val extentY = measuredExtent.y
+        val vp = measuredViewportY
+        val scrollable = extentY - vp
+        if (scrollable <= 0f) {
+            stopScrollbarDrag()
+            return
+        }
+        val grabberH = (vp * (vp / extentY)).coerceIn(MIN_GRABBER_H, vp)
+        val travel = vp - grabberH
+        if (travel <= 0f) return
+        val grabberTop = (pointer.y - scrollbarGrabDy).coerceIn(bodyOrigin.y, bodyOrigin.y + travel)
+        val frac = (grabberTop - bodyOrigin.y) / travel
+        rawScrollOffset = (frac * scrollable).coerceIn(0f, scrollable)
     }
 
     /** Mark the current press as handled so it neither drags nor reaches the picker. */
@@ -471,5 +629,14 @@ abstract class ScreenDebugWidget : Node(), DebugWidget {
 
         /** Stroke width of the control glyphs. */
         const val GLYPH_THICKNESS: Float = 1.5f
+
+        /** Width of the vertical scrollbar (track + grabber) at the panel's right edge. */
+        const val SCROLLBAR_WIDTH: Float = 6f
+
+        /** Smallest grabber height, so a tiny visible fraction stays grabbable. */
+        const val MIN_GRABBER_H: Float = 16f
+
+        /** Screen pixels scrolled per unit of wheel delta. */
+        const val WHEEL_STEP: Float = 40f
     }
 }

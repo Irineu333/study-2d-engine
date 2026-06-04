@@ -103,6 +103,40 @@ class LwjglInputTest {
     }
 
     @Test
+    fun `wheel-up produces a negative y delta for one tick`() {
+        val input = LwjglInput()
+        input.beginTick()
+        // GLFW reports wheel-up as positive yoffset; the SPI inverts it so
+        // positive y means scroll-down — wheel-up is therefore negative.
+        input.onGlfwScroll(0f, 1f)
+        input.beginTick()
+
+        assertEquals(-1f, input.scrollDelta.y)
+        assertEquals(0f, input.scrollDelta.x)
+
+        input.beginTick()
+        assertEquals(Vec2.ZERO, input.scrollDelta, "delta clears after one tick")
+    }
+
+    @Test
+    fun `no wheel motion reads as zero`() {
+        val input = LwjglInput()
+        input.beginTick()
+        assertEquals(Vec2.ZERO, input.scrollDelta)
+    }
+
+    @Test
+    fun `scrollConsumed resets each tick`() {
+        val input = LwjglInput()
+        input.beginTick()
+        input.scrollConsumed = true
+
+        input.beginTick()
+
+        assertFalse(input.scrollConsumed)
+    }
+
+    @Test
     fun `mouse button mapping covers LEFT RIGHT MIDDLE and rejects others`() {
         assertEquals(MouseButton.Left, glfwMouseButtonToEngineButton(GLFW.GLFW_MOUSE_BUTTON_LEFT))
         assertEquals(MouseButton.Right, glfwMouseButtonToEngineButton(GLFW.GLFW_MOUSE_BUTTON_RIGHT))

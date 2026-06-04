@@ -33,6 +33,8 @@ private class StubRenderer : Renderer {
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {}
     override fun popTransform() {}
+    override fun pushClip(rect: Rect) {}
+    override fun popClip() {}
 }
 
 /** Burns a fixed amount of wall time inside each physics step so the profiler's

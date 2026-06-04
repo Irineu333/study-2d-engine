@@ -6,6 +6,7 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Vec2
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
+import java.awt.event.MouseWheelEvent
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -29,6 +30,17 @@ class SkikoInput : Input {
     @Volatile override var mouseClickConsumed: Boolean = false
 
     @Volatile override var mouseDragConsumed: Boolean = false
+
+    @Volatile override var scrollConsumed: Boolean = false
+
+    @Volatile override var scrollDelta: Vec2 = Vec2.ZERO
+        private set
+
+    // Wheel events arrive on the AWT thread; the accumulator is drained into
+    // `scrollDelta` at `beginTick()`. Guarded by `wheelLock` so `+=` from AWT
+    // races neither itself nor the drain on the loop thread.
+    private val wheelLock = Any()
+    private var pendingWheelY: Float = 0f
 
     override fun isKeyDown(key: Key): Boolean = key in downKeys
 
@@ -66,6 +78,17 @@ class SkikoInput : Input {
         }
     }
 
+    /**
+     * Accumulates AWT wheel motion. `preciseWheelRotation` is positive when the
+     * wheel rolls down, which already matches the SPI's "positive y = scroll
+     * down", so no sign flip is needed (unlike GLFW).
+     */
+    fun onAwtMouseWheel(event: MouseWheelEvent) {
+        synchronized(wheelLock) {
+            pendingWheelY += event.preciseWheelRotation.toFloat()
+        }
+    }
+
     /** Called by the host at the start of each tick. */
     fun beginTick() {
         pressedThisTick.clear()
@@ -75,6 +98,14 @@ class SkikoInput : Input {
         pressedButtonsThisTick.clear()
         pressedButtonsThisTick.addAll(pendingButtonPresses)
         pendingButtonPresses.clear()
+
+        scrollConsumed = false
+        val drainedY = synchronized(wheelLock) {
+            val y = pendingWheelY
+            pendingWheelY = 0f
+            y
+        }
+        scrollDelta = if (drainedY == 0f) Vec2.ZERO else Vec2(0f, drainedY)
     }
 }
 

@@ -93,6 +93,7 @@ class SkikoHost : GameHost {
                 override fun mouseMoved(e: MouseEvent) = input.onAwtMouseMoved(e, skiaLayer.contentScale)
                 override fun mouseDragged(e: MouseEvent) = input.onAwtMouseMoved(e, skiaLayer.contentScale)
             })
+            skiaLayer.addMouseWheelListener { e -> input.onAwtMouseWheel(e) }
 
             frame.addWindowListener(object : WindowAdapter() {
                 override fun windowClosed(e: WindowEvent) {

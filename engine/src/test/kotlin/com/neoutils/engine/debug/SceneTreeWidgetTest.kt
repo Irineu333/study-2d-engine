@@ -13,6 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -104,16 +105,54 @@ class SceneTreeWidgetTest {
     }
 
     @Test
-    fun `overflow tail is summarized when the tree does not fit`() {
+    fun `large tree keeps every row instead of an overflow summary`() {
         val root = Node().apply { name = "Root" }
         repeat(40) { i -> root.addChild(Node().apply { name = "N$i" }) }
-        // A short viewport forces most rows out.
+        // A short viewport that would have forced most rows out before scroll.
         val tree = startedTree(root, h = 120f)
 
         val recorder = RecordingRenderer()
         tree.render(recorder)
-        val overflow = texts(recorder).firstOrNull { it.text.startsWith("… (+") }
-        assertNotNull(overflow, "an overflow row summarizes the hidden tail")
+        // No truncation row: the body lists every node, revealed by scrolling.
+        assertFalse(
+            texts(recorder).any { it.text.startsWith("… (+") },
+            "the overflow summary row is gone — scroll replaces it",
+        )
+        // The body is clipped to a bounded viewport rather than spilling.
+        assertTrue(
+            recorder.events.any { it is RecordedEvent.PushClip },
+            "the scrolled body is wrapped in a clip",
+        )
+    }
+
+    @Test
+    fun `clicking a scrolled-into-view row selects the row under the pointer`() {
+        val root = Node().apply { name = "Root" }
+        repeat(40) { i -> root.addChild(Node().apply { name = "N$i" }) }
+        val tree = startedTree(root, h = 120f)
+        val widget = tree.debug.inspector
+
+        tree.render(RecordingRenderer())
+        // A pointer near the top of the body — over the root row before scroll.
+        val topPointer = Vec2(widget.origin.x + 5f, widget.bodyOrigin.y + DebugTheme.padding + TREE_H / 2f)
+
+        clickAt(tree, topPointer)
+        assertSame(root, widget.selected, "before scrolling, the top row is the root")
+
+        // Scroll to the bottom, then re-render so the layout/offset settle.
+        widget.applyScroll(Vec2(widget.origin.x + 5f, widget.bodyOrigin.y + 10f), 1000f)
+        tree.render(RecordingRenderer())
+
+        clickAt(tree, topPointer)
+        assertNotNull(widget.selected, "a row is under the pointer after scrolling")
+        assertNotSame(root, widget.selected, "after scrolling, a deeper row occupies the top, not the root")
+    }
+
+    private fun clickAt(tree: SceneTree, pointer: Vec2) {
+        val input = FakeInput(pointer = pointer, leftClicked = true, leftDown = true)
+        tree.input = input
+        tree.hitTestUI(input)
+        tree.process(0f)
     }
 
     @Test

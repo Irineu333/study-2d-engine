@@ -42,6 +42,8 @@ private class NoopRenderer : Renderer {
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {}
     override fun popTransform() {}
+    override fun pushClip(rect: Rect) {}
+    override fun popClip() {}
 }
 
 private class StepProbe : Node() {

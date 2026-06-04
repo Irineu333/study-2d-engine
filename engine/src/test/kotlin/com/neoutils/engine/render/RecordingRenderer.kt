@@ -49,6 +49,14 @@ internal class RecordingRenderer : Renderer {
     override fun popTransform() {
         events += RecordedEvent.Pop
     }
+
+    override fun pushClip(rect: Rect) {
+        events += RecordedEvent.PushClip(rect)
+    }
+
+    override fun popClip() {
+        events += RecordedEvent.PopClip
+    }
 }
 
 internal sealed class RecordedEvent {
@@ -60,4 +68,6 @@ internal sealed class RecordedEvent {
     data class Polygon(val points: List<Vec2>, val color: Color) : RecordedEvent()
     data class Push(val translation: Vec2, val rotation: Float, val scale: Vec2) : RecordedEvent()
     data object Pop : RecordedEvent()
+    data class PushClip(val rect: com.neoutils.engine.math.Rect) : RecordedEvent()
+    data object PopClip : RecordedEvent()
 }

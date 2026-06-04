@@ -218,8 +218,10 @@ class SceneTree(val root: Node) {
     fun hitTestUI(input: Input) {
         input.mouseClickConsumed = false
         input.mouseDragConsumed = false
+        input.scrollConsumed = false
         debug.pressOwner = null
         if (!root.isLive) return
+        routeScroll(input)
         if (!input.wasMouseClickedRaw(MouseButton.Left)) return
         val pointer = input.pointerPosition
         // Bring-to-front first, independent of what absorbs the click: a press over
@@ -243,6 +245,22 @@ class SceneTree(val root: Node) {
         if (panel != null) {
             debug.pressOwner = panel
             input.mouseClickConsumed = true
+        }
+    }
+
+    /**
+     * Wheel routing, resolved in the UI phase (before `process`) so a gameplay
+     * node cannot react to a wheel a debug panel absorbed. Resolves the top-most
+     * panel under the pointer; if it is a scrollable `ScreenDebugWidget` whose
+     * viewport contains the pointer, the wheel scrolls it and is consumed. The
+     * offset itself stays owned by the widget.
+     */
+    private fun routeScroll(input: Input) {
+        val deltaY = input.scrollDelta.y
+        if (deltaY == 0f) return
+        val panel = debug.topPanelAt(input.pointerPosition) ?: return
+        if (panel.applyScroll(input.pointerPosition, deltaY)) {
+            input.scrollConsumed = true
         }
     }
 

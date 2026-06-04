@@ -133,4 +133,6 @@ private class RecordingRenderer : Renderer {
         events += Call.Push(translation, rotation, scale)
     }
     override fun popTransform() { events += Call.Pop }
+    override fun pushClip(rect: com.neoutils.engine.math.Rect) {}
+    override fun popClip() {}
 }

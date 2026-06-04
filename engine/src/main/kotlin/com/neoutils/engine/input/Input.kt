@@ -66,4 +66,31 @@ interface Input {
     var mouseDragConsumed: Boolean
         get() = false
         set(_) {}
+
+    /**
+     * Mouse-wheel delta accumulated during the current tick, where positive
+     * `y` means scrolling **down** (toward later content) and positive `x`
+     * means scrolling right. Reads [Vec2.ZERO] on any tick with no wheel
+     * motion, and is reset at the start of every tick (during `beginTick()`
+     * or equivalent), exactly like the per-tick click state.
+     */
+    val scrollDelta: Vec2
+        get() = Vec2.ZERO
+
+    /**
+     * Per-tick scroll-consumption signal mirroring [mouseDragConsumed]: reset
+     * to `false` at the start of each tick and set to `true` by the
+     * [com.neoutils.engine.tree.SceneTree.hitTestUI] phase (or its scroll
+     * sibling) when a debug panel absorbs the wheel for the current tick.
+     * Gameplay wheel consumers (camera zoom etc.) MUST check this before
+     * acting on [scrollDelta] so scrolling over a debug panel does not also
+     * drive gameplay.
+     *
+     * Defaults to a no-op (always reads `false`, writes ignored) so an `Input`
+     * that never participates in scroll consumption needs no extra storage;
+     * the shipped backends override it with stored, per-tick state.
+     */
+    var scrollConsumed: Boolean
+        get() = false
+        set(_) {}
 }

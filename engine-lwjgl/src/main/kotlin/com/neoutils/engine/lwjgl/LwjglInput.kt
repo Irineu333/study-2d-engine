@@ -30,6 +30,15 @@ class LwjglInput : Input {
 
     @Volatile override var mouseDragConsumed: Boolean = false
 
+    @Volatile override var scrollConsumed: Boolean = false
+
+    override var scrollDelta: Vec2 = Vec2.ZERO
+        private set
+
+    // Accumulated on the loop thread by the GLFW scroll callback (fired from
+    // glfwPollEvents), drained into `scrollDelta` at `beginTick()`.
+    private var pendingWheelY: Float = 0f
+
     override val pointerPosition: Vec2 get() = pointer
 
     override fun isKeyDown(key: Key): Boolean = key in keysDown
@@ -43,6 +52,16 @@ class LwjglInput : Input {
     fun beginTick() {
         keysPressedThisTick.clear()
         mouseClickedThisTick.clear()
+
+        scrollConsumed = false
+        // GLFW reports wheel-up as positive yoffset; the SPI's positive y means
+        // scroll-down, so the sign is inverted.
+        scrollDelta = if (pendingWheelY == 0f) Vec2.ZERO else Vec2(0f, -pendingWheelY)
+        pendingWheelY = 0f
+    }
+
+    fun onGlfwScroll(xoffset: Float, yoffset: Float) {
+        pendingWheelY += yoffset
     }
 
     fun onGlfwKey(glfwKey: Int, action: Int) {

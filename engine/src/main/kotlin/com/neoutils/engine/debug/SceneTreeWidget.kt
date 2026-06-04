@@ -99,6 +99,9 @@ class SceneTreeWidget : ScreenDebugWidget() {
      */
     private fun hitTestRows() {
         if (!bodyVisible) return
+        // A press that started a scrollbar-grabber drag must not also select a
+        // row under the pointer (the grabber overlays the rows' right edge).
+        if (isScrollbarDragging) return
         val owningTree = tree ?: return
         if (this !== owningTree.debug.pressOwner) return
         val input = owningTree.input ?: return
@@ -113,7 +116,8 @@ class SceneTreeWidget : ScreenDebugWidget() {
         val body = bodyOrigin
         val left = body.x
         if (pointer.x < left || pointer.x > left + current.size.x) return null
-        var y = body.y + DebugTheme.padding
+        // Match the drawn position: the body is scroll-translated by `-scrollOffset`.
+        var y = body.y + DebugTheme.padding - scrollOffset
         for (row in current.rows) {
             if (row is Row.TreeNode && pointer.y >= y && pointer.y < y + row.height) return row.node
             y += row.height
@@ -124,12 +128,11 @@ class SceneTreeWidget : ScreenDebugWidget() {
     override fun bodySize(): Vec2 {
         val owningTree = tree
         val measurer = owningTree?.textMeasurer
-        val surface = owningTree?.size
-        if (owningTree == null || measurer == null || surface == null) {
+        if (owningTree == null || measurer == null) {
             layout = null
             return Vec2.ZERO
         }
-        val computed = computeLayout(owningTree.root, measurer, surface)
+        val computed = computeLayout(owningTree.root, measurer)
         layout = computed
         return computed.size
     }
@@ -153,34 +156,19 @@ class SceneTreeWidget : ScreenDebugWidget() {
     }
 
     /**
-     * Builds the visible row list and panel size for the hierarchy under [root].
-     * Fits vertically: the tail that would spill past the screen collapses into
-     * a single overflow row reporting how many rows were hidden.
+     * Builds the full row list and content extent for the hierarchy under
+     * [root] — every node row, no truncation. The base bounds the viewport and
+     * scrolls when the extent overflows, so this reports the intrinsic height.
      */
-    private fun computeLayout(root: Node, measurer: TextMeasurer, surface: Vec2): TreeLayout {
+    private fun computeLayout(root: Node, measurer: TextMeasurer): TreeLayout {
         val rows = buildTreeRows(root)
-        // Leave room for the title-bar header drawn above the body.
-        val maxHeight = surface.y - DebugTheme.margin * 2f - DebugTheme.headerHeight
-        val shown = mutableListOf<Row>()
         var contentHeight = DebugTheme.padding * 2f
-        var hidden = 0
-        for ((index, row) in rows.withIndex()) {
-            if (contentHeight + row.height > maxHeight) {
-                hidden = rows.size - index
-                break
-            }
-            shown += row
-            contentHeight += row.height
-        }
-        if (hidden > 0) {
-            shown += Row.Section("… (+$hidden more)")
-            contentHeight += SECTION_H
-        }
-        val panelWidth = shown.maxOf { it.width(measurer) } + DebugTheme.padding * 2f
+        for (row in rows) contentHeight += row.height
+        val panelWidth = rows.maxOf { it.width(measurer) } + DebugTheme.padding * 2f
         // The last row carries a trailing LINE_GAP it does not need; drop it so
         // the bottom inset equals the top.
         val panelHeight = contentHeight - LINE_GAP
-        return TreeLayout(shown, Vec2(panelWidth, panelHeight))
+        return TreeLayout(rows, Vec2(panelWidth, panelHeight))
     }
 
     /**

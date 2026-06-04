@@ -29,6 +29,7 @@ class LwjglRenderer : Renderer {
 
     private var nvgContext: Long = NULL
     private var transformDepth: Int = 0
+    private var clipDepth: Int = 0
     private var defaultFontId: Int = -1
 
     fun init() {
@@ -44,13 +45,18 @@ class LwjglRenderer : Renderer {
     fun bind(windowWidth: Int, windowHeight: Int, pixelRatio: Float) {
         NanoVG.nvgBeginFrame(requiredCtx(), windowWidth.toFloat(), windowHeight.toFloat(), pixelRatio)
         transformDepth = 0
+        clipDepth = 0
     }
 
     fun unbind() {
-        val leaked = transformDepth
+        val leakedTransform = transformDepth
+        val leakedClip = clipDepth
         NanoVG.nvgEndFrame(requiredCtx())
-        check(leaked == 0) {
-            "LwjglRenderer.unbind() with $leaked unmatched pushTransform call(s); every push MUST be matched by pop within a frame."
+        check(leakedTransform == 0) {
+            "LwjglRenderer.unbind() with $leakedTransform unmatched pushTransform call(s); every push MUST be matched by pop within a frame."
+        }
+        check(leakedClip == 0) {
+            "LwjglRenderer.unbind() with $leakedClip unmatched pushClip call(s); every push MUST be matched by pop within a frame."
         }
     }
 
@@ -164,6 +170,24 @@ class LwjglRenderer : Renderer {
         check(transformDepth > 0) { "popTransform on empty transform stack (LwjglRenderer)" }
         NanoVG.nvgRestore(requiredCtx())
         transformDepth--
+    }
+
+    // NanoVG has no scissor-pop, so the LIFO clip stack is emulated over its
+    // own state stack: nvgSave snapshots the current scissor, nvgIntersectScissor
+    // narrows it (so a deeper clip intersects the current one), and nvgRestore
+    // pops back. `pushTransform` shares this same nvgSave/nvgRestore discipline,
+    // so clip and transform pushes nest correctly when interleaved.
+    override fun pushClip(rect: Rect) {
+        val ctx = requiredCtx()
+        NanoVG.nvgSave(ctx)
+        NanoVG.nvgIntersectScissor(ctx, rect.origin.x, rect.origin.y, rect.size.x, rect.size.y)
+        clipDepth++
+    }
+
+    override fun popClip() {
+        check(clipDepth > 0) { "popClip on empty clip stack (LwjglRenderer)" }
+        NanoVG.nvgRestore(requiredCtx())
+        clipDepth--
     }
 
     private fun requiredCtx(): Long {
