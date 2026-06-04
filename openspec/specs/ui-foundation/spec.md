@@ -63,7 +63,14 @@ Within a `CanvasLayer` subtree, `Node2D` children SHALL receive standard `Render
 
 ### Requirement: Panel is a screen-space rectangle
 
-`Panel : Node2D` SHALL render a filled rectangle at `position` with dimensions `size: Vec2`, color `color: Color`, and optionally a 1px-or-thicker border `border: Border?` where `Border` is `{ color: Color, width: Float }`. Panel SHALL be `@Serializable` with `@Inspect` annotations on `size`, `color`, and `border`. Panel SHALL be registered in `NodeRegistry` under `"engine.Panel"`.
+`Panel : Control` SHALL render a filled rectangle at `position` with dimensions
+`size: Vec2` (the `size` field is **inherited from `Control`**), color
+`color: Color`, and optionally a 1px-or-thicker border `border: Border?` where
+`Border` is `{ color: Color, width: Float }`. Panel SHALL be `@Serializable` with
+`@Inspect` annotations on `color` and `border` (`size`, anchors, offsets,
+`visible`, and `mouseFilter` are inherited `@Inspect` properties from `Control`).
+Panel's default `mouseFilter` SHALL be `STOP` (opaque). Panel SHALL be registered
+in `NodeRegistry` under `"engine.Panel"`.
 
 #### Scenario: Panel draws filled rect with no border
 
@@ -77,11 +84,20 @@ Within a `CanvasLayer` subtree, `Node2D` children SHALL receive standard `Render
 
 ### Requirement: Button raises pressed signal on click-release inside
 
-`Button : Node2D` SHALL render as a `Panel`-like rectangle with a centered `text: String` label and four state colors (`normalColor`, `hoverColor`, `pressedColor`, `disabledColor: Color`). Button SHALL expose `disabled: Bool = false` and a built-in `pressed: Signal<Unit>` instantiated per-instance during `attach`. Button SHALL be `@Serializable` with `@Inspect` annotations on `size`, `text`, the four colors, and `disabled`. Button SHALL be registered in `NodeRegistry` under `"engine.Button"`.
+`Button : Control` SHALL render as a `Panel`-like rectangle with a centered
+`text: String` label and four state colors (`normalColor`, `hoverColor`,
+`pressedColor`, `disabledColor: Color`). The button rect dimensions come from the
+inherited `Control.size`. Button SHALL expose `disabled: Bool = false` and a
+built-in `pressed: Signal<Unit>` instantiated per-instance during `attach`.
+Button SHALL be `@Serializable` with `@Inspect` annotations on `text`, the four
+colors, and `disabled` (`size`, anchors, offsets, `visible`, and `mouseFilter`
+are inherited from `Control`). Button's default `mouseFilter` SHALL be `STOP`.
+Button SHALL be registered in `NodeRegistry` under `"engine.Button"`.
 
 A click cycle SHALL be: `pressed` emits exactly once when `mouse-up` occurs inside the button rect AND the most recent `mouse-down` also occurred inside the same button. If the user drags out after `mouse-down` and releases outside, `pressed` SHALL NOT emit and the internal `armed` state SHALL clear.
 
-`Button.pressed` SHALL NOT emit while `disabled = true`.
+`Button.pressed` SHALL NOT emit while `disabled = true`, nor while
+`visible = false`.
 
 #### Scenario: Click inside emits pressed once
 
@@ -148,6 +164,47 @@ When no `Button` absorbs the click, the top-most panel resolved above (if any) S
 - **WHEN** the mouse clicks a `Button` that lives inside a debug panel covered by no other panel at that point
 - **THEN** the phase SHALL raise the panel to the top of its sibling order, the `Button` SHALL absorb the click (`input.mouseClickConsumed = true`) and its `pressed` SHALL emit normally, and the panel SHALL NOT become the press owner (it arms no drag).
 
+### Requirement: UI render pass skips invisible Control subtrees
+
+The UI render pass (pass 2 of `SceneTree.render`) SHALL skip any `Control` whose
+`visible = false`, together with that Control's entire subtree, drawing neither
+the Control nor any of its descendants. Non-Control nodes inside a `CanvasLayer`
+are unaffected by this rule (they have no `visible` flag in this change).
+
+#### Scenario: Invisible Panel and its children are not drawn
+
+- **WHEN** a `CanvasLayer` contains a `Panel` `P` with `visible = false`, and `P` contains a `Label` child `L`
+- **THEN** during the UI render pass neither `P` nor `L` SHALL be drawn.
+
+#### Scenario: Sibling of an invisible Control still draws
+
+- **WHEN** a `CanvasLayer` contains a visible `Panel` `A` and an invisible `Panel` `B`
+- **THEN** `A` SHALL be drawn and `B` (with its subtree) SHALL be skipped.
+
+### Requirement: UI hit-test respects Control visibility and mouse_filter
+
+The UI hit-test phase (`SceneTree.hitTestUI`) SHALL skip any `Control` whose
+`visible = false` (with its subtree) and SHALL honor each tested `Control`'s
+`mouseFilter`: `IGNORE` controls are never tested; `STOP` controls consume a
+press that lands inside their screen rect; `PASS` controls register the press
+without consuming it. A `Button` SHALL be eligible to absorb a click only when it
+is `visible`, `disabled = false`, and its `mouseFilter` is not `IGNORE`.
+
+#### Scenario: Click on an IGNORE Panel passes through to gameplay
+
+- **WHEN** a press lands over a `Panel` with `mouseFilter = IGNORE` and no other STOP control or enabled Button is under the pointer
+- **THEN** `input.mouseClickConsumed` SHALL remain `false` and gameplay scripts SHALL see `wasMouseClicked(Left) = true`.
+
+#### Scenario: Click on an invisible Button is not absorbed
+
+- **WHEN** a press lands over a `Button` with `visible = false`
+- **THEN** the hit-test phase SHALL NOT absorb the click against that button and SHALL continue resolving as if the button were absent.
+
+#### Scenario: STOP Panel consumes the press as opaque UI
+
+- **WHEN** a press lands over a `Panel` with the default `mouseFilter = STOP` and no enabled Button is under the pointer
+- **THEN** the press SHALL be consumed (`input.mouseClickConsumed = true`) and SHALL NOT reach the scene picker nor gameplay.
+
 ### Requirement: UI nodes serialize via standard scene.json properties bag
 
 `CanvasLayer`, `Panel`, and `Button` SHALL participate in the standard scene.json v2 `properties` bag and respect the same `@Inspect` vs `@Transient` discipline as other scene nodes. Loading and saving SHALL roundtrip the values.
@@ -179,12 +236,15 @@ When no `Button` absorbs the click, the top-most panel resolved above (if any) S
 
 ### Requirement: UI and visual leaves report local bounds
 
-`Panel`, `ColorRect`, `Circle2D`, `Button`, and `Label` SHALL override `Node2D.localBounds()` to report the `Rect` they actually draw in their local frame:
+`Panel`, `ColorRect`, and `Button` SHALL inherit `localBounds()` from `Control`,
+returning `Rect(Vec2.ZERO, size)` from the inherited `Control.size` field — they
+no longer each override `localBounds()`. `Circle2D` (which remains a plain
+`Node2D`, **not** a `Control`) and `Label` SHALL still report their own local
+bounds:
 
-- `Panel` and `ColorRect` SHALL return `Rect(Vec2.ZERO, size)`.
-- `Button` SHALL return `Rect(Vec2.ZERO, size)`.
+- `Panel`, `ColorRect`, and `Button` (via `Control`) SHALL return `Rect(Vec2.ZERO, size)`.
 - `Circle2D` SHALL return `Rect(Vec2(-radius, -radius), Vec2(2*radius, 2*radius))`.
-- `Label` SHALL return `Rect(Vec2.ZERO, tree.textMeasurer.measureText(text, size))` when a `TextMeasurer` is reachable via `tree`, and `null` otherwise.
+- `Label` (a `Control`) SHALL return `Rect(Vec2.ZERO, tree.textMeasurer.measureText(text, size))` as its **min-size** when a `TextMeasurer` is reachable via `tree`, and `null` otherwise.
 
 #### Scenario: Panel local bounds matches its drawn rect
 
