@@ -46,5 +46,5 @@
 ## 8. Verificação e demos
 
 - [x] 8.1 Rodar a suíte completa (`:engine`, `:engine-skiko`, `:engine-lwjgl`) e o build.
-- [ ] 8.2 Verificar manualmente no entrypoint Skiko de `:games:demos`: árvore grande no Inspector rola por roda e por grabber, clip suave nas bordas, reajuste ao redimensionar a janela.
-- [ ] 8.3 Verificar o mesmo no entrypoint LWJGL (`runLwjgl`) — sentinela do invariante #4.
+- [x] 8.2 Verificar manualmente no entrypoint Skiko de `:games:demos`: árvore grande no Inspector rola por roda e por grabber, clip suave nas bordas, reajuste ao redimensionar a janela.
+- [x] 8.3 Verificar o mesmo no entrypoint LWJGL (`runLwjgl`) — sentinela do invariante #4.
