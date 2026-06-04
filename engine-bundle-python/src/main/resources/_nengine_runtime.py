@@ -36,6 +36,9 @@ def _nengine_load_module(source, path):
         'Line2D': Line2D,
         'Polygon2D': Polygon2D,
         'Label': Label,
+        'Control': Control,
+        'MouseFilter': MouseFilter,
+        'LayoutPreset': LayoutPreset,
         'Signal': Signal,
         'signal': signal,
         # Cross-script handle lookup: `script_of(node)` returns the Python

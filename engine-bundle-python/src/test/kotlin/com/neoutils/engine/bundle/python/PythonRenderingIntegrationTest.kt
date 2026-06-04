@@ -33,6 +33,8 @@ private class RecordingRenderer : Renderer {
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {}
     override fun popTransform() {}
+    override fun pushClip(rect: Rect) {}
+    override fun popClip() {}
 }
 
 private data class Quadruple<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

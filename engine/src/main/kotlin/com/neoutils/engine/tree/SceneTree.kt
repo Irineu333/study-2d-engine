@@ -13,6 +13,8 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.Control
+import com.neoutils.engine.scene.MouseFilter
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 
@@ -221,6 +223,7 @@ class SceneTree(val root: Node) {
         input.scrollConsumed = false
         debug.pressOwner = null
         if (!root.isLive) return
+        runAnchorLayout()
         routeScroll(input)
         if (!input.wasMouseClickedRaw(MouseButton.Left)) return
         val pointer = input.pointerPosition
@@ -231,9 +234,8 @@ class SceneTree(val root: Node) {
         // collectCanvasLayers returns (layer asc, dfs-order asc) via stable sort;
         // reversing flips to (layer desc, dfs-order desc) — top-most-first.
         for (layer in collectCanvasLayers().asReversed()) {
-            val hit = findHitButton(layer, pointer)
+            val hit = findUiConsumer(layer, pointer)
             if (hit != null) {
-                hit.armPress()
                 input.mouseClickConsumed = true
                 return
             }
@@ -265,27 +267,75 @@ class SceneTree(val root: Node) {
     }
 
     /**
-     * Reverse-DFS walk of [layer]'s subtree returning the first enabled
-     * `Button` whose `screenRect` contains [pointer]. Reverse order means
-     * the last-drawn (top-most) sibling at every level wins overlap within
-     * the layer. Nested CanvasLayers are skipped — they own their own pass.
+     * Reverse-DFS walk of [layer]'s subtree returning the first `Control` that
+     * **consumes** the press at [pointer] — a `STOP` control (opaque UI) or an
+     * enabled `STOP` `Button`, which is armed as a side effect. Reverse order
+     * means the last-drawn (top-most) sibling at every level wins overlap within
+     * the layer. Invisible Control subtrees are skipped entirely; `IGNORE`
+     * controls are never tested; `PASS` controls register (arming an enabled
+     * Button) but do not consume, so the walk continues to whatever is behind.
+     * Nested CanvasLayers are skipped — they own their own pass.
      */
-    private fun findHitButton(layer: CanvasLayer, pointer: Vec2): Button? {
+    private fun findUiConsumer(layer: CanvasLayer, pointer: Vec2): Control? {
         for (child in layer.children.asReversed()) {
-            val hit = findHitButtonInSubtree(child, pointer)
+            val hit = findUiConsumerInSubtree(child, pointer)
             if (hit != null) return hit
         }
         return null
     }
 
-    private fun findHitButtonInSubtree(node: Node, pointer: Vec2): Button? {
+    private fun findUiConsumerInSubtree(node: Node, pointer: Vec2): Control? {
         if (node is CanvasLayer) return null
+        // Invisibility hides the whole subtree from the hit-test (conjunctive).
+        if (node is Control && !node.visible) return null
         for (child in node.children.asReversed()) {
-            val hit = findHitButtonInSubtree(child, pointer)
+            val hit = findUiConsumerInSubtree(child, pointer)
             if (hit != null) return hit
         }
-        if (node is Button && node.hitTest(pointer)) return node
+        if (node is Control && node.mouseFilter != MouseFilter.IGNORE) {
+            val rect = node.screenRect()
+            if (rect != null && rect.contains(pointer)) {
+                if (node is Button) {
+                    if (!node.disabled) {
+                        node.armPress()
+                        if (node.mouseFilter == MouseFilter.STOP) return node
+                    }
+                } else if (node.mouseFilter == MouseFilter.STOP) {
+                    return node
+                }
+                // PASS (and disabled buttons): observed, not consumed.
+            }
+        }
         return null
+    }
+
+    /**
+     * Anchor layout pass. Resolves every reachable `Control`'s `position`/`size`
+     * from its anchors/offsets against its parent rect, top-down so a parent
+     * Control resolves before its children. The parent rect is the resolved
+     * rect of the nearest ancestor `Control`, or the surface rect
+     * `Rect(ZERO, size)` at each `CanvasLayer` boundary (and at the root).
+     * Runs before the UI render pass and the UI hit-test each tick, so a surface
+     * or parent resize reflows anchored controls with no per-frame script code.
+     */
+    private fun runAnchorLayout() {
+        layoutWalk(root, Rect(Vec2.ZERO, size))
+    }
+
+    private fun layoutWalk(node: Node, parentRect: Rect) {
+        if (node is CanvasLayer) {
+            // A CanvasLayer establishes screen-space: its children resolve
+            // against the surface, independent of any world ancestor rect.
+            val surface = Rect(Vec2.ZERO, size)
+            for (child in node.children) layoutWalk(child, surface)
+            return
+        }
+        if (node is Control) {
+            val resolved = node.resolveLayout(parentRect)
+            for (child in node.children) layoutWalk(child, resolved)
+        } else {
+            for (child in node.children) layoutWalk(child, parentRect)
+        }
     }
 
     /**
@@ -347,6 +397,7 @@ class SceneTree(val root: Node) {
 
     fun render(renderer: Renderer) {
         if (!root.isLive) return
+        runAnchorLayout()
         // Place every screen-space debug widget by its DockSlot before drawing;
         // this re-flows on resize and as variable-height widgets change size.
         debug.dock.relayout(size)
@@ -462,6 +513,7 @@ class SceneTree(val root: Node) {
      */
     private fun traverseWorldDraw(node: Node, renderer: Renderer) {
         if (node is CanvasLayer) return
+        if (node is Control && !node.visible) return
         if (node is Node2D) {
             val t = node.transform
             renderer.pushTransform(t.position, t.rotation, t.scale)
@@ -491,6 +543,8 @@ class SceneTree(val root: Node) {
         // Nested CanvasLayers are flattened at collection time: each is rendered
         // once in the global (layer, dfs-order) sequence, so we skip them here.
         if (node is CanvasLayer) return
+        // An invisible Control hides itself and its whole subtree.
+        if (node is Control && !node.visible) return
         if (node is Node2D) {
             val t = node.transform
             renderer.pushTransform(t.position, t.rotation, t.scale)

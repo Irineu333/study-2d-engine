@@ -33,7 +33,7 @@ class LeafBoundsTest {
         val tree = SceneTree(Node())
         tree.textMeasurer = TextMeasurer { _, _ -> Vec2(14f, 12f) }
         tree.start()
-        val label = Label().apply { text = "Hi"; size = 12f }
+        val label = Label().apply { text = "Hi"; fontSize = 12f }
         tree.root.addChild(label)
         assertEquals(Rect(Vec2.ZERO, Vec2(14f, 12f)), label.localBounds())
     }

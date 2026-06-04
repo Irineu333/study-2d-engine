@@ -10,9 +10,12 @@
 ---@field script_of fun(node: any): any
 ---@field Key Key
 ---@field MouseButton MouseButton
+---@field MouseFilter MouseFilter
+---@field LayoutPreset LayoutPreset
 ---@field Node Node
 ---@field Node2D Node2D
 ---@field Camera2D Camera2D
+---@field Control Control
 ---@field Label Label
 ---@field ColorRect ColorRect
 ---@field Circle2D Circle2D

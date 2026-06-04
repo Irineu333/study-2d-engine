@@ -8,6 +8,7 @@ import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.LayoutPreset
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Panel
 
@@ -20,11 +21,12 @@ import com.neoutils.engine.scene.Panel
  * a dark `ColorRect` in world-space so it is visually obvious that the UI
  * lives on a different transform stack.
  *
- * Without anchors (those land in the future `ui-anchors` change), this demo
- * recomputes the HUD and menu positions in `onProcess` every frame, reading
- * `tree.size`. That keeps the HUD glued to the bottom-left and the menu
- * horizontally centered when the user resizes the window — at the cost of
- * the ad-hoc layout math that anchors will replace declaratively.
+ * Layout is declarative via `Control` anchors (`ui-controls-base`): the HUD
+ * backdrop is `BOTTOM_LEFT`-anchored, its labels are nested children pinned to
+ * the panel's top-left, and the three menu buttons center horizontally
+ * (`anchorLeft = anchorRight = 0.5`). The anchor layout pass reflows everything
+ * on resize with **no** `onProcess` code — the per-frame relayout this demo
+ * used to carry is gone.
  *
  * Clicking a button prints a recognizable string via [Log.i]. Validation
  * checklist:
@@ -75,48 +77,52 @@ class UiPlaygroundDemo : Node() {
     private fun buildHud(): CanvasLayer = CanvasLayer().apply {
         name = "Hud"
         layer = 0
+        // Backdrop pinned to the surface bottom-left via a BOTTOM_LEFT preset
+        // plus offsets: left/right grow from the left edge, top/bottom from the
+        // bottom edge (negative offsets walk up from `anchor = 1`).
         hudBackdrop = Panel().apply {
             name = "HudBackdrop"
-            size = Vec2(HUD_WIDTH, HUD_HEIGHT)
             color = Color(0f, 0f, 0f, 0.5f)
+            applyPreset(LayoutPreset.BOTTOM_LEFT)
+            offsetLeft = HUD_MARGIN
+            offsetRight = HUD_MARGIN + HUD_WIDTH
+            offsetTop = -(HUD_HEIGHT + HUD_MARGIN)
+            offsetBottom = -HUD_MARGIN
         }
+        // Labels nest inside the backdrop: top-left anchored, so they ride the
+        // panel as it tracks the resizing surface (Control-in-Control).
         scoreLabel = Label().apply {
             name = "Score"
             text = "Score: 0"
-            size = 16f
+            fontSize = 16f
             color = Color.WHITE
+            offsetLeft = 10f
+            offsetTop = 18f
         }
         livesLabel = Label().apply {
             name = "Lives"
             text = "Lives: 3"
-            size = 16f
+            fontSize = 16f
             color = Color.WHITE
+            offsetLeft = 100f
+            offsetTop = 18f
         }
+        hudBackdrop.addChild(scoreLabel)
+        hudBackdrop.addChild(livesLabel)
         addChild(hudBackdrop)
-        addChild(scoreLabel)
-        addChild(livesLabel)
     }
 
     private fun buildMenu(): CanvasLayer = CanvasLayer().apply {
         name = "Menu"
         layer = 10
-        startButton = Button().apply {
-            name = "Start"
-            size = Vec2(BUTTON_WIDTH, BUTTON_HEIGHT)
-            text = "Start"
+        startButton = menuButton("Start", "Start", row = 0).apply {
             pressed.connect { Log.i(TAG, "start clicked") }
         }
-        settingsButton = Button().apply {
-            name = "Settings"
-            size = Vec2(BUTTON_WIDTH, BUTTON_HEIGHT)
-            text = "Settings (disabled)"
+        settingsButton = menuButton("Settings", "Settings (disabled)", row = 1).apply {
             disabled = true
             pressed.connect { Log.i(TAG, "settings clicked — should NOT print") }
         }
-        quitButton = Button().apply {
-            name = "Quit"
-            size = Vec2(BUTTON_WIDTH, BUTTON_HEIGHT)
-            text = "Quit"
+        quitButton = menuButton("Quit", "Quit", row = 2).apply {
             pressed.connect { Log.i(TAG, "quit clicked") }
         }
         addChild(startButton)
@@ -124,29 +130,17 @@ class UiPlaygroundDemo : Node() {
         addChild(quitButton)
     }
 
-    override fun onProcess(dt: Float) {
-        super.onProcess(dt)
-        // Re-layout every frame against the current surface. Manual
-        // recomputation here stands in for the declarative anchors that
-        // `ui-anchors` will deliver later.
-        val surface = tree?.size ?: return
-        val w = surface.x
-        val h = surface.y
-
-        // HUD pinned to the bottom-left: 10 px left margin, ~10 px above the
-        // bottom edge for the backdrop; labels sit centered within it.
-        val hudY = h - HUD_HEIGHT - HUD_MARGIN
-        hudBackdrop.position = Vec2(HUD_MARGIN, hudY)
-        scoreLabel.position = Vec2(HUD_MARGIN + 10f, hudY + 18f)
-        livesLabel.position = Vec2(HUD_MARGIN + 100f, hudY + 18f)
-
-        // Menu horizontally centered, vertically stacked starting at 1/3 of
-        // the surface height.
-        val menuX = (w - BUTTON_WIDTH) / 2f
-        val firstY = h / 3f
-        startButton.position = Vec2(menuX, firstY)
-        settingsButton.position = Vec2(menuX, firstY + BUTTON_HEIGHT + BUTTON_GAP)
-        quitButton.position = Vec2(menuX, firstY + (BUTTON_HEIGHT + BUTTON_GAP) * 2)
+    /** Horizontally-centered button stacked at [row] from the menu top. */
+    private fun menuButton(name: String, label: String, row: Int): Button = Button().apply {
+        this.name = name
+        text = label
+        anchorLeft = 0.5f
+        anchorRight = 0.5f
+        offsetLeft = -BUTTON_WIDTH / 2f
+        offsetRight = BUTTON_WIDTH / 2f
+        val top = MENU_TOP + row * (BUTTON_HEIGHT + BUTTON_GAP)
+        offsetTop = top
+        offsetBottom = top + BUTTON_HEIGHT
     }
 
     private companion object {
@@ -159,5 +153,6 @@ class UiPlaygroundDemo : Node() {
         const val BUTTON_WIDTH = 200f
         const val BUTTON_HEIGHT = 50f
         const val BUTTON_GAP = 20f
+        const val MENU_TOP = 160f
     }
 }

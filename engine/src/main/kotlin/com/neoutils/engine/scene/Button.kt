@@ -25,10 +25,11 @@ import kotlinx.serialization.Transient
  * decoupled from any `Camera2D` view transform.
  */
 @Serializable
-open class Button : Node2D() {
+open class Button : Control() {
 
-    @Inspect
-    var size: Vec2 = Vec2(120f, 36f)
+    init {
+        size = Vec2(120f, 36f)
+    }
 
     @Inspect
     var text: String = ""
@@ -69,17 +70,16 @@ open class Button : Node2D() {
     @Transient
     private var armed: Boolean = false
 
-    override fun localBounds(): Rect = Rect(Vec2.ZERO, size)
-
     /**
      * Screen-space axis-aligned rect, equivalent to [worldBounds]: the AABB
      * enclosing `world().apply(c)` for each corner of [localBounds]. Accounts
      * for the full world transform including **rotation** — superseding the
      * older scale-only computation that silently ignored it. Under a
      * `CanvasLayer` (a non-Node2D) composition stops at the layer boundary, so
-     * coordinates are pure screen pixels.
+     * coordinates are pure screen pixels. Non-null: a Button always has a rect
+     * (`localBounds` is `Rect(ZERO, size)` from `Control`).
      */
-    fun screenRect(): Rect = worldBounds()!!
+    override fun screenRect(): Rect = worldBounds()!!
 
     /**
      * Tests whether [pointer] is inside this button's screen rect AND the
@@ -107,7 +107,7 @@ open class Button : Node2D() {
             super.onProcess(dt)
             return
         }
-        if (disabled) {
+        if (disabled || !visible) {
             hovered = false
             armed = false
         } else {

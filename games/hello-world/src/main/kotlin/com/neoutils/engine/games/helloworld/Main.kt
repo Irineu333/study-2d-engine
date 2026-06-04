@@ -9,7 +9,7 @@ import com.neoutils.engine.tree.SceneTree
 fun main() {
     val label = CenteredLabel().apply {
         text = "Hello, world!"
-        size = 32f
+        fontSize = 32f
         color = Color.WHITE
     }
     val hud = CanvasLayer().apply {

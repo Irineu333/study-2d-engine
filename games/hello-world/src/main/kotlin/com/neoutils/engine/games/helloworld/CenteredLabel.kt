@@ -9,7 +9,7 @@ class CenteredLabel : Label() {
     override fun onDraw(renderer: Renderer) {
         val surface = tree?.size ?: return
 
-        val measured = renderer.measureText(text, size)
+        val measured = renderer.measureText(text, fontSize)
 
         val position = Vec2(
             x = (surface.x - measured.x) / 2f,
@@ -19,7 +19,7 @@ class CenteredLabel : Label() {
         renderer.drawText(
             text,
             position,
-            size,
+            fontSize,
             color,
         )
     }

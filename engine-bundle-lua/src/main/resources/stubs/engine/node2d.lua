@@ -14,14 +14,13 @@ function Node2D:world() end
 ---@field current boolean
 local Camera2D = {}
 
----@class Label : Node2D
+---@class Label : Control
 ---@field text string
----@field size number
+---@field fontSize number Font height (renamed from `size`, which now means the Control rect)
 ---@field color Color
 local Label = {}
 
----@class ColorRect : Node2D
----@field size Vec2
+---@class ColorRect : Control
 ---@field color Color
 local ColorRect = {}
 

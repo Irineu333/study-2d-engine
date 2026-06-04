@@ -38,7 +38,7 @@ class SelectionGizmoWidgetTest {
 
         val lines = selectionLines(recorder)
         assertEquals(4, lines.size, "an oriented box has four edges")
-        val expected = target.localBounds().corners().map { target.world().apply(it) }
+        val expected = target.localBounds()!!.corners().map { target.world().apply(it) }
         for (i in expected.indices) {
             val edge = lines[i]
             assertApprox(expected[i], edge.from)

@@ -23,7 +23,10 @@ import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
+import com.neoutils.engine.scene.Control
 import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.LayoutPreset
+import com.neoutils.engine.scene.MouseFilter
 import com.neoutils.engine.scene.Line2D
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
@@ -150,6 +153,14 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
             "MouseButton",
             ProxyObject.fromMap(MouseButton.entries.associateBy { it.name }),
         )
+        bindings.putMember(
+            "MouseFilter",
+            ProxyObject.fromMap(MouseFilter.entries.associateBy { it.name }),
+        )
+        bindings.putMember(
+            "LayoutPreset",
+            ProxyObject.fromMap(LayoutPreset.entries.associateBy { it.name }),
+        )
         bindings.putMember("CollisionObject2D", CollisionObject2D::class.java)
         bindings.putMember("Area2D", Area2D::class.java)
         bindings.putMember("PhysicsBody2D", PhysicsBody2D::class.java)
@@ -168,6 +179,7 @@ class PythonScriptHost internal constructor(private val context: Context) : Scri
         bindings.putMember("Polygon2D", Polygon2D::class.java)
         bindings.putMember("Label", Label::class.java)
         bindings.putMember("CanvasLayer", CanvasLayer::class.java)
+        bindings.putMember("Control", Control::class.java)
         bindings.putMember("Panel", Panel::class.java)
         bindings.putMember("Button", Button::class.java)
         bindings.putMember("Signal", Signal::class.java)

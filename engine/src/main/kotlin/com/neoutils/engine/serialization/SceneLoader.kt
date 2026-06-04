@@ -142,7 +142,17 @@ object SceneLoader {
         }
         val exportNames: Set<String> = attachment?.exportNames ?: emptySet()
 
-        for ((key, element) in properties) {
+        // `Control`'s anchors/offsets are the rect source of truth; `transform`
+        // and `size` are derived and write back into the offsets when set. To
+        // keep both backward-compat (old scenes carry only `transform`/`size`)
+        // and round-trip fidelity (new scenes carry explicit offsets/anchors),
+        // apply the derived rect first (seeding offsets via write-back) and the
+        // anchor/offset source last, so an explicit source always wins.
+        val (sourceEntries, primaryEntries) = properties.entries.partition { (key, _) ->
+            key.startsWith("anchor") || key.startsWith("offset")
+        }
+
+        for ((key, element) in primaryEntries + sourceEntries) {
             if (key == GROUPS_PROPERTY) {
                 applyGroups(node, element, path)
                 continue

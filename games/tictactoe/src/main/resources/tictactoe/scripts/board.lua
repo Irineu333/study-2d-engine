@@ -166,7 +166,7 @@ local function recenter_status(self, renderer)
     -- Label's local transform here (before the Label's own onDraw runs) lands
     -- the centered position in the same frame.
     if self._status == nil then return end
-    local measured = renderer:measureText(self._status.text, self._status.size)
+    local measured = renderer:measureText(self._status.text, self._status.fontSize)
     self._status.position = nengine.Vec2(WORLD_CENTER_X - measured.x / 2.0, STATUS_Y)
 end
 

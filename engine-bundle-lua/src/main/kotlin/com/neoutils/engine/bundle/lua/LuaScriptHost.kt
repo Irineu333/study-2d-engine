@@ -26,6 +26,9 @@ import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.Control
+import com.neoutils.engine.scene.LayoutPreset
+import com.neoutils.engine.scene.MouseFilter
 import com.neoutils.engine.scene.Panel
 import com.neoutils.engine.scene.Circle2D
 import com.neoutils.engine.scene.ColorRect
@@ -428,6 +431,12 @@ class LuaScriptHost internal constructor(internal val globals: Globals) : Script
         val mouseTable = LuaTable()
         for (m in MouseButton.entries) mouseTable.set(m.name, CoerceJavaToLua.coerce(m))
         nengine.set("MouseButton", mouseTable)
+        val mouseFilterTable = LuaTable()
+        for (f in MouseFilter.entries) mouseFilterTable.set(f.name, CoerceJavaToLua.coerce(f))
+        nengine.set("MouseFilter", mouseFilterTable)
+        val presetTable = LuaTable()
+        for (p in LayoutPreset.entries) presetTable.set(p.name, CoerceJavaToLua.coerce(p))
+        nengine.set("LayoutPreset", presetTable)
 
         // Node types (zero-arg constructors via CoerceJavaToLua of the Class object).
         // Scripts mostly reference these as the `extends` string, but the
@@ -441,6 +450,7 @@ class LuaScriptHost internal constructor(internal val globals: Globals) : Script
         put("Camera2D", Camera2D::class.java)
         put("Label", Label::class.java)
         put("CanvasLayer", CanvasLayer::class.java)
+        put("Control", Control::class.java)
         put("Panel", Panel::class.java)
         put("Button", Button::class.java)
         put("ColorRect", ColorRect::class.java)

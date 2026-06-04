@@ -31,7 +31,7 @@ class SkikoTextMeasurerTest {
         val tree = SceneTree(Node())
         tree.textMeasurer = SkikoTextMeasurer()
         tree.start()
-        val label = Label().apply { text = "Hi"; size = 12f }
+        val label = Label().apply { text = "Hi"; fontSize = 12f }
         tree.root.addChild(label)
         assertNotNull(label.localBounds())
     }

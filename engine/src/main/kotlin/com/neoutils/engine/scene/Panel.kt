@@ -14,21 +14,22 @@ import kotlinx.serialization.Serializable
  * `filled = false`.
  *
  * `Panel` is distinct from `ColorRect` semantically: it carries a "UI frame"
- * intent and supports an outline. Use `ColorRect` for world-space fills.
+ * intent and supports an outline. Use `ColorRect` for world-space fills. As a
+ * [Control] it owns anchors/offsets, `visible` and `mouseFilter` (default
+ * `STOP` — opaque UI); `size` is inherited from `Control`.
  */
 @Serializable
-open class Panel : Node2D() {
+open class Panel : Control() {
 
-    @Inspect
-    var size: Vec2 = Vec2(100f, 50f)
+    init {
+        size = Vec2(100f, 50f)
+    }
 
     @Inspect
     var color: Color = Color.WHITE
 
     @Inspect
     var border: Border? = null
-
-    override fun localBounds(): Rect = Rect(Vec2.ZERO, size)
 
     override fun onDraw(renderer: Renderer) {
         val rect = Rect(Vec2.ZERO, size)

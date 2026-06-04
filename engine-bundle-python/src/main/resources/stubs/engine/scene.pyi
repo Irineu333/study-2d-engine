@@ -109,19 +109,86 @@ class Camera2D(Node2D):
         ...
 
 
-class Label(Node2D):
-    """Single-line text drawn at the node's world position."""
+class MouseFilter:
+    """How a :class:`Control` takes part in the UI hit-test. Use the string
+    values ``"STOP"`` / ``"PASS"`` / ``"IGNORE"`` in ``scene.json``; in scripts
+    the enum is exposed as ``MouseFilter.STOP`` etc."""
+
+    STOP: "MouseFilter"
+    PASS: "MouseFilter"
+    IGNORE: "MouseFilter"
+
+
+class LayoutPreset:
+    """Godot 4-style anchor presets for :meth:`Control.applyPreset`."""
+
+    TOP_LEFT: "LayoutPreset"
+    TOP_RIGHT: "LayoutPreset"
+    BOTTOM_LEFT: "LayoutPreset"
+    BOTTOM_RIGHT: "LayoutPreset"
+    CENTER_LEFT: "LayoutPreset"
+    CENTER_TOP: "LayoutPreset"
+    CENTER_RIGHT: "LayoutPreset"
+    CENTER_BOTTOM: "LayoutPreset"
+    CENTER: "LayoutPreset"
+    FULL_RECT: "LayoutPreset"
+
+
+class Control(Node2D):
+    """Abstract base for in-game UI widgets (``Panel``/``Button``/``Label``/
+    ``ColorRect``). Anchors + offsets are the source of truth; the anchor layout
+    pass resolves ``position``/``size`` against the parent rect each tick, so a
+    widget stays anchored on resize **without** per-frame repositioning code.
+    Writing ``position``/``size`` mirrors back into the offsets (Godot-style).
+
+    ``visible = False`` hides the control and its subtree (render + hit-test),
+    replacing the ``color.a = 0`` hack. ``mouseFilter`` controls hit-test
+    participation (``STOP``/``PASS``/``IGNORE``)."""
+
+    size: Vec2
+    anchorLeft: float
+    anchorTop: float
+    anchorRight: float
+    anchorBottom: float
+    offsetLeft: float
+    offsetTop: float
+    offsetRight: float
+    offsetBottom: float
+    visible: bool
+    mouseFilter: MouseFilter
+    focusMode: "FocusMode"
+    sizeFlagsHorizontal: int
+    sizeFlagsVertical: int
+
+    def applyPreset(self, preset: LayoutPreset) -> None:
+        """Set the four anchors to the canonical fractions for ``preset``;
+        offsets are left untouched."""
+        ...
+
+
+class FocusMode:
+    """Reserved for the future ``ui-focus`` change. Inert today."""
+
+    NONE: "FocusMode"
+    CLICK: "FocusMode"
+    ALL: "FocusMode"
+
+
+class Label(Control):
+    """Single-line text, a :class:`Control` **min-size** leaf: its rect is the
+    measured text size. ``fontSize`` is the font height (renamed from the former
+    ``size``, which now means the Control rect)."""
 
     text: str
-    size: float
+    fontSize: float
     color: Color
 
 
-class ColorRect(Node2D):
+class ColorRect(Control):
     """Filled rectangle anchored at the node's local origin. ``SceneTree.render``
-    applies the world transform via ``Renderer.pushTransform`` around ``onDraw``."""
+    applies the world transform via ``Renderer.pushTransform`` around ``onDraw``.
+    Non-interactive (``mouseFilter`` defaults to ``IGNORE``)."""
 
-    size: Vec2
     color: Color
 
 
@@ -163,12 +230,12 @@ class CanvasLayer(Node):
     layer: int
 
 
-class Panel(Node2D):
+class Panel(Control):
     """Filled rectangle in screen-space (when placed under ``CanvasLayer``) or
     world-space (when not). Optional ``border`` is drawn as an unfilled rect
-    on top of the fill."""
+    on top of the fill. ``size`` is inherited from :class:`Control`; default
+    ``mouseFilter`` is ``STOP`` (opaque)."""
 
-    size: Vec2
     color: Color
     border: Optional["Border"]
 
@@ -181,14 +248,16 @@ class Border:
     width: float
 
 
-class Button(Node2D):
+class Button(Control):
     """Pushable widget. Hit-test is geometric (rect contains pointer), not
     physics-based. Place under a :class:`CanvasLayer` for screen-space input.
+    ``size`` is inherited from :class:`Control`; default ``mouseFilter`` is
+    ``STOP``.
 
     ``pressed`` emits exactly once per click cycle when mouse-up occurs inside
     the button rect AND the most recent mouse-down was also inside. Drag-out
-    cancels. ``disabled = True`` suppresses both emission and hit-test
-    consumption.
+    cancels. ``disabled = True`` (or ``visible = False``) suppresses both
+    emission and hit-test consumption.
 
     Connect handlers in ``_ready``::
 
@@ -201,7 +270,6 @@ class Button(Node2D):
             print("clicked")
     """
 
-    size: Vec2
     text: str
     textSize: float
     textColor: Color
