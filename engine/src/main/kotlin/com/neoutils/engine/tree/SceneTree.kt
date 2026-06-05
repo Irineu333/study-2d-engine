@@ -142,20 +142,26 @@ class SceneTree(val root: Node) {
 
     /**
      * Reference resolution UI (`CanvasLayer`s with `followStretch = true`) is
-     * authored against. A **stable** tree property: defaulted once at [start]
-     * from the current `Camera2D.bounds` size (or the surface size when there
-     * is no camera) and **not** recomputed per frame, so a panning or zooming
-     * gameplay camera never disturbs the HUD. Settable for the rare scene that
-     * needs a design resolution decoupled from the camera; an explicit write
-     * before [start] suppresses the default derivation.
+     * authored against. Defaulted once at [start] from the current
+     * `Camera2D.bounds` size when a camera exists — then it is **stable**, so a
+     * panning or zooming gameplay camera never disturbs the HUD. With **no**
+     * camera there is no fixed reference, so it tracks the live surface size on
+     * [resize], keeping the UI stretch identity (raw screen-space) at every
+     * window size. Settable for the rare scene that needs a design resolution
+     * decoupled from the camera; an explicit write before [start] suppresses the
+     * default derivation and freezes the value (no surface tracking).
      */
-    var designSize: Vec2 = Vec2.ZERO
+    var designSize: Vec2
+        get() = _designSize
         set(value) {
-            field = value
+            _designSize = value
             designSizeInitialized = true
+            designSizeTracksSurface = false
         }
 
+    private var _designSize: Vec2 = Vec2.ZERO
     private var designSizeInitialized = false
+    private var designSizeTracksSurface = false
 
     /**
      * How [designSize] maps onto the surface for stretched `CanvasLayer`s.
@@ -215,6 +221,9 @@ class SceneTree(val root: Node) {
     fun resize(width: Float, height: Float) {
         if (width == size.x && height == size.y) return
         size = Vec2(width, height)
+        // No-camera trees have no fixed design reference: keep designSize glued
+        // to the surface so the UI stretch stays identity (raw screen-space).
+        if (designSizeTracksSurface) _designSize = size
         onResize?.invoke(width, height)
     }
 
@@ -242,10 +251,18 @@ class SceneTree(val root: Node) {
     private fun initDesignSize() {
         if (designSizeInitialized) return
         val bounds = currentCamera()?.bounds
-        designSize = if (bounds != null && bounds.size.x > 0f && bounds.size.y > 0f) {
-            bounds.size
+        if (bounds != null && bounds.size.x > 0f && bounds.size.y > 0f) {
+            // Camera present: freeze the design resolution to its bounds so UI
+            // and world share a design space and their letterbox bars coincide.
+            designSize = bounds.size
         } else {
-            size
+            // No camera: the surface itself is the reference resolution. Track
+            // it on resize so the stretch stays identity at every size (raw
+            // screen-space) instead of freezing the initial size and
+            // letterboxing/scaling the UI when the window changes.
+            _designSize = size
+            designSizeInitialized = true
+            designSizeTracksSurface = true
         }
     }
 

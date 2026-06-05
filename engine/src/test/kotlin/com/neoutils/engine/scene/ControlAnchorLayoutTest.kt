@@ -99,8 +99,18 @@ class ControlAnchorLayoutTest {
             anchorLeft = 1f; anchorTop = 1f; anchorRight = 1f; anchorBottom = 1f
             offsetLeft = -110f; offsetTop = -60f; offsetRight = -10f; offsetBottom = -10f
         }
-        // No camera → designSize defaults to the initial surface (800x600).
-        val tree = treeWith(panel, width = 800f, height = 600f, followStretch = true)
+        // A camera freezes designSize to its bounds (800x600), independent of
+        // the surface, so the design-space rect is resize-stable.
+        val root = Node()
+        root.addChild(com.neoutils.engine.scene.Camera2D().apply {
+            bounds = com.neoutils.engine.math.Rect(Vec2.ZERO, Vec2(800f, 600f)); current = true
+        })
+        val layer = CanvasLayer() // followStretch = true (default)
+        layer.addChild(panel)
+        root.addChild(layer)
+        val tree = SceneTree(root)
+        tree.resize(800f, 600f)
+        tree.start()
         layout(tree)
         assertEquals(Vec2(690f, 540f), panel.position)
         assertEquals(Vec2(100f, 50f), panel.size)

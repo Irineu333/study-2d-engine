@@ -4,7 +4,12 @@
 
 `SceneTree` SHALL expose a `designSize: Vec2` (the reference resolution UI is authored against) and a `uiStretchMode` with values `FIT`, `FILL`, `STRETCH`, and `DISABLED`. `designSize` SHALL default to the `bounds` size of the current `Camera2D` at startup when one exists, otherwise to the initial surface size (`GameConfig` width/height). Both properties SHALL be settable. `uiStretchMode` SHALL default to `FIT`.
 
-`designSize` SHALL be a **stable** tree property: it SHALL NOT be recomputed per frame from the live camera, so a panning or zooming gameplay `Camera2D` does not disturb the UI.
+When derived from a `Camera2D` (or set explicitly), `designSize` SHALL be a **stable** tree property: it SHALL NOT be recomputed per frame from the live camera, so a panning or zooming gameplay `Camera2D` does not disturb the UI. When derived from the surface because **no** `Camera2D` exists at startup, there is no fixed reference resolution, so `designSize` SHALL instead track the live surface size on resize — keeping the UI stretch identity (raw screen-space) at every window size rather than freezing the initial size and letterboxing the UI on resize. An explicit write to `designSize` freezes the value and stops surface tracking.
+
+#### Scenario: no-camera designSize tracks the surface on resize
+
+- **WHEN** a tree without any `Camera2D` is started on an `800x600` surface and the surface is then resized to `1024x768`
+- **THEN** `tree.designSize` SHALL become `Vec2(1024f, 768f)` and the UI stretch transform SHALL remain `null` (identity), so the UI keeps behaving exactly as raw screen-space across the resize.
 
 #### Scenario: designSize defaults from the current camera bounds
 

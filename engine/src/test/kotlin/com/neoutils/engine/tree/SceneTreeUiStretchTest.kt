@@ -49,6 +49,31 @@ class SceneTreeUiStretchTest {
     }
 
     @Test
+    fun `no-camera designSize tracks the surface across resizes`() {
+        val tree = SceneTree(Node())
+        tree.resize(800f, 600f)
+        tree.start()
+        assertEquals(Vec2(800f, 600f), tree.designSize)
+        assertEquals(null, tree.uiStretchTransform(), "identity at start")
+
+        // Resizing a camera-less tree must keep the stretch identity (raw
+        // screen-space), not letterbox the UI against a frozen initial size.
+        tree.resize(1024f, 768f)
+        assertEquals(Vec2(1024f, 768f), tree.designSize, "designSize follows the surface")
+        assertEquals(null, tree.uiStretchTransform(), "still identity after resize")
+    }
+
+    @Test
+    fun `explicit designSize before start freezes against surface tracking`() {
+        val tree = SceneTree(Node())
+        tree.designSize = Vec2(400f, 300f)
+        tree.resize(800f, 600f)
+        tree.start()
+        tree.resize(1024f, 768f)
+        assertEquals(Vec2(400f, 300f), tree.designSize, "explicit value is frozen, not tracked")
+    }
+
+    @Test
     fun `explicit designSize before start suppresses derivation`() {
         val root = Node()
         root.addChild(Camera2D().apply {
