@@ -17,6 +17,9 @@ import com.neoutils.engine.scene.Control
 import com.neoutils.engine.scene.MouseFilter
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
+import com.neoutils.engine.scene.UiStretchMode
+import com.neoutils.engine.scene.fitTransform
+import com.neoutils.engine.scene.toAspectMode
 
 /**
  * Live owner of the scene graph. Holds the driver/host/query concerns that used
@@ -138,6 +141,43 @@ class SceneTree(val root: Node) {
     val height: Float get() = size.y
 
     /**
+     * Reference resolution UI (`CanvasLayer`s with `followStretch = true`) is
+     * authored against. A **stable** tree property: defaulted once at [start]
+     * from the current `Camera2D.bounds` size (or the surface size when there
+     * is no camera) and **not** recomputed per frame, so a panning or zooming
+     * gameplay camera never disturbs the HUD. Settable for the rare scene that
+     * needs a design resolution decoupled from the camera; an explicit write
+     * before [start] suppresses the default derivation.
+     */
+    var designSize: Vec2 = Vec2.ZERO
+        set(value) {
+            field = value
+            designSizeInitialized = true
+        }
+
+    private var designSizeInitialized = false
+
+    /**
+     * How [designSize] maps onto the surface for stretched `CanvasLayer`s.
+     * `FIT` (default) letterboxes uniformly to match a `FIT` `Camera2D`;
+     * `DISABLED` keeps the UI in raw screen pixels.
+     */
+    var uiStretchMode: UiStretchMode = UiStretchMode.FIT
+
+    /**
+     * The UI stretch transform `(translation, scale)` mapping
+     * `Rect(Vec2.ZERO, designSize)` onto `Rect(Vec2.ZERO, size)` under
+     * [uiStretchMode], carrying only the resolution-fit scale and the letterbox
+     * centering — never a `Camera2D` pan/zoom. `null` (treated as identity, no
+     * push) when [uiStretchMode] is `DISABLED`, when [designSize] is degenerate,
+     * or when it would equal identity (`designSize == size`).
+     */
+    fun uiStretchTransform(): Pair<Vec2, Vec2>? {
+        val mode = uiStretchMode.toAspectMode() ?: return null
+        return fitTransform(designSize, size, mode)
+    }
+
+    /**
      * Visible world rect. Resolves to the active `Camera2D.bounds` when a
      * camera is current, or to `Rect(Vec2.ZERO, size)` otherwise. Computed
      * on demand: there is no cached "active camera" state.
@@ -186,6 +226,26 @@ class SceneTree(val root: Node) {
             // by the debug layer being present at attach time. Idempotent —
             // a re-start whose root already carries the layer is a no-op.
             ensureDebugLayer()
+            initDesignSize()
+        }
+    }
+
+    /**
+     * Captures the stable [designSize] default the first time the tree starts,
+     * unless a caller already set it explicitly. The camera and surface are both
+     * known here (the host resized before the first tick and the root's
+     * `onEnter` populated the tree), so the current `Camera2D.bounds` is the
+     * natural reference — UI and world then share a design space and their
+     * letterbox bars coincide. Falls back to the surface size when there is no
+     * camera (then the stretch is identity and UI behaves as raw screen-space).
+     */
+    private fun initDesignSize() {
+        if (designSizeInitialized) return
+        val bounds = currentCamera()?.bounds
+        designSize = if (bounds != null && bounds.size.x > 0f && bounds.size.y > 0f) {
+            bounds.size
+        } else {
+            size
         }
     }
 
@@ -233,8 +293,18 @@ class SceneTree(val root: Node) {
         if (panel != null) debug.raisePanelToTop(panel)
         // collectCanvasLayers returns (layer asc, dfs-order asc) via stable sort;
         // reversing flips to (layer desc, dfs-order desc) — top-most-first.
+        val stretch = uiStretchTransform()
         for (layer in collectCanvasLayers().asReversed()) {
-            val hit = findUiConsumer(layer, pointer)
+            // A stretched layer is hit in design-space: map the screen pointer
+            // back through the inverse stretch so a click lands on the Button
+            // where it is drawn. Raw layers test against the raw pointer.
+            val layerPointer = if (layer.followStretch && stretch != null) {
+                val (t, s) = stretch
+                Vec2((pointer.x - t.x) / s.x, (pointer.y - t.y) / s.y)
+            } else {
+                pointer
+            }
+            val hit = findUiConsumer(layer, layerPointer)
             if (hit != null) {
                 input.mouseClickConsumed = true
                 return
@@ -313,8 +383,9 @@ class SceneTree(val root: Node) {
      * Anchor layout pass. Resolves every reachable `Control`'s `position`/`size`
      * from its anchors/offsets against its parent rect, top-down so a parent
      * Control resolves before its children. The parent rect is the resolved
-     * rect of the nearest ancestor `Control`, or the surface rect
-     * `Rect(ZERO, size)` at each `CanvasLayer` boundary (and at the root).
+     * rect of the nearest ancestor `Control`, or — at each `CanvasLayer`
+     * boundary (and at the root) — the design rect `Rect(ZERO, designSize)`
+     * when the layer `followStretch`es, else the surface rect `Rect(ZERO, size)`.
      * Runs before the UI render pass and the UI hit-test each tick, so a surface
      * or parent resize reflows anchored controls with no per-frame script code.
      */
@@ -324,10 +395,16 @@ class SceneTree(val root: Node) {
 
     private fun layoutWalk(node: Node, parentRect: Rect) {
         if (node is CanvasLayer) {
-            // A CanvasLayer establishes screen-space: its children resolve
-            // against the surface, independent of any world ancestor rect.
-            val surface = Rect(Vec2.ZERO, size)
-            for (child in node.children) layoutWalk(child, surface)
+            // A CanvasLayer establishes screen-space: a stretched layer resolves
+            // its children against the design rect (the UI stretch transform
+            // projects it onto the surface at render time), a raw layer against
+            // the surface — independent of any world ancestor rect.
+            val layerRect = if (node.followStretch) {
+                Rect(Vec2.ZERO, designSize)
+            } else {
+                Rect(Vec2.ZERO, size)
+            }
+            for (child in node.children) layoutWalk(child, layerRect)
             return
         }
         if (node is Control) {
@@ -414,10 +491,22 @@ class SceneTree(val root: Node) {
             } else {
                 traverseWorldDraw(root, renderer)
             }
-            // UI pass: each CanvasLayer in (layer asc, dfs-order asc) starts from identity.
+            // UI pass: each CanvasLayer in (layer asc, dfs-order asc). A
+            // followStretch layer pushes the UI stretch transform around its
+            // subtree (design-space → surface); a raw layer starts from identity.
             val layers = collectCanvasLayers()
+            val stretch = uiStretchTransform()
             for (layer in layers) {
-                traverseCanvasLayerSubtree(layer, renderer)
+                if (layer.followStretch && stretch != null) {
+                    renderer.pushTransform(stretch.first, 0f, stretch.second)
+                    try {
+                        traverseCanvasLayerSubtree(layer, renderer)
+                    } finally {
+                        renderer.popTransform()
+                    }
+                } else {
+                    traverseCanvasLayerSubtree(layer, renderer)
+                }
             }
             // Dock overlay (insertion indicator) on top of the UI, screen pixels.
             debug.dock.drawOverlay(renderer)

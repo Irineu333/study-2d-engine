@@ -27,9 +27,7 @@ Plano de evolução do `nengine`. **Active** = changes OpenSpec em andamento; **
 
 Bugs/limitações **pré-existentes** já mapeados, a endereçar numa change futura.
 
-| Dívida | Detalhe |
-|--------|---------|
-| HUD screen-space não acompanha o resize (snake, tictactoe) | Os Labels de HUD/status do `:games:snake` (`ScoreLabel`) e do `:games:tictactoe` (`status`) vivem em screen-space (`Hud` `CanvasLayer`) com `fontSize` fixo e posicionados em coordenadas de **mundo** (ex.: `board.lua` usa `WORLD_CENTER_X = 300`, metade do `bounds` 600×600 da câmera `FIT`). Como a `Camera2D` (`FIT`) escala o mundo no resize mas a UI screen-space não, esses labels desalinham e **não escalam junto com o tabuleiro** — "o label não acompanha o tamanho". Pré-existente (anterior a `ui-controls-base`, que só migrou o `GameOverLabel` do snake para anchors). Conserto provável: ancorar os labels via `Control` (preset/anchors) e/ou derivar `fontSize`/posição da superfície em vez de constantes de mundo; candidato natural quando `ui-layout` ou uma change de polish de jogos chegar. |
+_Nenhuma dívida aberta no momento._ A dívida "HUD screen-space não acompanha o resize (snake, tictactoe)" foi fechada pela change `ui-stretch`: `CanvasLayer` ganhou `followStretch` (default `true`) e a `SceneTree` passou a esticar a UI de design-space (`designSize`) sobre a superfície, alinhando e escalando o HUD junto com o mundo.
 
 ## Como manter
 

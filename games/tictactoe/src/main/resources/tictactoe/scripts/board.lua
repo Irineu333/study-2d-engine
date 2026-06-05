@@ -6,8 +6,6 @@
 local BOARD_ORIGIN_X = 60.0
 local BOARD_ORIGIN_Y = 60.0
 local CELL_SIZE = 160.0
-local WORLD_CENTER_X = 300.0
-local STATUS_Y = 24.0
 
 local MARK_INSET = 0.18
 local MARK_THICKNESS = 0.08
@@ -161,15 +159,6 @@ local function draw_debug(self, tree, input_ref)
     end
 end
 
-local function recenter_status(self, renderer)
-    -- SceneTree.render draws root first then walks children, so updating the
-    -- Label's local transform here (before the Label's own onDraw runs) lands
-    -- the centered position in the same frame.
-    if self._status == nil then return end
-    local measured = renderer:measureText(self._status.text, self._status.fontSize)
-    self._status.position = nengine.Vec2(WORLD_CENTER_X - measured.x / 2.0, STATUS_Y)
-end
-
 return {
     extends = "Node",
 
@@ -226,6 +215,5 @@ return {
         if self._winning_line ~= nil then
             draw_winning_line(renderer, self._winning_line)
         end
-        recenter_status(self, renderer)
     end,
 }

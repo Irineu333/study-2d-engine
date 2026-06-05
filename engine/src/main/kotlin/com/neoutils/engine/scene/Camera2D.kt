@@ -4,8 +4,6 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.serialization.Inspect
 import kotlinx.serialization.Serializable
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * How `Camera2D.bounds` is mapped onto a surface whose aspect ratio differs
@@ -48,31 +46,19 @@ open class Camera2D : Node2D() {
      * caller can short-circuit to identity (no push).
      */
     fun computeViewTransform(sceneSize: Vec2): Pair<Vec2, Vec2>? {
-        val bw = bounds.size.x
-        val bh = bounds.size.y
-        if (bw <= 0f || bh <= 0f) return null
+        if (bounds.size.x <= 0f || bounds.size.y <= 0f) return null
 
-        val scale = when (aspectMode) {
-            AspectMode.FIT -> {
-                val s = min(sceneSize.x / bw, sceneSize.y / bh)
-                Vec2(s, s)
-            }
-            AspectMode.FILL -> {
-                val s = max(sceneSize.x / bw, sceneSize.y / bh)
-                Vec2(s, s)
-            }
-            AspectMode.STRETCH -> Vec2(sceneSize.x / bw, sceneSize.y / bh)
-        }
+        // Reuse the shared resolution-fit math (scale + letterbox centering).
+        // A null here means the fit part is identity (scale 1, centering 0) —
+        // bounds already passed the degenerate guard above — so reconstruct it.
+        val (offset, scale) = fitTransform(bounds.size, sceneSize, aspectMode)
+            ?: (Vec2.ZERO to Vec2.ONE)
 
-        // Center the projected world on the surface; shift bounds.origin so a
-        // world point at bounds.origin maps to (offset.x, offset.y) on screen.
-        val projectedW = bw * scale.x
-        val projectedH = bh * scale.y
-        val offsetX = (sceneSize.x - projectedW) * 0.5f
-        val offsetY = (sceneSize.y - projectedH) * 0.5f
+        // Add the camera pan term: shift bounds.origin so a world point at
+        // bounds.origin maps to (offset.x, offset.y) on screen.
         val translation = Vec2(
-            offsetX - bounds.origin.x * scale.x,
-            offsetY - bounds.origin.y * scale.y,
+            offset.x - bounds.origin.x * scale.x,
+            offset.y - bounds.origin.y * scale.y,
         )
         return translation to scale
     }

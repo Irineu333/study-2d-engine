@@ -13,6 +13,9 @@ class ScreenDebugCanvas : CanvasLayer() {
     init {
         name = "ScreenDebugCanvas"
         layer = LAYER_INDEX
+        // Debug UI is pixel-locked: it must stay in raw screen pixels, immune
+        // to designSize/uiStretchMode, unlike game CanvasLayers.
+        followStretch = false
     }
 
     companion object {

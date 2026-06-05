@@ -16,9 +16,14 @@ class ControlAnchorLayoutTest {
 
     private fun layout(tree: SceneTree) = tree.render(RecordingRenderer())
 
-    private fun treeWith(vararg controls: Control, width: Float, height: Float): SceneTree {
+    private fun treeWith(
+        vararg controls: Control,
+        width: Float,
+        height: Float,
+        followStretch: Boolean = false,
+    ): SceneTree {
         val root = Node()
-        val layer = CanvasLayer()
+        val layer = CanvasLayer().apply { this.followStretch = followStretch }
         for (c in controls) layer.addChild(c)
         root.addChild(layer)
         val tree = SceneTree(root)
@@ -85,6 +90,26 @@ class ControlAnchorLayoutTest {
         tree.resize(1024f, 768f)
         layout(tree)
         assertEquals(Vec2(914f, 708f), panel.position, "must re-resolve against the new surface")
+        assertEquals(Vec2(100f, 50f), panel.size)
+    }
+
+    @Test
+    fun `stretched controls are resize-stable in design-space`() {
+        val panel = Panel().apply {
+            anchorLeft = 1f; anchorTop = 1f; anchorRight = 1f; anchorBottom = 1f
+            offsetLeft = -110f; offsetTop = -60f; offsetRight = -10f; offsetBottom = -10f
+        }
+        // No camera → designSize defaults to the initial surface (800x600).
+        val tree = treeWith(panel, width = 800f, height = 600f, followStretch = true)
+        layout(tree)
+        assertEquals(Vec2(690f, 540f), panel.position)
+        assertEquals(Vec2(100f, 50f), panel.size)
+
+        // Surface resize does NOT change designSize, so the design-space rect is
+        // unchanged — only the UI stretch transform re-letterboxes it.
+        tree.resize(1024f, 768f)
+        layout(tree)
+        assertEquals(Vec2(690f, 540f), panel.position, "design-space rect must be resize-stable")
         assertEquals(Vec2(100f, 50f), panel.size)
     }
 

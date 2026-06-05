@@ -77,7 +77,8 @@
             "type": "com.neoutils.engine.scene.Label",
             "name": "status",
             "properties": {
-              "transform": { "position": { "x": 240.0, "y": 24.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "anchorLeft": 0.0, "anchorTop": 0.0, "anchorRight": 1.0, "anchorBottom": 0.0,
+              "offsetLeft": 0.0, "offsetTop": 24.0, "offsetRight": 0.0, "offsetBottom": 24.0,
               "text": "Vez de X",
               "fontSize": 22.0,
               "color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 }
