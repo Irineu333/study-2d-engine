@@ -36,9 +36,9 @@
 - [x] 6.1 Pong: confirm `designSize` inherits the camera `bounds`; verify `leftScore`/`rightScore` now align and scale with the field on resize (no scene rework beyond design-space confirmation).
 - [x] 6.2 Snake: verify `ScoreLabel` and `GameOverLabel` align and scale on resize under design-space; remove any now-redundant compensation.
 - [x] 6.3 Tictactoe: migrate `status` to design-space (anchor/center against design rect); remove the per-frame `recenter_status` in `board.lua` if made redundant.
-- [ ] 6.4 Manually smoke-test each migrated game (Skiko) at the design size and at a resized window; confirm HUD tracks the board/field. `hello-world` unchanged.
+- [x] 6.4 Manually smoke-test each migrated game (Skiko) at the design size and at a resized window; confirm HUD tracks the board/field. `hello-world` unchanged.
 
 ## 7. Docs
 
-- [ ] 7.1 Update `CLAUDE.md` invariant #6 to describe `followStretch` + design-space stretch (done at archive).
+- [x] 7.1 Update `CLAUDE.md` invariant #6 to describe `followStretch` + design-space stretch (done at archive).
 - [x] 7.2 Close the "HUD screen-space não acompanha o resize" debt entry in `ROADMAP.md`.
