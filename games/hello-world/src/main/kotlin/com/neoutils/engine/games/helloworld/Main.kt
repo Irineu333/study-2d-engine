@@ -3,14 +3,17 @@ package com.neoutils.engine.games.helloworld
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.runtime.GameConfig
 import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.LayoutPreset
 import com.neoutils.engine.skiko.SkikoHost
 import com.neoutils.engine.tree.SceneTree
 
 fun main() {
-    val label = CenteredLabel().apply {
+    val label = Label().apply {
         text = "Hello, world!"
         fontSize = 32f
         color = Color.WHITE
+        applyPreset(LayoutPreset.FULL_RECT)
     }
     val hud = CanvasLayer().apply {
         name = "Hud"
