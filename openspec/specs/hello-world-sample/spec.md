@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Exemplo executável mínimo da engine: um módulo `:games:hello-world` code-only com um único `CenteredLabel` como root da `SceneTree`. Serve como primeiro contato didático — abre uma janela Skiko com `"Hello, world!"` centralizado, sem bundle, sem scripting e sem `Camera2D`.
+Exemplo executável mínimo da engine: um módulo `:games:hello-world` code-only com um root `CanvasLayer` contendo um único `Label` (a classe shipped pela engine, sem subclasse) da `SceneTree`. Serve como primeiro contato didático — abre uma janela Skiko com `"Hello, world!"` centralizado via `LayoutPreset.FULL_RECT` (anchor layout pass da engine, em design-space), sem bundle, sem scripting e sem `Camera2D`.
 
 ## Requirements
 
@@ -26,57 +26,56 @@ O projeto SHALL prover um módulo `:games:hello-world` que depende exclusivament
 #### Scenario: Main.kt is code-only
 
 - **WHEN** o source de `games/hello-world/src/main/kotlin/com/neoutils/engine/games/helloworld/Main.kt` é inspecionado
-- **THEN** o corpo de `main()` instancia `CenteredLabel` e `CanvasLayer`, monta a hierarquia (`canvasLayer.addChild(label)` ou equivalente), e termina em uma única chamada a `SkikoHost().run(SceneTree(root = canvasLayer), GameConfig(...))`
+- **THEN** o corpo de `main()` instancia `Label` e `CanvasLayer`, monta a hierarquia (`canvasLayer.addChild(label)` ou equivalente), e termina em uma única chamada a `SkikoHost().run(SceneTree(root = canvasLayer), GameConfig(...))`
 - **AND** o source NÃO contém referência aos identificadores `BundleLoader`, `PythonScriptHost`, `ScriptHost`, `NodeRegistry`, `getResource`, `classLoader`, nem leitura de arquivos JSON
 
-### Requirement: Scene root is a CanvasLayer with a single CenteredLabel
+### Requirement: Scene root is a CanvasLayer with a single Label
 
-A `SceneTree` do Hello World SHALL ter como root um **`CanvasLayer`** com **um único filho**: uma instância de `CenteredLabel`, classe declarada no próprio módulo `:games:hello-world` como `class CenteredLabel : Label()`. Não MUST existir um `Node` wrapper além do `CanvasLayer`. NÃO MUST existir um `Camera2D` na árvore. Além do `CanvasLayer` root e do `CenteredLabel` filho, NÃO MUST existir nenhum outro nó. O `CenteredLabel` SHALL ser uma classe nomeada top-level (em arquivo dedicado `CenteredLabel.kt`); MUST NOT ser declarado como `object : Label()` anônimo dentro de `Main.kt`.
+A `SceneTree` do Hello World SHALL ter como root um **`CanvasLayer`** com **um único filho**: uma instância de `com.neoutils.engine.scene.Label` (a classe shipped pela engine, sem subclasse no módulo). Não MUST existir um `Node` wrapper além do `CanvasLayer`. NÃO MUST existir um `Camera2D` na árvore. Além do `CanvasLayer` root e do `Label` filho, NÃO MUST existir nenhum outro nó. O módulo MUST NOT declarar nenhuma subclasse de `Label` (em particular, o arquivo `CenteredLabel.kt` e a classe `CenteredLabel` NÃO MUST existir): a centralização é obtida via anchors/preset, não via subtipo.
 
-A escolha de `CanvasLayer` como root reflete o invariante de UI: textos in-screen vivem em screen-space via `CanvasLayer`, mesmo no exemplo didático mínimo. Isso torna Hello World o exemplo canônico do par CanvasLayer + Label.
+A escolha de `CanvasLayer` como root reflete o invariante de UI: textos in-screen vivem em screen-space via `CanvasLayer`, esticados em design-space. Isso torna Hello World o exemplo canônico do par CanvasLayer + Label.
 
 #### Scenario: Scene tree has CanvasLayer root with one Label child
 
 - **WHEN** a cena é montada em `main()`
 - **THEN** `SceneTree(root = canvasLayer)` recebe uma instância de `CanvasLayer` como root
-- **AND** o root tem exatamente um filho do tipo `CenteredLabel`
+- **AND** o root tem exatamente um filho do tipo `Label`
 - **AND** esse filho não tem filhos próprios
 
-#### Scenario: CenteredLabel is a named class in a dedicated file
+#### Scenario: Module declares no Label subclass
 
 - **WHEN** o source do módulo é inspecionado
-- **THEN** existe um arquivo `games/hello-world/src/main/kotlin/com/neoutils/engine/games/helloworld/CenteredLabel.kt`
-- **AND** esse arquivo declara `class CenteredLabel : Label()`
-- **AND** `Main.kt` NÃO contém a expressão `object : Label()` (nem qualquer outra classe anônima estendendo `Label`)
+- **THEN** NÃO existe o arquivo `games/hello-world/src/main/kotlin/com/neoutils/engine/games/helloworld/CenteredLabel.kt`
+- **AND** nenhum arquivo do módulo declara uma classe que estende `Label` (`class ... : Label()` ou `object : Label()`)
 
 #### Scenario: No Camera2D in the scene
 
 - **WHEN** o source do módulo é inspecionado
 - **THEN** nenhum arquivo do módulo importa nem instancia `com.neoutils.engine.scene.Camera2D`
 
-### Requirement: CenteredLabel centers text in screen-space via measureText and tree.size
+### Requirement: Label centers in design-space via FULL_RECT preset
 
-`CenteredLabel` SHALL sobrescrever `onDraw(renderer: Renderer)` para desenhar `text` de modo que o centro do bounding box medido pelo renderer coincida com o centro da surface da `SceneTree`. Como `CenteredLabel` agora é filho de um `CanvasLayer`, ele recebe identity transform no início do walk de UI pass — coordenadas são pixels screen-space puros. A implementação MUST: (a) ler `tree?.size` (early-return se `null`); (b) medir o texto via `renderer.measureText(text, size)`; (c) chamar `renderer.drawText(text, Vec2((surface.x - measured.x) / 2f, (surface.y - measured.y) / 2f), size, color)`. A implementação MUST NOT chamar `super.onDraw(renderer)` (o `Label` base desenharia o texto numa segunda posição). A implementação MUST NOT usar magic numbers para offset de centralização (qualquer dimensão de texto deve vir de `measureText`, não de constantes literais como `60f` ou `8f`).
+O `Label` do Hello World SHALL ser centralizado pelo **anchor layout pass** da engine, não por desenho manual. A montagem em `main()` MUST configurar `text`, `fontSize` e `color` no `Label` e aplicar o preset `LayoutPreset.FULL_RECT` (via `applyPreset(LayoutPreset.FULL_RECT)` ou setando os quatro anchors para `0,0,1,1` com offsets zero). Como `Label` é um `Control` min-size e filho direto de um `CanvasLayer` com `followStretch = true`, `Control.resolveLayout` resolve seu rect contra `Rect(Vec2.ZERO, tree.designSize)` e centraliza o slack positivo em ambos os eixos. O módulo MUST NOT sobrescrever `onDraw`, MUST NOT chamar `renderer.measureText`, e MUST NOT ler `tree.size` para posicionar o texto — toda medição e centralização é interna ao `Label`/`Control`.
 
-#### Scenario: onDraw uses measureText and tree.size
+#### Scenario: Centering uses the preset, not a draw hack
 
-- **WHEN** o source de `CenteredLabel.kt` é inspecionado
-- **THEN** `onDraw` chama `renderer.measureText(text, size)` e usa o resultado no cálculo da posição de desenho
-- **AND** `onDraw` lê `tree?.size` (ou propriedade equivalente da `SceneTree`) para descobrir a surface
-- **AND** `onDraw` NÃO contém literais numéricos representando largura/altura do texto (ex.: `60f`, `8f`, `100f`)
+- **WHEN** o source do módulo é inspecionado
+- **THEN** `main()` aplica `LayoutPreset.FULL_RECT` ao `Label` (via `applyPreset` ou anchors `0,0,1,1` + offsets zero)
+- **AND** nenhum arquivo do módulo sobrescreve `onDraw`, chama `renderer.measureText`, ou lê `tree.size`/`tree.designSize` para posicionar o texto
 
-#### Scenario: onDraw does not call super
+#### Scenario: Text is centered at startup
 
-- **WHEN** o source de `CenteredLabel.kt` é inspecionado
-- **THEN** o corpo de `onDraw` NÃO contém `super.onDraw(renderer)` (evita desenho duplicado do `Label` base)
+- **GIVEN** o `GameConfig` declara `width = 800`, `height = 600` e a cena não tem `Camera2D` (então `designSize` rastreia a surface e o UI stretch é identidade)
+- **WHEN** o primeiro frame é renderizado
+- **THEN** `"Hello, world!"` aparece visualmente centralizado horizontal e verticalmente na surface da janela
 
-#### Scenario: Text remains centered when window is resized
+#### Scenario: Text remains centered and scales when window is resized
 
-- **GIVEN** o `GameConfig` declara `width = 800`, `height = 600` e o usuário redimensiona a janela arrastando a borda
+- **GIVEN** o usuário redimensiona a janela arrastando a borda
 - **WHEN** o frame é renderizado em qualquer tamanho de janela
-- **THEN** `"Hello, world!"` permanece visualmente centralizado horizontal e verticalmente na surface da janela
+- **THEN** `"Hello, world!"` permanece visualmente centralizado horizontal e verticalmente na surface
+- **AND** a recentralização é resolvida pelo anchor layout pass do `SceneTree` antes do UI render pass (não há `onDraw` customizado), com o `CanvasLayer` estabelecendo o design rect como parent rect
 - **AND** a recentralização é contínua (não há "salto" pré ou pós-resize)
-- **AND** o cálculo ocorre durante o UI pass do `SceneTree.render`, com `CanvasLayer` estabelecendo identity transform — independente de qualquer view transform que pudesse existir (não há Camera2D nesta cena, mas o invariante vale)
 
 ### Requirement: Documentation lists the new sample
 
