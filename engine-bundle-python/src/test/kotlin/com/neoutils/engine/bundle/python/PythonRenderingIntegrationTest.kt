@@ -31,6 +31,7 @@ private class RecordingRenderer : Renderer {
     }
     override fun measureText(text: String, size: Float): Vec2 = Vec2(0f, 0f)
     override fun drawPolygon(points: List<Vec2>, color: Color) {}
+    override fun drawImage(texture: com.neoutils.engine.render.Texture, src: com.neoutils.engine.math.Rect, dst: com.neoutils.engine.math.Rect, flipH: Boolean) {}
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {}
     override fun popTransform() {}
     override fun pushClip(rect: Rect) {}

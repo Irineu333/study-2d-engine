@@ -13,7 +13,7 @@ import com.neoutils.engine.scene.Node
  */
 class DemoSwitcherRoot : Node() {
 
-    enum class Slot { SolarSystem, Scale, Spawner, Stress, RotatingBox, TumblingSwarm, UiPlayground }
+    enum class Slot { SolarSystem, Scale, Spawner, Stress, RotatingBox, TumblingSwarm, UiPlayground, Sprite }
 
     private val factories: Map<Slot, () -> Node> = mapOf(
         Slot.SolarSystem to ::SolarSystemDemo,
@@ -23,6 +23,7 @@ class DemoSwitcherRoot : Node() {
         Slot.RotatingBox to ::RotatingBoxDemo,
         Slot.TumblingSwarm to ::TumblingSwarmDemo,
         Slot.UiPlayground to ::UiPlaygroundDemo,
+        Slot.Sprite to ::SpriteDemo,
     )
 
     private var active: Slot = Slot.SolarSystem
@@ -70,6 +71,7 @@ class DemoSwitcherRoot : Node() {
             input.wasKeyPressed(Key.DIGIT_5) -> select(Slot.RotatingBox)
             input.wasKeyPressed(Key.DIGIT_6) -> select(Slot.TumblingSwarm)
             input.wasKeyPressed(Key.DIGIT_7) -> select(Slot.UiPlayground)
+            input.wasKeyPressed(Key.DIGIT_8) -> select(Slot.Sprite)
         }
     }
 }
@@ -85,10 +87,11 @@ private class HudOverlay(private val slot: () -> DemoSwitcherRoot.Slot) : Node()
             DemoSwitcherRoot.Slot.RotatingBox -> "5. Rotating box (ancestor rotation composes into children)"
             DemoSwitcherRoot.Slot.TumblingSwarm -> "6. Tumbling swarm (elastic impulse + angular transfer)"
             DemoSwitcherRoot.Slot.UiPlayground -> "7. UI playground (CanvasLayer + Panel + Button)"
+            DemoSwitcherRoot.Slot.Sprite -> "8. Sprite (texture render, nearest-neighbor, cross-backend)"
         }
         renderer.drawText(name, Vec2(8f, 18f), size = 16f, color = Color.WHITE)
         renderer.drawText(
-            "keys: 1/2/3/4/5/6/7 switch | F1 opens debug HUD (checkboxes)",
+            "keys: 1/2/3/4/5/6/7/8 switch | F1 opens debug HUD (checkboxes)",
             Vec2(8f, 38f),
             size = 12f,
             color = Color(1f, 1f, 1f, 0.7f),

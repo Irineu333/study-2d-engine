@@ -42,6 +42,10 @@ internal class RecordingRenderer : Renderer {
         events += RecordedEvent.Polygon(points, color)
     }
 
+    override fun drawImage(texture: Texture, src: Rect, dst: Rect, flipH: Boolean) {
+        events += RecordedEvent.Image(texture, src, dst, flipH)
+    }
+
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {
         events += RecordedEvent.Push(translation, rotation, scale)
     }
@@ -66,6 +70,7 @@ internal sealed class RecordedEvent {
     data class Line(val from: Vec2, val to: Vec2, val thickness: Float, val color: Color) : RecordedEvent()
     data class Text(val text: String, val position: Vec2, val size: Float, val color: Color) : RecordedEvent()
     data class Polygon(val points: List<Vec2>, val color: Color) : RecordedEvent()
+    data class Image(val texture: Texture, val src: com.neoutils.engine.math.Rect, val dst: com.neoutils.engine.math.Rect, val flipH: Boolean) : RecordedEvent()
     data class Push(val translation: Vec2, val rotation: Float, val scale: Vec2) : RecordedEvent()
     data object Pop : RecordedEvent()
     data class PushClip(val rect: com.neoutils.engine.math.Rect) : RecordedEvent()

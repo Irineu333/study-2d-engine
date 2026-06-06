@@ -10,6 +10,7 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.render.TextMeasurer
+import com.neoutils.engine.render.TextureBackend
 import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
@@ -83,6 +84,17 @@ class SceneTree(val root: Node) {
      * Backend-supplied; never serialized.
      */
     @Volatile var audio: AudioBackend? = null
+
+    /**
+     * Texture backend, assigned by the host at startup (before the first
+     * frame), mirroring [audio]/[textMeasurer]. Nodes resolve image assets via
+     * `node.tree.textures?.load(path)` (cached by path; same path ⇒ same
+     * handle). `null` until a host wires it (e.g. unit tests, headless runs),
+     * in which case `textures?.load(...)` is a graceful no-op (returns `null`)
+     * and texture-backed nodes simply do not draw. Disposed exactly once in
+     * [stop]. Backend-supplied; never serialized.
+     */
+    @Volatile var textures: TextureBackend? = null
 
     /**
      * Gameplay time multiplier applied by `GameLoop` before accumulating the
@@ -290,6 +302,10 @@ class SceneTree(val root: Node) {
         // at most once.
         audio?.dispose()
         audio = null
+        // Release native textures on teardown (symmetry with the host wiring
+        // `textures` at startup). Cleared so a double stop disposes at most once.
+        textures?.dispose()
+        textures = null
     }
 
     /**

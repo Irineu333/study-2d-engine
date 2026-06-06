@@ -4,7 +4,9 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.render.Texture
 import org.lwjgl.nanovg.NVGColor
+import org.lwjgl.nanovg.NVGPaint
 import org.lwjgl.nanovg.NanoVG
 import org.lwjgl.nanovg.NanoVGGL3
 import org.lwjgl.opengl.GL
@@ -67,6 +69,13 @@ class LwjglRenderer : Renderer {
      * `SceneTree.textMeasurer` by `LwjglHost` at startup.
      */
     fun createTextMeasurer(): LwjglTextMeasurer = LwjglTextMeasurer(requiredCtx(), defaultFontId)
+
+    /**
+     * Texture backend sharing this renderer's NanoVG context. Call after [init];
+     * its `load` creates NanoVG images on this context, so it is only valid on
+     * the render-loop thread. Wired onto `SceneTree.textures` by `LwjglHost`.
+     */
+    fun createTextureBackend(): LwjglTextureBackend = LwjglTextureBackend(requiredCtx())
 
     fun shutdown() {
         if (nvgContext != NULL) {
@@ -155,6 +164,42 @@ class LwjglRenderer : Renderer {
         for (i in 1 until points.size) NanoVG.nvgLineTo(ctx, points[i].x, points[i].y)
         NanoVG.nvgClosePath(ctx)
         withColor(color) { c -> NanoVG.nvgFillColor(ctx, c); NanoVG.nvgFill(ctx) }
+    }
+
+    override fun drawImage(texture: Texture, src: Rect, dst: Rect, flipH: Boolean) {
+        val ctx = requiredCtx()
+        val tex = texture as? LwjglTexture
+            ?: error("drawImage received a foreign Texture handle: ${texture::class.qualifiedName}")
+        if (src.size.x <= 0f || src.size.y <= 0f) return
+        // Position/scale the image pattern so the src sub-rect (texture pixels)
+        // maps exactly onto dst, then fill only the dst rect. ex/ey is the full
+        // image extent at this scale; ox/oy offsets it so src.origin lands on
+        // dst.origin.
+        val scaleX = dst.size.x / src.size.x
+        val scaleY = dst.size.y / src.size.y
+        val ex = tex.width * scaleX
+        val ey = tex.height * scaleY
+        val ox = dst.origin.x - src.origin.x * scaleX
+        val oy = dst.origin.y - src.origin.y * scaleY
+        // flipH: mirror about the dst center via a balanced save/restore (own
+        // nvgSave, not the engine transform stack — clipDepth/transformDepth
+        // untouched).
+        val mirrored = flipH
+        if (mirrored) {
+            val cx = dst.origin.x + dst.size.x / 2f
+            NanoVG.nvgSave(ctx)
+            NanoVG.nvgTranslate(ctx, cx, 0f)
+            NanoVG.nvgScale(ctx, -1f, 1f)
+            NanoVG.nvgTranslate(ctx, -cx, 0f)
+        }
+        NVGPaint.calloc().use { paint ->
+            NanoVG.nvgImagePattern(ctx, ox, oy, ex, ey, 0f, tex.handle, 1f, paint)
+            NanoVG.nvgBeginPath(ctx)
+            NanoVG.nvgRect(ctx, dst.origin.x, dst.origin.y, dst.size.x, dst.size.y)
+            NanoVG.nvgFillPaint(ctx, paint)
+            NanoVG.nvgFill(ctx)
+        }
+        if (mirrored) NanoVG.nvgRestore(ctx)
     }
 
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {

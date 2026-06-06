@@ -55,6 +55,12 @@ class SkikoHost : GameHost {
             tree.audio = runCatching { JavaSoundAudio() }
                 .onFailure { Log.w("SkikoHost", "Audio backend unavailable: ${it.message}") }
                 .getOrNull()
+            // Wire the texture backend alongside audio/text metrics. Init
+            // failure is tolerated: log and leave `tree.textures` null so
+            // `textures?.load(...)` degrades to invisible sprites.
+            tree.textures = runCatching { SkikoTextureBackend() }
+                .onFailure { Log.w("SkikoHost", "Texture backend unavailable: ${it.message}") }
+                .getOrNull()
 
             val skiaLayer = SkiaLayer()
             var lastNanos = 0L

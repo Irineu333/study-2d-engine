@@ -4,10 +4,14 @@ import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.render.Texture
 import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.FilterMipmap
+import org.jetbrains.skia.FilterMode
 import org.jetbrains.skia.Font
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.FontStyle
+import org.jetbrains.skia.MipmapMode
 import org.jetbrains.skia.Paint
 import org.jetbrains.skia.PaintMode
 import org.jetbrains.skia.PathBuilder
@@ -115,6 +119,29 @@ class SkikoRenderer : Renderer {
         for (i in 1 until points.size) builder.lineTo(points[i].x, points[i].y)
         builder.closePath()
         c.drawPath(builder.snapshot(), configurePaint(color, filled = true, thickness = 1f))
+    }
+
+    override fun drawImage(texture: Texture, src: Rect, dst: Rect, flipH: Boolean) {
+        val c = required()
+        val image = (texture as? SkikoTexture)?.image
+            ?: error("drawImage received a foreign Texture handle: ${texture::class.qualifiedName}")
+        val srcRect = SkRect.makeXYWH(src.origin.x, src.origin.y, src.size.x, src.size.y)
+        val dstRect = SkRect.makeXYWH(dst.origin.x, dst.origin.y, dst.size.x, dst.size.y)
+        // Nearest-neighbor: pixel-art must not blur when scaled (D5).
+        val sampling = FilterMipmap(FilterMode.NEAREST, MipmapMode.NONE)
+        if (flipH) {
+            // Mirror about the destination's center via a balanced save/restore
+            // (own native save, not the engine transform stack — depth untouched).
+            val cx = dst.origin.x + dst.size.x / 2f
+            c.save()
+            c.translate(cx, 0f)
+            c.scale(-1f, 1f)
+            c.translate(-cx, 0f)
+            c.drawImageRect(image, srcRect, dstRect, sampling, null, true)
+            c.restore()
+        } else {
+            c.drawImageRect(image, srcRect, dstRect, sampling, null, true)
+        }
     }
 
     override fun pushTransform(translation: Vec2, rotation: Float, scale: Vec2) {

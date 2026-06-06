@@ -29,6 +29,11 @@ local ColorRect = {}
 ---@field color Color
 local Circle2D = {}
 
+---@class Sprite2D : Node2D
+---@field texture_path string Classpath path of the image asset
+---@field flip_h boolean Mirror horizontally (visual only)
+local Sprite2D = {}
+
 ---@class Line2D : Node2D
 ---@field points Vec2[]
 ---@field thickness number

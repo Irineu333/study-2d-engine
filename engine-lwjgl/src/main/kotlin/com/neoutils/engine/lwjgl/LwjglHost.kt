@@ -67,6 +67,12 @@ class LwjglHost : GameHost {
             tree.audio = runCatching { JavaSoundAudio() }
                 .onFailure { Log.w("LwjglHost", "Audio backend unavailable: ${it.message}") }
                 .getOrNull()
+            // Texture backend over the same NanoVG context (loop thread). Init
+            // failure is tolerated: log and leave `tree.textures` null so
+            // sprites degrade to invisible.
+            tree.textures = runCatching { renderer.createTextureBackend() }
+                .onFailure { Log.w("LwjglHost", "Texture backend unavailable: ${it.message}") }
+                .getOrNull()
             var lastNanos = 0L
 
             GLFW.glfwShowWindow(window)

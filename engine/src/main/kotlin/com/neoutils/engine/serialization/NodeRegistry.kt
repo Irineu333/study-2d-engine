@@ -16,6 +16,7 @@ import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Panel
 import com.neoutils.engine.scene.Polygon2D
+import com.neoutils.engine.scene.Sprite2D
 import com.neoutils.engine.scene.Timer
 import kotlin.reflect.KClass
 
@@ -74,6 +75,7 @@ object NodeRegistry {
         register(Circle2D::class) { Circle2D() }
         register(Line2D::class) { Line2D() }
         register(Polygon2D::class) { Polygon2D() }
+        register(Sprite2D::class) { Sprite2D() }
         register(Label::class) { Label() }
         register(CanvasLayer::class) { CanvasLayer() }
         register(Panel::class) { Panel() }

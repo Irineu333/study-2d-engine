@@ -26,6 +26,26 @@ interface Renderer {
     fun drawPolygon(points: List<Vec2>, color: Color)
 
     /**
+     * Draws the region [src] of [texture] into the destination rect [dst].
+     *
+     * [src] is in **texture pixels** (origin top-left, y down, like the source
+     * PNG) and indexes the bitmap to sample — pass `Rect(Vec2.ZERO,
+     * Vec2(texture.width, texture.height))` to draw the whole image. [dst] is
+     * in **local space**, under the current transform stack (the same
+     * composition `draw*` calls see), so the drawn image translates, rotates
+     * and scales with the node it belongs to.
+     *
+     * Sampling is **nearest-neighbor** (no smoothing) — a hard requirement for
+     * pixel-art (16/32px sprites scaled up must stay crisp, never blurred).
+     *
+     * [flipH] mirrors the image horizontally about the center of [dst] (turns a
+     * character to face the other way) — a purely visual flip that does **not**
+     * touch any node transform, so it never feeds a negative `scale.x` into the
+     * transform stack, physics or hit-testing.
+     */
+    fun drawImage(texture: Texture, src: Rect, dst: Rect, flipH: Boolean = false)
+
+    /**
      * Pushes a new entry onto a LIFO transform stack composing
      * `translate(translation) ∘ rotate(rotation) ∘ scale(scale)` over the
      * current top. All subsequent `draw*` calls render under the resulting
