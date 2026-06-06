@@ -1,5 +1,7 @@
 package com.neoutils.engine.lwjgl
 
+import com.neoutils.engine.audio.javasound.JavaSoundAudio
+import com.neoutils.engine.dx.Log
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
@@ -59,6 +61,12 @@ class LwjglHost : GameHost {
             // `Label.localBounds()` resolves even before any draw. Built after
             // `renderer.init()` so the NanoVG context and font are registered.
             tree.textMeasurer = renderer.createTextMeasurer()
+            // Same host-agnostic JDK audio backend as SkikoHost. Init failure
+            // (headless / no sound device) is tolerated: log and leave
+            // `tree.audio` null so `audio?.play(...)` degrades to silence.
+            tree.audio = runCatching { JavaSoundAudio() }
+                .onFailure { Log.w("LwjglHost", "Audio backend unavailable: ${it.message}") }
+                .getOrNull()
             var lastNanos = 0L
 
             GLFW.glfwShowWindow(window)

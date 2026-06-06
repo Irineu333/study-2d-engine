@@ -40,8 +40,11 @@ Toda mudança deve respeitar os seis invariantes abaixo. Eles vêm das decisões
 | `:engine-bundle-lua`    | implementação concreta de `ScriptHost` para scripts Lua `.lua`, usando LuaJ 3.0.x (JAR puro JVM); publica stubs LuaCATS em resources                                                                               |
 | `:engine-skiko`         | implementação de `Renderer`/`Input`/`GameHost` SPIs via Skiko + SkiaLayer + JFrame; backend padrão usado por todos os jogos shipped                                                                                |
 | `:engine-lwjgl`         | implementação de `Renderer`/`Input`/`GameHost` SPIs via LWJGL (NanoVG + GLFW + OpenGL 3.3 core); segundo backend ativo de render; sentinela do invariante #4 via entrypoint LWJGL de `:games:demos`. Único módulo do projeto autorizado a declarar dependência em `org.lwjgl.*`. |
+| `:engine-audio-javasound` | implementação de `AudioBackend` (`JavaSoundAudio`) em JDK puro (`javax.sound.sampled`), host-agnóstica — o mesmo módulo serve `:engine-skiko` e `:engine-lwjgl`. WAV-only no v1, vozes sobrepostas (uma linha nova por `play`), resolução de asset por classpath. Depende só de `:engine`; nenhuma lib de áudio de terceiro. |
 
 Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durante a change `engine-foundation`.
+
+**SPI de áudio (server-style).** Saída de som é um serviço de tree, não um Node/Component (invariante #1): `SceneTree.audio: AudioBackend?` é nullable e injetado pelo host no startup, espelhando exatamente `tree.textMeasurer`. Nodes/scripts disparam SFX off-frame via `node.tree.audio?.play(sound)` — `null` ⇒ no-op gracioso (testes/headless silenciosos). A SPI (`AudioBackend` + handle opaco `Sound`) vive em `com.neoutils.engine.audio` (`:engine`, Kotlin puro, sem `javax.sound`/binding nativo — invariante #2); a impl concreta mora em `:engine-audio-javasound`. `tree.stop()` chama `audio?.dispose()` uma vez no teardown. v1 é SFX curto fire-and-forget WAV-only; música/posicional ficam para changes futuras (a SPI `load`/`play` não muda quando entrarem).
 
 ## Games
 

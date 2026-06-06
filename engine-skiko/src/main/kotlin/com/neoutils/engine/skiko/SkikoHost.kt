@@ -1,5 +1,7 @@
 package com.neoutils.engine.skiko
 
+import com.neoutils.engine.audio.javasound.JavaSoundAudio
+import com.neoutils.engine.dx.Log
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.physics.PhysicsSystem
 import com.neoutils.engine.render.Color
@@ -47,6 +49,12 @@ class SkikoHost : GameHost {
             // Wire off-frame text metrics before the first frame so
             // `Label.localBounds()` resolves even before any draw.
             tree.textMeasurer = SkikoTextMeasurer()
+            // Wire the audio backend alongside the text metrics. Init failure
+            // (headless / no sound device) is tolerated: log and leave
+            // `tree.audio` null so `audio?.play(...)` degrades to silence.
+            tree.audio = runCatching { JavaSoundAudio() }
+                .onFailure { Log.w("SkikoHost", "Audio backend unavailable: ${it.message}") }
+                .getOrNull()
 
             val skiaLayer = SkiaLayer()
             var lastNanos = 0L

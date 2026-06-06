@@ -1,5 +1,6 @@
 package com.neoutils.engine.tree
 
+import com.neoutils.engine.audio.AudioBackend
 import com.neoutils.engine.debug.DebugLayer
 import com.neoutils.engine.debug.DebugRegistry
 import com.neoutils.engine.input.Input
@@ -72,6 +73,16 @@ class SceneTree(val root: Node) {
      * `null`. Backend-supplied; never serialized.
      */
     var textMeasurer: TextMeasurer? = null
+
+    /**
+     * Off-frame audio backend, assigned by the host at startup (before the
+     * first frame), mirroring [textMeasurer]. Nodes and scripts trigger sound
+     * effects off-frame via `node.tree.audio?.play(...)`. `null` until a host
+     * wires it (e.g. unit tests, headless runs), in which case every
+     * `audio?.play(...)` is a graceful no-op. Disposed exactly once in [stop].
+     * Backend-supplied; never serialized.
+     */
+    @Volatile var audio: AudioBackend? = null
 
     /**
      * Gameplay time multiplier applied by `GameLoop` before accumulating the
@@ -274,6 +285,11 @@ class SceneTree(val root: Node) {
 
     fun stop() {
         if (root.isLive) root.detachFromLiveTree()
+        // Release native audio lines/mixer on teardown (symmetry with the
+        // host wiring `audio` at startup). Cleared so a double stop disposes
+        // at most once.
+        audio?.dispose()
+        audio = null
     }
 
     /**

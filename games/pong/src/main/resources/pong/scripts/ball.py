@@ -23,6 +23,12 @@ def _ready(self):
     if not getattr(self, '_initialized', False):
         _reset(self, 1.0 if _random.random() > 0.5 else -1.0)
         self._initialized = True
+    # Pre-load SFX once (Godot-style preload): decode happens here, off the hot
+    # path, so a rapid rebound never pays I/O. Null-safe: a headless run (no
+    # audio backend) leaves the handles None and every play below is a no-op.
+    audio = self.tree.audio
+    self._hit_sfx = audio.load("pong/sfx/hit.wav") if audio is not None else None
+    self._goal_sfx = audio.load("pong/sfx/goal.wav") if audio is not None else None
 
 
 def _physics_process(self, dt):
@@ -59,6 +65,12 @@ def _physics_process(self, dt):
     # no longer pin it — no script-side nudge needed.
     if body.isInGroup("paddles") and _ball_beside_paddle(self, body):
         _bounce_off_paddle(self, body)
+        # Paddle face hit: the rebatida moment. Fire-and-forget; null-safe so a
+        # headless run stays silent. Overlapping voices keep rapid rallies crisp.
+        if self.tree.audio is not None and self._hit_sfx is not None:
+            # Pass volume explicitly: a Kotlin default arg is not visible to the
+            # GraalPy interop, so the single-arg form would be an arity error.
+            self.tree.audio.play(self._hit_sfx, 1.0)
     else:
         # Walls and paddle top/bottom edges: reflect velocity across the contact
         # normal — v' = v - 2(v·n)n.
@@ -95,11 +107,19 @@ def _on_area_entered(self, area):
     # Goals are Area2D; entering one is a one-shot event per attempt, so the
     # `_scored_this_tick` flag of the old `_on_collide` era is gone.
     if area.name == "leftGoal":
+        _play_goal(self)
         self.scored.emit("Right")
         _reset(self, 1.0)
     elif area.name == "rightGoal":
+        _play_goal(self)
         self.scored.emit("Left")
         _reset(self, -1.0)
+
+
+def _play_goal(self):
+    # Point scored: play the goal SFX, null-safe (no-op without a backend).
+    if self.tree.audio is not None and self._goal_sfx is not None:
+        self.tree.audio.play(self._goal_sfx, 1.0)
 
 
 def _ball_beside_paddle(self, paddle):

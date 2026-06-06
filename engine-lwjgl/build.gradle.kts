@@ -20,6 +20,9 @@ private val lwjglVersion = libs.versions.lwjgl.get()
 
 dependencies {
     implementation(projects.engine)
+    // Host-agnostic JDK audio backend — the same module serves SkikoHost too,
+    // proving render and audio are independent axes (no OpenAL needed in v1).
+    implementation(projects.engineAudioJavasound)
 
     api(libs.lwjgl.core)
     api(libs.lwjgl.glfw)

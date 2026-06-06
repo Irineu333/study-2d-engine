@@ -18,6 +18,9 @@ private val osArch: String = run {
 
 dependencies {
     implementation(projects.engine)
+    // Host-agnostic JDK audio backend — render and audio are orthogonal axes,
+    // so the Skia graphics host depends on the same module LwjglHost does.
+    implementation(projects.engineAudioJavasound)
     api(libs.skiko.awt)
     runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-$osArch:${libs.versions.skiko.get()}")
 
