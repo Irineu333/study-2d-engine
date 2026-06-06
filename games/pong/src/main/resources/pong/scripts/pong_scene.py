@@ -8,6 +8,15 @@
 
 def _ready(self):
     _wire_scoring(self)
+    _play_start(self)
+
+
+def _play_start(self):
+    # One-shot game-start jingle, fired once when the root enters the tree.
+    # Null-safe: a headless run (no audio backend) stays silent.
+    audio = self.tree.audio
+    if audio is not None:
+        audio.play(audio.load("pong/sfx/start.wav"), 1.0)
 
 
 def _wire_scoring(self):

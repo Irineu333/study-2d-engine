@@ -29,6 +29,7 @@ def _ready(self):
     audio = self.tree.audio
     self._hit_sfx = audio.load("pong/sfx/hit.wav") if audio is not None else None
     self._goal_sfx = audio.load("pong/sfx/goal.wav") if audio is not None else None
+    self._wall_sfx = audio.load("pong/sfx/wall.wav") if audio is not None else None
 
 
 def _physics_process(self, dt):
@@ -76,6 +77,11 @@ def _physics_process(self, dt):
         # normal — v' = v - 2(v·n)n.
         dot = v.x * n.x + v.y * n.y
         self.velocity = Vec2(v.x - 2.0 * dot * n.x, v.y - 2.0 * dot * n.y)
+        # A genuine wall bounce (top/bottom StaticBody2D, group "walls") gets its
+        # own thud. Paddle top/bottom edges also reflect here but stay silent —
+        # only the face hit (rebatida) above plays the hit SFX. Null-safe.
+        if body.isInGroup("walls") and self.tree.audio is not None and self._wall_sfx is not None:
+            self.tree.audio.play(self._wall_sfx, 1.0)
     # No starting-overlap nudge: moveAndCollide now applies the ball's outward
     # (separating) motion on a starting overlap itself, so a paddle re-pressing a
     # marginal corner overlap can no longer pin the ball in place. The engine
