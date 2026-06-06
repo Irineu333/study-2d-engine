@@ -33,14 +33,14 @@
 - [x] 5.2 Criar `LwjglTextureBackend(nvg: Long) : TextureBackend`: `load` resolve via classpath, `nvgCreateImageMem(..., NVG_IMAGE_NEAREST, ...)` na thread/contexto do loop, cacheia por path, fail-fast; `dispose` chama `nvgDeleteImage` em todas.
 - [x] 5.3 Implementar `LwjglRenderer.drawImage` via `nvgImagePattern` + `nvgFill` no `dst` sob a transform NanoVG corrente; aplicar `flipH`; cast para `LwjglTexture` com fail-fast.
 - [x] 5.4 `LwjglHost.run`: instanciar `LwjglTextureBackend` com o handle NVG e setar `tree.textures`, tolerando falha de init.
-- [ ] 5.5 Verificação manual: a cena sentinela (tarefa 6) desenha o sprite no `runLwjgl`.
+- [x] 5.5 Verificação manual: a cena sentinela (tarefa 6) desenha o sprite no `runLwjgl`.
 
 ## 6. Sentinela cross-backend em :games:demos
 
 - [x] 6.1 Importar 1 PNG de Pixel Adventure 1 para `games/demos/src/main/resources/demos/sprites/` (ex.: `Main Characters/Pink Man/Idle (32x32).png` → `idle.png`).
 - [x] 6.2 Criar uma cena `SpriteDemo` (Kotlin) com um `Sprite2D` estático apontando para o asset, registrada no rol de cenas do demos (Skiko default).
-- [ ] 6.3 Confirmar que a cena aparece no `runLwjgl` (mesmo asset, mesma posição, nearest crisp).
-- [ ] 6.4 Rodar manualmente nos dois backends e confirmar paridade visual.
+- [x] 6.3 Confirmar que a cena aparece no `runLwjgl` (mesmo asset, mesma posição, nearest crisp).
+- [x] 6.4 Rodar manualmente nos dois backends e confirmar paridade visual.
 
 ## 7. Binding Lua + stub
 
@@ -54,4 +54,4 @@
 - [x] 8.2 Suíte verde: `:engine`, `:engine-skiko`, `:engine-lwjgl`, `:engine-bundle-lua`, `:games:demos`; testes headless seguem passando com `tree.textures == null`.
 - [x] 8.3 Atualizar `CLAUDE.md`: nota sobre `tree.textures` (SPI de textura server-style, backend por módulo de render, espelha `audio`/`textMeasurer`) e `Renderer.drawImage` (nearest-neighbor).
 - [x] 8.4 Atualizar `ROADMAP.md`: registrar `texture-rendering` em Active.
-- [ ] 8.5 Rodar `/opsx:verify texture-rendering` e fechar pendências.
+- [x] 8.5 Rodar `/opsx:verify texture-rendering` e fechar pendências.
