@@ -93,7 +93,8 @@ The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `
 
 1. Create a `JFrame` with `title = config.title`, `setSize(config.width, config.height)`, `setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE)`, and request focus.
 2. Set `tree.debugHudKey = config.debugHudKey` once before the first frame so the engine's internal `DebugToggleNode` polls the configured key.
-3. Add a `SkiaLayer` to the frame's content pane and set its `skikoView` to an object that, on each `onRender(canvas, width, height, nanoTime)` callback:
+3. Wire platform services into the tree once before the first frame, alongside `tree.textMeasurer`: set `tree.audio = JavaSoundAudio()` (from `:engine-audio-javasound`). Failure to initialize the audio backend (e.g. headless/no sound device) MUST be tolerated — the host logs and leaves `tree.audio` as the no-op `null` rather than aborting `run`.
+4. Add a `SkiaLayer` to the frame's content pane and set its `skikoView` to an object that, on each `onRender(canvas, width, height, nanoTime)` callback:
    a. Calls `input.beginTick()`.
    b. Calls `tree.resize(width.toFloat(), height.toFloat())`.
    c. Binds `renderer` to `canvas`.
@@ -102,8 +103,8 @@ The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `
    f. Calls `skiaLayer.needRedraw()` to drive the next frame.
 
    The host SHALL NOT instantiate `FpsCounter`. The host SHALL NOT write to `tree.debug.*` per frame (only the one-time `tree.debugHudKey` assignment in step 2). The host SHALL NOT call into any momentum overlay helper. The host SHALL NOT poll input for the purpose of toggling debug visualization. All debug visualization, including the FPS readout, the collider outlines, and the momentum sparklines, flows through `tree.render(renderer)` via the auto-inserted `DebugLayer` and its widgets.
-4. Register AWT `KeyListener`, `MouseListener`, and `MouseMotionListener` on the `JFrame` (or the `SkiaLayer`) that delegate to the `SkikoInput`.
-5. Block via a `CountDownLatch` (or equivalent) released by a `WindowListener.windowClosed` callback, so `run(...)` returns when the frame disposes.
+5. Register AWT `KeyListener`, `MouseListener`, and `MouseMotionListener` on the `JFrame` (or the `SkiaLayer`) that delegate to the `SkikoInput`.
+6. Block via a `CountDownLatch` (or equivalent) released by a `WindowListener.windowClosed` callback, so `run(...)` returns when the frame disposes. The `windowClosed` teardown calls `tree.stop()`, which disposes the audio backend.
 
 `SkikoHost` MUST NOT call `System.exit(...)`, so callers that embed `SkikoHost.run(...)` inside a larger JVM process keep the JVM alive after the window closes.
 
@@ -150,6 +151,13 @@ The `:engine-skiko` module SHALL provide a concrete `GameHost` implementation, `
 - **WHEN** `SkikoHost.run(...)` returns after the user closes the window
 - **THEN** no non-daemon thread launched by `SkikoHost` keeps the JVM alive
 - **AND** `System.exit(...)` is not called by `SkikoHost`
+
+#### Scenario: SkikoHost wires the audio backend into the tree
+
+- **WHEN** `SkikoHost().run(tree, config)` starts and a sound device is available
+- **THEN** `tree.audio` is set to a `JavaSoundAudio` instance before the first frame
+- **AND** scripts and nodes can reach it via `node.tree.audio`
+- **AND** when the window closes, `tree.stop()` disposes the audio backend
 
 ### Requirement: Skiko-runtime module is a Compose-free engine boundary
 

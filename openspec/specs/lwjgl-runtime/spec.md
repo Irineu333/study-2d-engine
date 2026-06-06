@@ -103,12 +103,12 @@ O módulo `:engine-lwjgl` SHALL prover uma classe `LwjglHost` que implementa a i
 6. Instanciar `LwjglInput` e conectar três callbacks GLFW (`glfwSetKeyCallback`/`glfwSetMouseButtonCallback`/`glfwSetCursorPosCallback`) que delegam para `input.onGlfwKey/onGlfwMouseButton/onGlfwCursorPos`.
 7. Instanciar `LwjglRenderer`, chamar `renderer.init()` (que cria o NanoVG context, registra a fonte default).
 8. Instanciar `PhysicsSystem`, `GameLoop(tree, renderer, input, physics, physicsHz = config.physicsHz)`. **Não instanciar `FpsCounter`** — `FpsWidget` é dona do seu próprio counter.
-9. Setar `tree.debugHudKey = config.debugHudKey` uma vez antes do primeiro frame.
+9. Setar `tree.debugHudKey = config.debugHudKey` uma vez antes do primeiro frame. Wirar serviços de plataforma na tree antes do primeiro frame: setar `tree.audio = JavaSoundAudio()` (de `:engine-audio-javasound`). Falha ao inicializar o backend de áudio (ex.: headless/sem dispositivo de som) MUST ser tolerada — o host loga e deixa `tree.audio` como `null` (no-op), sem abortar `run`.
 10. `glfwShowWindow(window)`.
 11. Loop principal `while (!glfwWindowShouldClose(window))`: chamar `glfwPollEvents()`, `input.beginTick()`, ler `glfwGetWindowSize`/`glfwGetFramebufferSize` para calcular `pixelRatio`, chamar `tree.resize(winW, winH)`, chamar `glViewport(0, 0, fbW, fbH)`, chamar `renderer.bind(winW, winH, pixelRatio)`, dentro de `try { ... } finally { renderer.unbind() }` chamar `renderer.clear` + `loop.tick(dtNanos)` — e nada mais. Depois do `try/finally`, `glfwSwapBuffers(window)`.
 
     O host **NÃO** deve: instanciar `FpsCounter`, escrever em `tree.debug.*` por frame (exceto o set único em passo 9), chamar qualquer helper de debug overlay, ou pollar input para toggle de visualização de debug. Toda saída visual de debug (FPS, colliders, momentum, HUD) sai do `tree.render(renderer)` via `DebugLayer` auto-inserido pela engine.
-12. Após o loop sair: `tree.stop()`, `renderer.shutdown()`, `Callbacks.glfwFreeCallbacks(window)`, `glfwDestroyWindow(window)`, e em `finally` externo: `glfwTerminate()` + `GLFWErrorCallback.set(null)?.free()`.
+12. Após o loop sair: `tree.stop()` (que dispõe o backend de áudio), `renderer.shutdown()`, `Callbacks.glfwFreeCallbacks(window)`, `glfwDestroyWindow(window)`, e em `finally` externo: `glfwTerminate()` + `GLFWErrorCallback.set(null)?.free()`.
 
 `run` MUST ser blocking — retorna somente quando o usuário fecha a janela ou código chama `glfwSetWindowShouldClose(window, true)`. `LwjglHost.run` MUST ser chamado a partir do main thread do processo; em macOS, o processo precisa ter sido iniciado com `-XstartOnFirstThread` (responsabilidade do `build.gradle.kts` que dispara a task `runLwjgl`).
 
@@ -157,6 +157,13 @@ O módulo `:engine-lwjgl` SHALL prover uma classe `LwjglHost` que implementa a i
 - **WHEN** the host issues `glViewport(0, 0, fbW, fbH)` and `renderer.bind(winW, winH, pixelRatio = fbW/winW)`
 - **THEN** subsequent draws fill the entire framebuffer (no letterboxing)
 - **AND** `Renderer` coordinates remain in logical pixels — drawing a rect at `(0, 0)` size `(800, 600)` covers the whole window
+
+#### Scenario: LwjglHost wires the audio backend into the tree
+
+- **WHEN** `LwjglHost().run(tree, config)` starts and a sound device is available
+- **THEN** `tree.audio` is set to a `JavaSoundAudio` instance before the first frame
+- **AND** the same `:engine-audio-javasound` module serves both `SkikoHost` and `LwjglHost`
+- **AND** when the loop exits, `tree.stop()` disposes the audio backend
 
 ### Requirement: lwjgl-runtime is the only non-Skiko backend module allowed to depend on a graphics runtime
 
