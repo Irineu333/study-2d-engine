@@ -8,7 +8,7 @@ Problemas: cobertura sobreposta (3 demos de física quase-irmãs; 3 demos de tex
 
 **Goals:**
 
-- Reduzir de 10 slots para **5 demos densas**, preservando 100% da cobertura de invariantes e **ganhando** cobertura de `Camera2D`.
+- Reduzir de 10 slots para **5 demos densas**, preservando a cobertura de invariantes (exceto a escala dinâmica parent→child da antiga demo Scale, intencionalmente descartada por incoerência visual na cena do sistema solar) e **ganhando** cobertura de `Camera2D`.
 - Substituir a navegação por teclas + HUD de texto cru por um **menu de UI real** (botões) com botão "← Menu" em cada demo — fazendo do próprio launcher a vitrine viva de `ui-foundation`.
 - Eliminar redundância: `hue()` compartilhada; FPS por demo removido (profiler assume); título/descrição via `Label`/`CanvasLayer`; métricas via `tree.debug`.
 - Manter os dois entrypoints e a sentinela cross-backend (#4) intactos.
@@ -26,7 +26,7 @@ Problemas: cobertura sobreposta (3 demos de física quase-irmãs; 3 demos de tex
 
 | Demo nova | Funde | Invariantes preservados | Ganho |
 | --- | --- | --- | --- |
-| **Transforms** | 1 + 2 | composição de transform aninhada; `world().scale` → tamanho do filho | **+ `Camera2D` zoom/pan** |
+| **Transforms** | 1 | composição de transform aninhada (position + rotation) | **+ `Camera2D` zoom/pan** |
 | **Spawn & Collide** | 3 + 4 | mutação durante traversal; `Area2D` trigger; `RigidBody2D` solver + cache | — |
 | **Rotating Frame** | 5 (mantida) | `CharacterBody2D.moveAndCollide` em frame rotativo | — |
 | **Tumbling Swarm** | 6 | solver `RigidBody2D` completo (linear+angular+Coulomb) | — |
@@ -64,7 +64,7 @@ Remove o `instantFps`/`drawText` por demo. `F1` (ProfilerWidget) é a fonte de F
 ## Risks / Trade-offs
 
 - **[Quebra de testes/specs existentes]** As specs `demos-sample` e `solar-system-demo` têm cenários amarrados aos nomes/slots/teclas atuais e à convenção "sem Camera2D". → Mitigação: deltas `MODIFIED`/`REMOVED`/`RENAMED` explícitos; atualizar/recriar os testes de unidade que verificam topologia/slots para o novo catálogo.
-- **[Perda do nº fixo de nós do solar system]** A demo Transforms adiciona `Camera2D` + corpo de pulso de escala, mudando a contagem de nós que `solar-system-demo` fixa. → Mitigação: a spec delta atualiza as contagens/escopo; o corpo de escala e a câmera são nós nomeados verificáveis.
+- **[Perda do nº fixo de nós do solar system]** A demo Transforms adiciona um `Camera2D`, mudando a contagem de nós que `solar-system-demo` fixa. → Mitigação: a spec delta atualiza as contagens/escopo; a câmera é um nó nomeado verificável. (O corpo de pulso de escala foi descartado por poluir a cena — a demo Scale sai sem substituto; o invariante parent-scale → child-size perde cobertura de demo dedicada.)
 - **[Menu como ponto único de navegação]** Se o `Button`/hit-test regredir, todas as demos ficam inacessíveis. → Mitigação: o menu usa o mesmo `Button` shipped já coberto por `ui-foundation`; teste de fumaça garante que o menu monta e que "← Menu" volta.
 - **[Camera2D só numa demo]** Cobertura de câmera fica restrita a uma cena. → Aceitável: Pong já cobre câmera em gameplay; aqui o objetivo é didático/visual, não exaustivo.
 - **[Esforço de reescrita]** Remoção de 6 arquivos + reescrita de 2 + 2 novos. → Mitigação: fusões são recombinação de código existente (helpers já prontos), não lógica nova de física/render.

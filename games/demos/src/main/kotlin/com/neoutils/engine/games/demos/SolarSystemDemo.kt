@@ -8,7 +8,6 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Circle2D
-import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -160,17 +159,6 @@ class SolarSystemDemo : Node2D() {
         neptune.addChild(buildMoon("Triton", Radii.TRITON, Speeds.TRITON, Sizes.TRITON, Palette.TRITON))
 
         addChild(center)
-
-        // Scale-pulse body (folds the old Scale hierarchy demo): a green square
-        // whose parent scale oscillates, so its child ColorRect grows/shrinks
-        // via world().scale. A direct demo child (not under Center) so Center's
-        // topology stays exactly {Sun, 8 orbits}; parked left-of-center, clearly
-        // not a planet. The camera's view transform frames it like everything else.
-        addChild(
-            ScalePulse().apply {
-                transform = Transform(position = Vec2(initialSize.x * 0.14f, initialSize.y / 2f))
-            }
-        )
 
         // Interactive camera framing the whole window 1:1 to start. bounds is
         // finalized in onProcess once the real surface size is known.
@@ -350,47 +338,5 @@ class SaturnRing : Node2D() {
         const val RING_THICKNESS: Float = 1.5f
         const val RING_FLATTEN: Float = 0.4f
         val RING_COLOR = Color(0.9f, 0.85f, 0.7f, 0.6f)
-    }
-}
-
-/**
- * Scale-pulse body folding the old `Scale hierarchy` demo: a parent `Node2D`
- * whose `scale` oscillates between [MIN_SCALE] and [MAX_SCALE]. The child
- * `ColorRect` keeps a fixed local size — the rendered size grows and shrinks
- * because `world().scale` propagates into the draw. Visually distinct from the
- * planets (a green square, not a circle) so it never reads as a celestial body.
- */
-@Serializable
-class ScalePulse : Node2D() {
-
-    @Transient
-    private var t: Float = 0f
-
-    init {
-        name = "ScalePulse"
-        if (children.isEmpty()) {
-            addChild(
-                ColorRect().apply {
-                    name = "PulseArt"
-                    size = Vec2(SIDE, SIDE)
-                    color = Color(0.5f, 0.95f, 0.4f)
-                    // Center the square on the pulsing origin.
-                    transform = Transform(position = Vec2(-SIDE / 2f, -SIDE / 2f))
-                }
-            )
-        }
-    }
-
-    override fun onProcess(dt: Float) {
-        t += dt
-        val s = MIN_SCALE + (MAX_SCALE - MIN_SCALE) * (0.5f + 0.5f * sin(t * SPEED))
-        transform = transform.copy(scale = Vec2(s, s))
-    }
-
-    private companion object {
-        const val SIDE: Float = 30f
-        const val MIN_SCALE: Float = 0.5f
-        const val MAX_SCALE: Float = 2.0f
-        const val SPEED: Float = 1.5f
     }
 }

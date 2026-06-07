@@ -29,7 +29,7 @@ O módulo `:games:demos` SHALL hospedar a cena `SolarSystemDemo` como a demo **`
 - Sob `Saturn`: 1 `SaturnRing` (nó visual customizado), e 1 `Rotator` `TitanOrbit` contendo 1 `Circle2D` `Titan`.
 - Sob `Neptune`: 1 `Rotator` `TritonOrbit` contendo 1 `Circle2D` `Triton`.
 
-Além da topologia de corpos celestes acima, a cena PODE conter nós adicionais introduzidos pela fusão com a antiga demo Scale e pela câmera: um `Camera2D` (`current = true`) e um único nó com `scale` oscilante (corpo de pulso de escala). Esses nós extras MUST ser nomeados e identificáveis, e MUST NOT alterar a topologia/contagem dos corpos celestes descrita acima.
+Além da topologia de corpos celestes acima, a cena PODE conter nós adicionais introduzidos pela câmera: um `Camera2D` (`current = true`). Esses nós extras MUST ser nomeados e identificáveis, e MUST NOT alterar a topologia/contagem dos corpos celestes descrita acima.
 
 #### Scenario: All eight planets are present under Center
 
@@ -83,14 +83,3 @@ A demo `Transforms` SHALL instalar uma `Camera2D` (`current = true`) local à ce
 - **WHEN** o usuário retorna ao menu e carrega outra demo
 - **THEN** a `Camera2D` da demo `Transforms` foi desmontada
 - **AND** a outra demo renderiza em pixels de surface crus
-
-### Requirement: Transforms scene includes a scale-pulse body folding the old Scale demo
-
-A demo `Transforms` SHALL incluir um nó cuja `scale` oscila ao longo do tempo, demonstrando que `world().scale` se propaga para o tamanho renderizado do filho (o invariante que a antiga demo `Scale hierarchy` validava isoladamente). Esse nó MUST ser visualmente distinto do sistema solar (não confundível com um planeta) e MUST pulsar continuamente entre um valor mínimo e máximo de escala.
-
-#### Scenario: A node visibly pulses in scale over time
-
-- **GIVEN** a demo `Transforms` está ativa
-- **WHEN** o usuário observa a cena por alguns segundos
-- **THEN** um nó dedicado cresce e encolhe ciclicamente (scale oscilando)
-- **AND** o tamanho renderizado acompanha a `world().scale`, não permanecendo estático

@@ -11,13 +11,13 @@
 - [x] 2.3 Garantir que clique no menu/botões é consumido (`wasMouseClicked` retorna `false` para gameplay no tick)
 - [x] 2.4 Remover `UiPlaygroundDemo.kt`
 
-## 3. Transforms demo (funde Solar system + Scale + Camera2D)
+## 3. Transforms demo (Solar system + Camera2D)
 
 - [x] 3.1 Adicionar uma `Camera2D` (`current = true`) local à `SolarSystemDemo`, desmontada com a cena
 - [x] 3.2 Implementar zoom (escalar `bounds`) e pan (transladar `bounds.origin`) via scroll do mouse e/ou teclas
-- [x] 3.3 Adicionar um nó dedicado com `scale` oscilante (corpo de pulso de escala), visualmente distinto dos planetas
+- [x] 3.3 ~~Adicionar corpo de pulso de escala~~ — descartado: um objeto de escala solto polui a cena do sistema solar; o invariante de escala dinâmica (parent-scale → child-size) fica sem cobertura de demo dedicada
 - [x] 3.4 Mover título/descrição da demo para `Label` em `CanvasLayer` (não sofre zoom da câmera)
-- [x] 3.5 Remover `ScaleHierarchyDemo.kt` (e `ScalePivot`) — sua cobertura passa para o corpo de pulso
+- [x] 3.5 Remover `ScaleHierarchyDemo.kt` (e `ScalePivot`) — a antiga demo Scale sai sem substituto na cena Transforms
 
 ## 4. Spawn & Collide demo (funde Spawner + Collision stress)
 

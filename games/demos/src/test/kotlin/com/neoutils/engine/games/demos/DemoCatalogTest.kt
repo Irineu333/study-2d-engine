@@ -123,7 +123,7 @@ class DemoCatalogTest {
     }
 
     @Test
-    fun `solar system keeps its celestial topology plus camera and scale pulse`() {
+    fun `solar system keeps its celestial topology plus a current camera`() {
         val demo = SolarSystemDemo()
         val center = demo.findChild("Center") as Node2D
         val childNames = center.children.map { it.name }.toSet()
@@ -134,11 +134,10 @@ class DemoCatalogTest {
         assertTrue("Sun" in childNames, "Center must contain the Sun")
         assertTrue(childNames.containsAll(expectedOrbits), "Center must contain all eight planet orbits")
 
-        // The fold adds a current Camera2D and a named scale-pulse body, without
-        // touching the celestial-body counts under Center.
+        // The fold adds an interactive Camera2D without touching the
+        // celestial-body counts under Center.
         val camera = demo.findChild("Camera") as? Camera2D
         assertNotNull(camera, "Transforms demo must install a Camera2D")
         assertTrue(camera.current, "the camera must be current")
-        assertNotNull(demo.findChild("ScalePulse") as? Node2D, "Transforms demo must include a scale-pulse body")
     }
 }
