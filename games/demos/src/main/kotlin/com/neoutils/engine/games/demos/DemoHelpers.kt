@@ -5,6 +5,8 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.MouseFilter
+import com.neoutils.engine.scene.Panel
 
 /**
  * Maps a hue fraction `h ∈ [0, 1)` to a saturated RGB color, cycling through
@@ -45,16 +47,37 @@ internal class DemoOverlay(
         // (Int.MAX_VALUE - 1), so F1's HUD still paints on top.
         layer = 100
 
+        // Decorative top bar grounding the controls and guaranteeing title /
+        // description legibility over any demo (bright sun, sprites, etc.).
+        // IGNORE so it never consumes clicks — the demo behind still gets them
+        // (spawning, camera drag); only the back Button consumes its own rect.
+        addChild(
+            Panel().apply {
+                name = "HeaderBar"
+                color = Color(0.07f, 0.07f, 0.10f, 0.78f)
+                mouseFilter = MouseFilter.IGNORE
+                anchorLeft = 0f
+                anchorRight = 1f
+                anchorTop = 0f
+                anchorBottom = 0f
+                offsetLeft = 0f
+                offsetRight = 0f
+                offsetTop = 0f
+                offsetBottom = HEADER_HEIGHT
+            }
+        )
+
         addChild(
             Button().apply {
                 name = "BackButton"
                 text = "← Menu"
                 textSize = 15f
-                // Accent colors so the back action reads as the primary control
-                // on the overlay, distinct from the neutral menu buttons.
-                normalColor = Color(0.20f, 0.46f, 0.66f, 1f)
-                hoverColor = Color(0.28f, 0.56f, 0.78f, 1f)
-                pressedColor = Color(0.14f, 0.34f, 0.50f, 1f)
+                // Neutral palette matching the menu buttons / charcoal card —
+                // no clashing accent hue. A touch lighter than default so it
+                // reads as a control sitting on the dark header bar.
+                normalColor = Color(0.26f, 0.27f, 0.30f, 1f)
+                hoverColor = Color(0.36f, 0.38f, 0.43f, 1f)
+                pressedColor = Color(0.16f, 0.17f, 0.20f, 1f)
                 textColor = Color.WHITE
                 anchorLeft = 0f
                 anchorTop = 0f
@@ -75,7 +98,7 @@ internal class DemoOverlay(
                 fontSize = 16f
                 color = Color.WHITE
                 offsetLeft = MARGIN + BACK_WIDTH + 14f
-                offsetTop = MARGIN + 6f
+                offsetTop = MARGIN + 4f
             }
         )
 
@@ -86,7 +109,7 @@ internal class DemoOverlay(
                 fontSize = 12f
                 color = Color(1f, 1f, 1f, 0.7f)
                 offsetLeft = MARGIN + BACK_WIDTH + 14f
-                offsetTop = MARGIN + 24f
+                offsetTop = MARGIN + 23f
             }
         )
     }
@@ -95,6 +118,7 @@ internal class DemoOverlay(
         const val MARGIN = 8f
         const val BACK_WIDTH = 112f
         const val BACK_HEIGHT = 36f
+        const val HEADER_HEIGHT = 52f
     }
 }
 
