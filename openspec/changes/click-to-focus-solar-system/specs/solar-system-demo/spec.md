@@ -123,3 +123,26 @@ Enquanto `focused != null`, a demo `Transforms` SHALL prover feedback visual do 
 - **WHEN** `focused` volta a `null`
 - **THEN** o anel de seleção não é mais desenhado
 - **AND** o `Label` de nome do corpo focado fica vazio/oculto
+
+### Requirement: Arrow keys switch focus directionally while locked
+
+Enquanto `focused != null`, a demo `Transforms` SHALL permitir trocar o corpo focado para outro corpo via **setas direcionais**, navegando espacialmente: cada seta (←/→/↑/↓) MUST selecionar o corpo mais próximo na direção correspondente (em world-space, com `y` crescente para baixo) a partir do `world().position` do corpo atualmente focado. A troca MUST ocorrer na **borda de pressionar** (`wasKeyPressed`), uma troca por toque. Apenas corpos cujo deslocamento em relação ao corpo focado caia dentro de um cone de 45° em torno do eixo da seta (componente ao longo do eixo `> 0` e `≥` componente perpendicular) MUST ser candidatos; entre eles, o de **menor distância euclidiana** MUST vencer. Se nenhum corpo existir naquela direção, o foco MUST permanecer no corpo atual. Ao trocar, o `focusSize` MUST ser recomputado para o novo corpo (reenquadrando corpo + órbita) e o anel/nome do HUD MUST passar a refletir o novo corpo. Em modo livre (`focused == null`), as setas MUST continuar fazendo pan da câmera, sem trocar foco.
+
+#### Scenario: Pressing an arrow focuses the nearest body in that direction
+
+- **GIVEN** um corpo está focado e existe outro corpo à direita dele
+- **WHEN** o usuário pressiona a seta para a direita
+- **THEN** `focused` passa a referenciar o corpo mais próximo dentro do cone à direita
+- **AND** o `focusSize` é recomputado para o novo corpo
+
+#### Scenario: Arrow with no body in that direction keeps the focus
+
+- **GIVEN** um corpo está focado e não há nenhum corpo dentro do cone naquela direção
+- **WHEN** o usuário pressiona aquela seta
+- **THEN** `focused` permanece no mesmo corpo
+
+#### Scenario: Arrows still pan when nothing is focused
+
+- **GIVEN** nenhum corpo está focado
+- **WHEN** o usuário pressiona as setas
+- **THEN** a câmera faz pan como antes (nenhuma troca de foco)

@@ -112,6 +112,7 @@ class SolarSystemDemo : Node2D() {
                 val factor = (1f + scroll * ZOOM_STEP).coerceIn(0.5f, 2f)
                 focusSize = (focusSize * factor).coerceIn(FOCUS_MIN_WIDTH, MAX_ZOOM_WIDTH)
             }
+            switchFocus(input)
         } else {
             freeZoom(cam, input, tree.size)
             dragPan(cam, input, tree.size)
@@ -167,6 +168,42 @@ class SolarSystemDemo : Node2D() {
                 focused = hit
                 focusSize = computeFocusWidth(hit)
             }
+        }
+    }
+
+    // While locked, an arrow press hops focus to the nearest body in that
+    // screen direction (y grows downward). Only bodies inside a 45° cone around
+    // the axis are candidates (the along-axis component dominates the perp one);
+    // the closest of those wins. Press-edge, so one hop per tap. Nothing in that
+    // direction ⇒ focus stays put. Switching reframes via computeFocusWidth.
+    internal fun switchFocus(input: Input) {
+        val dir = when {
+            input.wasKeyPressed(Key.ARROW_LEFT) -> Vec2(-1f, 0f)
+            input.wasKeyPressed(Key.ARROW_RIGHT) -> Vec2(1f, 0f)
+            input.wasKeyPressed(Key.ARROW_UP) -> Vec2(0f, -1f)
+            input.wasKeyPressed(Key.ARROW_DOWN) -> Vec2(0f, 1f)
+            else -> return
+        }
+        val current = focused ?: return
+        val from = current.world().position
+        var best: Circle2D? = null
+        var bestDist = Float.MAX_VALUE
+        for (body in collectBodies()) {
+            if (body === current) continue
+            val delta = body.world().position - from
+            val along = delta.x * dir.x + delta.y * dir.y
+            if (along <= 0f) continue
+            val perp = (delta - dir * along).length
+            if (perp > along) continue // outside the 45° cone
+            val dist = delta.length
+            if (dist < bestDist) {
+                bestDist = dist
+                best = body
+            }
+        }
+        best?.let {
+            focused = it
+            focusSize = computeFocusWidth(it)
         }
     }
 

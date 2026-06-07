@@ -28,15 +28,15 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-/** Scripted [Input] with a settable pointer, mouse-down, raw-click and Esc edge. */
+/** Scripted [Input] with a settable pointer, mouse-down, raw-click and key edge. */
 private class ScriptedInput : Input {
     override var pointerPosition: Vec2 = Vec2.ZERO
     var down: Boolean = false
     var clickedRaw: Boolean = false
-    var esc: Boolean = false
+    var pressedKey: Key? = null
 
     override fun isKeyDown(key: Key) = false
-    override fun wasKeyPressed(key: Key) = esc && key == Key.ESCAPE
+    override fun wasKeyPressed(key: Key) = key == pressedKey
     override fun isMouseDown(button: MouseButton) = down && button == MouseButton.Left
     override fun wasMouseClickedRaw(button: MouseButton) = clickedRaw && button == MouseButton.Left
     override var mouseClickConsumed: Boolean = false
@@ -396,9 +396,9 @@ class DemoCatalogTest {
         // Esc unfocuses.
         click(loop, input, sunScreen)
         assertEquals("Sun", focusName(demo))
-        input.esc = true
+        input.pressedKey = Key.ESCAPE
         loop.tick(FRAME_NANOS)
-        input.esc = false
+        input.pressedKey = null
         assertEquals("", focusName(demo), "Esc must clear the focus")
 
         // Clicking empty space unfocuses.
@@ -412,5 +412,47 @@ class DemoCatalogTest {
         assertEquals("Sun", focusName(demo))
         click(loop, input, sunScreen)
         assertEquals("", focusName(demo), "clicking the focused body must toggle it off")
+    }
+
+    private fun freezeRotators(node: Node) {
+        if (node is Rotator) {
+            node.transform = node.transform.copy(rotation = 0f)
+            node.angularVelocity = 0f
+        }
+        node.children.forEach { freezeRotators(it) }
+    }
+
+    private fun pressKey(loop: GameLoop, input: ScriptedInput, key: Key) {
+        input.pressedKey = key
+        loop.tick(FRAME_NANOS)
+        input.pressedKey = null
+    }
+
+    @Test
+    fun `arrow keys hop focus to the nearest body in that direction`() {
+        val (demo, loop, input) = soloDemo()
+        val cam = demo.findChild("Camera") as Camera2D
+        // Freeze every Rotator at angle 0 so all bodies line up on y=300,
+        // colinear to the right of the Sun at increasing distances:
+        // Sun(400) < Mercury(460) < Venus(508) < Earth(568) < ...
+        freezeRotators(demo)
+
+        val sun = findCircle(demo, "Sun")!!
+        click(loop, input, cam.worldToScreen(sun.world().position, Vec2(800f, 600f)))
+        assertEquals("Sun", focusName(demo))
+
+        // Right hops to the nearest body to the right (Mercury), then Venus.
+        pressKey(loop, input, Key.ARROW_RIGHT)
+        assertEquals("Mercury", focusName(demo), "right must focus the nearest body to the right")
+        pressKey(loop, input, Key.ARROW_RIGHT)
+        assertEquals("Venus", focusName(demo))
+
+        // Left hops back to the nearest body to the left (Mercury, not the Sun).
+        pressKey(loop, input, Key.ARROW_LEFT)
+        assertEquals("Mercury", focusName(demo))
+
+        // No body sits within the upward cone (all are colinear) → focus holds.
+        pressKey(loop, input, Key.ARROW_UP)
+        assertEquals("Mercury", focusName(demo), "no body in that direction must keep the focus")
     }
 }

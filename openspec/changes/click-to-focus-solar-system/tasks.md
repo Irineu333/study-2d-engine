@@ -27,6 +27,7 @@
 - [x] 5.2 Scroll em modo travado escala o `focusSize`-alvo (clampeado), mantendo o corpo centrado; não fazer pan livre.
 - [x] 5.3 Destravar (`focused = null`) em: arrasto cruzou `CLICK_SLOP_PX`, `Esc` (`wasKeyPressed(ESCAPE)`), clique no vazio, ou clique no mesmo corpo (toggle). Garantir que o destravamento por arrasto ocorra antes do recenter do frame.
 - [x] 5.4 Confirmar que com `focused == null` o comportamento livre (scroll-zoom em torno do cursor, drag-pan, setas) é byte-idêntico ao anterior.
+- [x] 5.5 Em modo travado, setas direcionais (`wasKeyPressed`) trocam o foco para o corpo mais próximo dentro do cone de 45° na direção da seta (menor distância vence; nada na direção mantém o foco); recomputar `focusSize` ao trocar. Setas em modo livre seguem fazendo pan.
 
 ## 6. Feedback visual
 
