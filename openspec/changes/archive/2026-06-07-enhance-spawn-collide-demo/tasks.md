@@ -40,4 +40,4 @@
 
 - [x] 7.1 Atualizar/estender `DemoCatalogTest` (ou adicionar teste) cobrindo: dois colliders irmãos na arena, toggle de `disabled` por modo, clamp do trap, gate de auto-spawn, e register/unregister do widget no enter/exit.
 - [x] 7.2 Rodar `./gradlew :games:demos:test` (e o build) e garantir verde; confirmar que nenhum teste referencia `AxesWidget`.
-- [ ] 7.3 Validação visual nos dois backends (`:games:demos:run` Skiko e `:games:demos:runLwjgl`): abrir Spawn & Collide, abrir HUD, alternar Despawn/Collide, arrastar o trap até as bordas, desligar auto-spawn, voltar ao menu e confirmar que a linha do widget some.
+- [x] 7.3 Validação visual nos dois backends (`:games:demos:run` Skiko e `:games:demos:runLwjgl`): abrir Spawn & Collide, abrir HUD, alternar Despawn/Collide, arrastar o trap até as bordas, desligar auto-spawn, voltar ao menu e confirmar que a linha do widget some.
