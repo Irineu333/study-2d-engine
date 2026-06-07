@@ -50,7 +50,7 @@ The illustrative custom widget named in the scenarios below SHALL be a hypotheti
 
 ### Requirement: DebugHud lists registered widgets as togglable rows
 
-`DebugHud` SHALL extend `ScreenDebugWidget` (initial `enabled = false`). When `enabled = true`, it SHALL render a `Panel` pinned to a screen corner (default: top-right, offset 12 px from edges), containing exactly one `Button` per `DebugWidget` currently in `tree.debug.widgets` (excluding `DebugHud` itself). Each `Button`'s label SHALL begin with `"[x] "` if its target widget's `enabled` is `true`, or `"[ ] "` otherwise, followed by the target widget's `title`. Clicking a `Button` SHALL flip the target widget's `enabled` and refresh the row label. The HUD SHALL re-evaluate the list each time `enabled` transitions to `true` (covering widgets registered after the previous HUD open).
+`DebugHud` SHALL extend `ScreenDebugWidget` (initial `enabled = false`). When `enabled = true`, it SHALL render a `Panel` pinned to a screen corner (default: top-right, offset 12 px from edges), containing exactly one `Button` per `DebugWidget` currently in `tree.debug.widgets` (excluding `DebugHud` itself). Each `Button`'s label SHALL begin with `"[x] "` if its target widget's `enabled` is `true`, or `"[ ] "` otherwise, followed by the target widget's `title`. Clicking a `Button` SHALL flip the target widget's `enabled` and refresh the row label. The HUD SHALL re-evaluate the list each time `enabled` transitions to `true` (covering widgets registered after the previous HUD open), **and** whenever `tree.debug.widgets` changes while the HUD is already open — a widget registered or unregistered live (e.g. from a `Node`'s `onEnter`/`onExit`) SHALL add or remove its row by the next frame, without the user closing and reopening the HUD.
 
 When `enabled = false`, the HUD SHALL emit zero draw calls and SHALL NOT consume any mouse click via `tree.hitTestUI` — `Input.wasMouseClicked` SHALL pass through unchanged.
 
@@ -62,6 +62,14 @@ The user-registered widget named in the scenario below SHALL be a hypothetical e
 - **WHEN** `tree.debug.hud.enabled = true` and a frame is rendered
 - **THEN** the rendered HUD `Panel` SHALL contain exactly one `Button` child per registered widget (excluding the HUD itself), including an `Example` row
 - **AND** the label order SHALL match registration order
+
+#### Scenario: Open HUD reflects live register/unregister without reopening
+
+- **GIVEN** `tree.debug.hud.enabled = true` with its `Panel` already built and showing rows
+- **WHEN** a game registers a new widget via `tree.debug.register(...)`
+- **THEN** by the next frame the HUD `Panel` SHALL contain a row for it, without the HUD's `enabled` transitioning
+- **WHEN** that widget is later removed via `tree.debug.unregister(...)`
+- **THEN** by the next frame its row SHALL be absent from the HUD `Panel`
 
 #### Scenario: Clicking a row flips the target widget's enabled
 

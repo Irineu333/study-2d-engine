@@ -1,5 +1,6 @@
 package com.neoutils.engine.debug
 
+import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Panel
@@ -7,6 +8,11 @@ import com.neoutils.engine.tree.SceneTree
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+private class ExampleWidget : WorldDebugWidget() {
+    override val title: String = "Example"
+    override fun drawDebug(renderer: Renderer) {}
+}
 
 class DebugHudTest {
 
@@ -60,6 +66,46 @@ class DebugHudTest {
         tree.process(0.016f)
         tree.applyPending()
         assertEquals("[x] Colliders", collidersButton.text)
+    }
+
+    @Test
+    fun `open HUD reflects a widget registered live without reopening`() {
+        val tree = SceneTree(Node()).also { it.start() }
+        tree.debug.hud.enabled = true
+        tree.process(0.016f)
+        tree.applyPending()
+        val before = tree.debug.hud.children.filterIsInstance<Panel>().single()
+            .children.filterIsInstance<Button>().map { it.text }
+        assertTrue(before.none { it.contains("Example") }, "no Example row before registration")
+
+        // Register while the HUD is already open — the row must appear next frame.
+        tree.debug.register(ExampleWidget())
+        tree.process(0.016f)
+        tree.applyPending()
+        val afterRegister = tree.debug.hud.children.filterIsInstance<Panel>().single()
+            .children.filterIsInstance<Button>().map { it.text }
+        assertTrue("[ ] Example" in afterRegister, "live-registered widget must add a row: $afterRegister")
+    }
+
+    @Test
+    fun `open HUD drops a widget unregistered live without reopening`() {
+        val tree = SceneTree(Node()).also { it.start() }
+        val widget = ExampleWidget()
+        tree.debug.register(widget)
+        tree.debug.hud.enabled = true
+        tree.process(0.016f)
+        tree.applyPending()
+        val present = tree.debug.hud.children.filterIsInstance<Panel>().single()
+            .children.filterIsInstance<Button>().map { it.text }
+        assertTrue("[ ] Example" in present, "row present before unregister: $present")
+
+        // Unregister while the HUD is open — the row must vanish next frame.
+        tree.debug.unregister(widget)
+        tree.process(0.016f)
+        tree.applyPending()
+        val afterUnregister = tree.debug.hud.children.filterIsInstance<Panel>().single()
+            .children.filterIsInstance<Button>().map { it.text }
+        assertTrue(afterUnregister.none { it.contains("Example") }, "live-unregistered widget must drop its row: $afterUnregister")
     }
 
     @Test

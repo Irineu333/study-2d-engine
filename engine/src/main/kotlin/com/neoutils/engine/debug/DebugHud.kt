@@ -17,6 +17,10 @@ import com.neoutils.engine.scene.Panel
  *    to the scene (via the deferred-mutation pending queue). When it flips
  *    to `false`, those children are removed — so a closed HUD draws zero
  *    rects/text and consumes zero clicks.
+ *  - While open, the row set tracks `tree.debug.widgets` live: a widget
+ *    registered or unregistered (e.g. a demo's `onEnter`/`onExit`) rebuilds the
+ *    rows on the next frame, so the HUD never shows a stale list against an
+ *    already-open panel.
  *  - Docked at the top-right corner by the `DebugDock`; the panel follows
  *    `dockOrigin`, so it re-pins on `tree.resize` with no corner math here.
  */
@@ -40,7 +44,26 @@ class DebugHud : ScreenDebugWidget() {
             return
         }
         if (!bodyVisible) return
-        refreshLabels()
+        // Rebuild when the registry changed under an already-open HUD (a widget
+        // registered/unregistered live), so the row set reflects the current
+        // `tree.debug.widgets` every frame — not only the set present at the
+        // last open. Otherwise just refresh the labels in place.
+        if (registryChanged()) rebuildPanel() else refreshLabels()
+    }
+
+    // True when the current non-HUD widget set differs (by identity or order)
+    // from the rows last built — the cheap per-frame guard before a rebuild.
+    private fun registryChanged(): Boolean {
+        val owningTree = tree ?: return false
+        val candidates = owningTree.debug.widgets.filter { it !== this }
+        if (candidates.size != rows.size) return true
+        for (i in candidates.indices) if (candidates[i] !== rows[i].widget) return true
+        return false
+    }
+
+    private fun rebuildPanel() {
+        tearDownPanel()
+        buildPanel()
     }
 
     // Keep a stable header width while collapsed (the panel is torn down, so
