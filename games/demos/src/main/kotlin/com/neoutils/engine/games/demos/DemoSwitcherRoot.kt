@@ -4,6 +4,7 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Label
 import com.neoutils.engine.scene.LayoutPreset
+import com.neoutils.engine.scene.MouseFilter
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Panel
 
@@ -102,18 +103,19 @@ class DemoSwitcherRoot : Node() {
         name = "Menu"
         layer = 100
 
+        // Full-surface backdrop so the menu reads as a cohesive screen instead
+        // of a floating card clashing against the black clear color. Decorative
+        // (IGNORE) — only the buttons participate in the hit-test.
         addChild(
             Panel().apply {
-                name = "MenuCard"
-                color = Color(0.10f, 0.10f, 0.14f, 0.92f)
-                anchorLeft = 0.5f
-                anchorRight = 0.5f
-                anchorTop = 0f
-                anchorBottom = 0f
-                offsetLeft = -CARD_HALF_WIDTH
-                offsetRight = CARD_HALF_WIDTH
-                offsetTop = CARD_TOP
-                offsetBottom = CARD_TOP + CARD_HEIGHT
+                name = "MenuBackdrop"
+                color = Color(0.09f, 0.09f, 0.11f, 1f)
+                mouseFilter = MouseFilter.IGNORE
+                applyPreset(LayoutPreset.FULL_RECT)
+                offsetLeft = 0f
+                offsetTop = 0f
+                offsetRight = 0f
+                offsetBottom = 0f
             }
         )
 
@@ -141,9 +143,6 @@ class DemoSwitcherRoot : Node() {
     }
 
     private companion object {
-        const val CARD_HALF_WIDTH = 200f
-        const val CARD_TOP = 70f
-        const val CARD_HEIGHT = 420f
         const val TITLE_TOP = 90f
         const val BUTTONS_TOP = 140f
     }
