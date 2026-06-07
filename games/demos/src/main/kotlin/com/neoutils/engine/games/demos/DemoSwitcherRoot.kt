@@ -53,7 +53,7 @@ class DemoSwitcherRoot : Node() {
         ),
         Slot.SpritesTiles to Entry(
             label = "Sprites & Tiles",
-            description = "TileMap ground + AnimatedSprite2D + Sprite2D; CharacterBody2D player",
+            description = "TileMap ground + AnimatedSprite2D; CharacterBody2D player",
             factory = ::SpritesTilesDemo,
         ),
     )

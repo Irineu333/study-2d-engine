@@ -21,7 +21,7 @@
 
 ## 4. Spawn & Collide demo (funde Spawner + Collision stress)
 
-- [x] 4.1 Criar a demo `Spawn & Collide`: `BoundaryWalls` como arena, spawn por clique + auto-spawn de `RigidBody2D` bolinhas (quicam elasticamente), trap `Area2D` central que remove via `onAreaEntered`
+- [x] 4.1 Criar a demo `Spawn & Collide`: `BoundaryWalls` como arena, spawn por clique + auto-spawn de `RigidBody2D` bolinhas (quicam elasticamente), trap `Area2D` central que remove via `onBodyEntered` (as bolinhas são `RigidBody2D`/bodies)
 - [x] 4.2 Adicionar atores como filhos da instância de `BoundaryWalls` (não siblings); honrar `wasMouseClicked` para click-consumption
 - [x] 4.3 Adicionar overlay de título/descrição via `CanvasLayer`/`Label`
 - [x] 4.4 Remover `CollisionStressDemo.kt` e `SpawnerDemo.kt` (mover o que for reutilizável: `Spawner`, `Trap`, bola rígida)
