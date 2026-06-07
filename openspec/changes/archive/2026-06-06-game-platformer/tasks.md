@@ -39,4 +39,4 @@
 
 - [x] 6.1 Atualizar `CLAUDE.md`: linha de `:games:platformer` na tabela **Games** (Skiko, Lua, função: validador de plataforma — sprites/animação/tilemap + `CharacterBody2D`).
 - [x] 6.2 Atualizar `README.md` (se lista demos) e `ROADMAP.md`.
-- [ ] 6.3 Rodar `/opsx:verify game-platformer` e fechar pendências.
+- [x] 6.3 Rodar `/opsx:verify game-platformer` e fechar pendências.
