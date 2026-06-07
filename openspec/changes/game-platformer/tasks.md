@@ -33,6 +33,7 @@
 - [x] 5.2 Validar: anda esquerda/direita, cai por gravidade, pula só no chão, para no chão e nas paredes.
 - [x] 5.3 Validar: animações trocam por estado e o personagem olha para a direção do movimento.
 - [x] 5.4 Validar: pixel-art nítida (nearest), terreno e colisores alinhados.
+- [x] 5.5 **Correção** — issue "não consigo pular entre as plataformas flutuantes": o salto `PlatformB → PlatformA` exigia 80px horizontais, acima do alcance do arco de pulo (~70px com `JUMP_SPEED=330`/`GRAVITY=900`/`MOVE_SPEED=95`), tornando-o impossível. `PlatformA` reposicionada de cols 12–14 (x 192) para cols 10–12 (x 160) em `scene.json` — tiles visuais e `StaticBody2D` collider movidos juntos (invariante D3). Vão B→A: 80px → 48px (subida 32px), dentro do arco. Tuning de nível, não de engine (seção *Risks* do `design.md`).
 
 ## 6. Docs
 
