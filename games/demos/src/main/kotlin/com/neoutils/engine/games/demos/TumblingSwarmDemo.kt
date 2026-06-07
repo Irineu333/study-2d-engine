@@ -11,7 +11,6 @@ import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlin.math.cos
-import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -38,9 +37,6 @@ class TumblingSwarmDemo : Node2D() {
 
     @Transient
     private val rng = Random(0xDEADBEEF7L)
-
-    @Transient
-    private var instantFps: Float = 0f
 
     init {
         name = "TumblingSwarmDemo"
@@ -77,29 +73,6 @@ class TumblingSwarmDemo : Node2D() {
         }
     }
 
-    override fun onProcess(dt: Float) {
-        if (dt > 0f) instantFps = 1f / dt
-    }
-
-    override fun onDraw(renderer: Renderer) {
-        val text = "tumbling squares: $SQUARE_COUNT | fps: ${instantFps.roundToInt()}"
-        val sceneW = tree?.width ?: 800f
-        val textW = renderer.measureText(text, 14f).x
-        renderer.drawText(text, Vec2(sceneW - textW - 8f, 18f), size = 14f, color = Color.WHITE)
-    }
-
-    private fun hue(h: Float): Color {
-        val i = (h * 6f).toInt()
-        val f = h * 6f - i
-        return when (i % 6) {
-            0 -> Color(1f, f, 0f)
-            1 -> Color(1f - f, 1f, 0f)
-            2 -> Color(0f, 1f, f)
-            3 -> Color(0f, 1f - f, 1f)
-            4 -> Color(f, 0f, 1f)
-            else -> Color(1f, 0f, 1f - f)
-        }
-    }
 }
 
 class TumblingSquare(

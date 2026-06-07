@@ -10,6 +10,6 @@ fun main() {
     tree.debug.register(AxesWidget())
     SkikoHost().run(
         tree = tree,
-        config = GameConfig(title = "engine-consistency demos", width = 800, height = 600),
+        config = GameConfig(title = "demos", width = 800, height = 600),
     )
 }

@@ -31,7 +31,7 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 | ------------- | ---------------- | --------- | ------------------------------------------------------------------------- |
 | Pong          | Skiko            | Python    | prova da fundação (loop, física, scripts, signals, `Camera2D`)            |
 | Jogo da Velha | Skiko            | Lua       | sentinela do segundo backend de scripting                                 |
-| Demos         | Skiko (+LWJGL)   | Kotlin    | 6 cenas exercitando invariantes; sentinela do segundo backend de render   |
+| Demos         | Skiko (+LWJGL)   | Kotlin    | 5 demos exercitando invariantes, navegadas por menu de UI; sentinela do segundo backend de render |
 | Snake         | Skiko            | Python    | gameplay discreto/tick-based; mutação dinâmica de scene graph             |
 | Hello World   | Skiko            | —         | exemplo code-only mínimo (um `Label` centralizado)                        |
 | Platformer    | Skiko            | Lua       | platformer mínimo (gravidade, pulo, andar) — `TileMap` + `CharacterBody2D` + `AnimatedSprite2D` |
@@ -52,14 +52,15 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 
 ## Demos
 
-A executável `:games:demos` expõe 6 cenas trocáveis pelas teclas `1`–`6`, cada uma exercitando um aspecto da engine. Detalhe completo em [`openspec/specs/demos-sample/`](./openspec/specs/demos-sample/spec.md).
+A executável `:games:demos` expõe 5 demos navegadas por um **menu de UI** (um botão por demo; cada demo tem um botão "← Menu" para voltar) — não há mais teclas `1`–`0`. Cada demo exercita um aspecto da engine. Detalhe completo em [`openspec/specs/demos-sample/`](./openspec/specs/demos-sample/spec.md).
 
-1. **Solar system** — composição aninhada de transform em até 4 níveis (Sol → órbita → planeta → órbita-lua → lua).
-2. **Scale hierarchy** — composição de scale via `Shape.onRender` ao longo da cadeia de ancestrais.
-3. **Spawner** — mutação durante traversal (clique adiciona bolinha; `Area2D` trap remove no `onAreaEntered`).
-4. **Collision stress** — 30 `RigidBody2D` numa arena; impulse solver bilateral; conservação de KE com `restitution=1`.
-5. **Rotating box** — sweep `moveAndCollide` em frame rotativo (12 `CharacterBody2D` numa caixa que gira).
-6. **Tumbling swarm** — 16 quadrados `RigidBody2D` com spin; OBB rotated sweep; fricção Coulomb tangencial.
+- **Transforms** — composição aninhada de transform (Sol → órbita → planeta → lua) + um corpo com `scale` pulsante + `Camera2D` com zoom (scroll) e pan (setas).
+- **Spawn & Collide** — clique/auto-spawn de bolinhas `RigidBody2D` numa `BoundaryWalls`; trap `Area2D` central as remove no `onBodyEntered` (mutação segura durante traversal + impulse solver).
+- **Rotating Frame** — sweep `moveAndCollide` em frame rotativo (`CharacterBody2D` dentro de uma caixa que gira e translada).
+- **Tumbling Swarm** — quadrados `RigidBody2D` com spin numa `BoundaryWalls`; OBB rotated sweep + fricção Coulomb tangencial.
+- **Sprites & Tiles** — `TileMap` (chão) + `AnimatedSprite2D` correndo + `Sprite2D` decorativo; player `CharacterBody2D` sobre `StaticBody2D`. Sentinela cross-backend (Skiko + LWJGL).
+
+As demos com arena (**Spawn & Collide**, **Tumbling Swarm**) têm paredes resize-aware via `BoundaryWalls` — redimensionar a janela move as paredes em tempo real. O FPS sai do canto de cada demo; use o **Profiler** (`F1`) como fonte de verdade.
 
 ## Controles globais
 

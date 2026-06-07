@@ -1,10 +1,14 @@
 package com.neoutils.engine.games.demos
 
+import com.neoutils.engine.input.Key
+import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.ColorRect
 import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -27,12 +31,62 @@ class SolarSystemDemo : Node2D() {
 
     override fun onProcess(dt: Float) {
         val tree = tree ?: return
-        if (tree.size == lastSize) return
-        lastSize = tree.size
-        val center = findChild("Center") as? Node2D ?: return
-        center.transform = center.transform.copy(
-            position = Vec2(tree.width / 2f, tree.height / 2f),
-        )
+        if (tree.size != lastSize) {
+            lastSize = tree.size
+            (findChild("Center") as? Node2D)?.let { center ->
+                center.transform = center.transform.copy(
+                    position = Vec2(tree.width / 2f, tree.height / 2f),
+                )
+            }
+            // First valid surface size: frame the whole window 1:1 so zoom
+            // starts neutral. Done once (degenerate bounds) so later resizes
+            // only re-letterbox and never clobber user zoom/pan.
+            (findChild("Camera") as? Camera2D)?.let { cam ->
+                if (cam.bounds.size.x <= 0f || cam.bounds.size.y <= 0f) {
+                    cam.bounds = Rect(Vec2.ZERO, tree.size)
+                }
+            }
+        }
+        updateCamera(dt)
+    }
+
+    // Scroll zooms around the cursor (cursor world point stays put); arrow keys
+    // pan. Zoom and pan only touch Camera2D.bounds — the HUD overlay lives in a
+    // CanvasLayer and is immune to this view transform.
+    private fun updateCamera(dt: Float) {
+        val tree = tree ?: return
+        val input = tree.input ?: return
+        val cam = findChild("Camera") as? Camera2D ?: return
+        if (cam.bounds.size.x <= 0f) return
+
+        val scroll = input.scrollDelta.y
+        if (scroll != 0f && !input.scrollConsumed) {
+            val pointer = input.pointerPosition
+            val before = cam.screenToWorld(pointer, tree.size)
+            // Scroll up (negative y) zooms in (smaller bounds → closer).
+            val factor = (1f + scroll * ZOOM_STEP).coerceIn(0.5f, 2f)
+            val newSize = clampZoom(cam.bounds.size * factor)
+            cam.bounds = Rect(cam.bounds.origin, newSize)
+            val after = cam.screenToWorld(pointer, tree.size)
+            cam.bounds = Rect(cam.bounds.origin + (before - after), cam.bounds.size)
+        }
+
+        val pan = cam.bounds.size.x * PAN_FRACTION * dt
+        var dx = 0f
+        var dy = 0f
+        if (input.isKeyDown(Key.ARROW_LEFT)) dx -= pan
+        if (input.isKeyDown(Key.ARROW_RIGHT)) dx += pan
+        if (input.isKeyDown(Key.ARROW_UP)) dy -= pan
+        if (input.isKeyDown(Key.ARROW_DOWN)) dy += pan
+        if (dx != 0f || dy != 0f) {
+            cam.bounds = Rect(cam.bounds.origin + Vec2(dx, dy), cam.bounds.size)
+        }
+    }
+
+    private fun clampZoom(size: Vec2): Vec2 {
+        val s = size.x.coerceIn(MIN_ZOOM_WIDTH, MAX_ZOOM_WIDTH)
+        val aspect = if (size.x != 0f) size.y / size.x else 1f
+        return Vec2(s, s * aspect)
     }
 
     // Orbit trails are drawn from here in world coordinates rather than from
@@ -106,6 +160,27 @@ class SolarSystemDemo : Node2D() {
         neptune.addChild(buildMoon("Triton", Radii.TRITON, Speeds.TRITON, Sizes.TRITON, Palette.TRITON))
 
         addChild(center)
+
+        // Scale-pulse body (folds the old Scale hierarchy demo): a green square
+        // whose parent scale oscillates, so its child ColorRect grows/shrinks
+        // via world().scale. A direct demo child (not under Center) so Center's
+        // topology stays exactly {Sun, 8 orbits}; parked left-of-center, clearly
+        // not a planet. The camera's view transform frames it like everything else.
+        addChild(
+            ScalePulse().apply {
+                transform = Transform(position = Vec2(initialSize.x * 0.14f, initialSize.y / 2f))
+            }
+        )
+
+        // Interactive camera framing the whole window 1:1 to start. bounds is
+        // finalized in onProcess once the real surface size is known.
+        addChild(
+            Camera2D().apply {
+                name = "Camera"
+                current = true
+                bounds = Rect(Vec2.ZERO, initialSize)
+            }
+        )
     }
 
     // A planet is a (Rotator named "<Name>Orbit") with a single Circle2D child
@@ -155,6 +230,13 @@ class SolarSystemDemo : Node2D() {
         private const val TRAIL_SEGMENTS: Int = 64
         private const val TRAIL_THICKNESS: Float = 1f
         private val TRAIL_COLOR = Color(1f, 1f, 1f, 0.22f)
+
+        // Camera tunables: scroll zoom step per wheel notch, pan speed as a
+        // fraction of the framed width per second, and zoom-width clamps.
+        private const val ZOOM_STEP: Float = 0.12f
+        private const val PAN_FRACTION: Float = 0.8f
+        private const val MIN_ZOOM_WIDTH: Float = 120f
+        private const val MAX_ZOOM_WIDTH: Float = 4000f
     }
 
     object Radii {
@@ -268,5 +350,47 @@ class SaturnRing : Node2D() {
         const val RING_THICKNESS: Float = 1.5f
         const val RING_FLATTEN: Float = 0.4f
         val RING_COLOR = Color(0.9f, 0.85f, 0.7f, 0.6f)
+    }
+}
+
+/**
+ * Scale-pulse body folding the old `Scale hierarchy` demo: a parent `Node2D`
+ * whose `scale` oscillates between [MIN_SCALE] and [MAX_SCALE]. The child
+ * `ColorRect` keeps a fixed local size — the rendered size grows and shrinks
+ * because `world().scale` propagates into the draw. Visually distinct from the
+ * planets (a green square, not a circle) so it never reads as a celestial body.
+ */
+@Serializable
+class ScalePulse : Node2D() {
+
+    @Transient
+    private var t: Float = 0f
+
+    init {
+        name = "ScalePulse"
+        if (children.isEmpty()) {
+            addChild(
+                ColorRect().apply {
+                    name = "PulseArt"
+                    size = Vec2(SIDE, SIDE)
+                    color = Color(0.5f, 0.95f, 0.4f)
+                    // Center the square on the pulsing origin.
+                    transform = Transform(position = Vec2(-SIDE / 2f, -SIDE / 2f))
+                }
+            )
+        }
+    }
+
+    override fun onProcess(dt: Float) {
+        t += dt
+        val s = MIN_SCALE + (MAX_SCALE - MIN_SCALE) * (0.5f + 0.5f * sin(t * SPEED))
+        transform = transform.copy(scale = Vec2(s, s))
+    }
+
+    private companion object {
+        const val SIDE: Float = 30f
+        const val MIN_SCALE: Float = 0.5f
+        const val MAX_SCALE: Float = 2.0f
+        const val SPEED: Float = 1.5f
     }
 }

@@ -1,36 +1,65 @@
 package com.neoutils.engine.games.demos
 
-import com.neoutils.engine.input.Key
-import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
-import com.neoutils.engine.render.Renderer
+import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.LayoutPreset
 import com.neoutils.engine.scene.Node
+import com.neoutils.engine.scene.Panel
 
 /**
  * Hosts the engine-consistency demos and swaps between them at runtime with
  * addChild/removeChild — the switch itself doubles as a tiny stress test of
  * the lifecycle paths.
+ *
+ * Navigation is a real UI menu (no `1`–`0` key polling, no raw `drawText`
+ * HUD): the root shows a `CanvasLayer` menu with one `Button` per demo; each
+ * loaded demo carries a `DemoOverlay` whose "← Menu" `Button` returns here.
+ * The menu + back-button absorb the old dedicated UI demo — `CanvasLayer`,
+ * `Panel`, `Button`, `Label`, anchors, z-order and click-consumption are
+ * exercised continuously on every screen.
  */
 class DemoSwitcherRoot : Node() {
 
-    enum class Slot { SolarSystem, Scale, Spawner, Stress, RotatingBox, TumblingSwarm, UiPlayground, Sprite, Animated, Tilemap }
+    enum class Slot { Transforms, SpawnCollide, RotatingFrame, TumblingSwarm, SpritesTiles }
 
-    private val factories: Map<Slot, () -> Node> = mapOf(
-        Slot.SolarSystem to ::SolarSystemDemo,
-        Slot.Scale to ::ScaleHierarchyDemo,
-        Slot.Spawner to ::SpawnerDemo,
-        Slot.Stress to ::CollisionStressDemo,
-        Slot.RotatingBox to ::RotatingBoxDemo,
-        Slot.TumblingSwarm to ::TumblingSwarmDemo,
-        Slot.UiPlayground to ::UiPlaygroundDemo,
-        Slot.Sprite to ::SpriteDemo,
-        Slot.Animated to ::AnimatedSpriteDemo,
-        Slot.Tilemap to ::TileMapDemo,
+    private class Entry(
+        val label: String,
+        val description: String,
+        val factory: () -> Node,
     )
 
-    private var active: Slot = Slot.SolarSystem
+    private val catalog: Map<Slot, Entry> = mapOf(
+        Slot.Transforms to Entry(
+            label = "Transforms",
+            description = "Nested orbit composition + scale pulse + Camera2D zoom/pan",
+            factory = ::SolarSystemDemo,
+        ),
+        Slot.SpawnCollide to Entry(
+            label = "Spawn & Collide",
+            description = "Click/auto-spawn rigid balls; central Area2D trap removes them",
+            factory = ::SpawnCollideDemo,
+        ),
+        Slot.RotatingFrame to Entry(
+            label = "Rotating Frame",
+            description = "moveAndCollide sweeps inside a rotating, translating wrapper",
+            factory = ::RotatingBoxDemo,
+        ),
+        Slot.TumblingSwarm to Entry(
+            label = "Tumbling Swarm",
+            description = "RigidBody2D solver: linear + angular impulse + Coulomb friction",
+            factory = ::TumblingSwarmDemo,
+        ),
+        Slot.SpritesTiles to Entry(
+            label = "Sprites & Tiles",
+            description = "TileMap ground + AnimatedSprite2D + Sprite2D; CharacterBody2D player",
+            factory = ::SpritesTilesDemo,
+        ),
+    )
+
+    private var menu: CanvasLayer? = null
     private var activeNode: Node? = null
-    private val hud = HudOverlay { active }
+    private var activeOverlay: CanvasLayer? = null
 
     init {
         name = "DemoSwitcher"
@@ -38,69 +67,84 @@ class DemoSwitcherRoot : Node() {
 
     override fun onEnter() {
         super.onEnter()
-        // Guard against re-attach (start/stop/start) — the active demo and the
-        // HUD survive across reattachments. Checking the demo slot rather than
-        // `children.isEmpty()` keeps us robust against engine-owned siblings
-        // (e.g. the auto-inserted DebugLayer).
-        if (activeNode != null) return
-        // Demos run in raw surface pixels (no Camera2D) by design: they're
-        // physics/collision exercises whose visuals follow the window, not a
-        // fixed virtual world. Adding a camera would double-scale ball
-        // bouncing bounds and HUD positions that read tree.size directly.
-        val node = factories.getValue(active)()
-        activeNode = node
-        addChild(node)
-        addChild(hud)
+        // Guard against re-attach (start/stop/start): if a demo or the menu is
+        // already shown, don't rebuild. Checking our own navigation state (not
+        // children.isEmpty()) keeps us robust against engine-owned siblings
+        // (the auto-inserted DebugLayer).
+        if (activeNode != null || menu != null) return
+        showMenu()
     }
 
-    fun select(slot: Slot) {
-        if (slot == active) return
+    private fun showMenu() {
         activeNode?.let { removeChild(it) }
-        active = slot
-        val node = factories.getValue(slot)()
+        activeOverlay?.let { removeChild(it) }
+        activeNode = null
+        activeOverlay = null
+        if (menu != null) return
+        val built = buildMenu()
+        menu = built
+        addChild(built)
+    }
+
+    private fun select(slot: Slot) {
+        menu?.let { removeChild(it) }
+        menu = null
+        val entry = catalog.getValue(slot)
+        val node = entry.factory()
+        val overlay = DemoOverlay(entry.label, entry.description) { showMenu() }
         activeNode = node
+        activeOverlay = overlay
         addChild(node)
+        addChild(overlay)
     }
 
-    override fun onProcess(dt: Float) {
-        super.onProcess(dt)
-        val input = tree?.input ?: return
-        when {
-            input.wasKeyPressed(Key.DIGIT_1) -> select(Slot.SolarSystem)
-            input.wasKeyPressed(Key.DIGIT_2) -> select(Slot.Scale)
-            input.wasKeyPressed(Key.DIGIT_3) -> select(Slot.Spawner)
-            input.wasKeyPressed(Key.DIGIT_4) -> select(Slot.Stress)
-            input.wasKeyPressed(Key.DIGIT_5) -> select(Slot.RotatingBox)
-            input.wasKeyPressed(Key.DIGIT_6) -> select(Slot.TumblingSwarm)
-            input.wasKeyPressed(Key.DIGIT_7) -> select(Slot.UiPlayground)
-            input.wasKeyPressed(Key.DIGIT_8) -> select(Slot.Sprite)
-            input.wasKeyPressed(Key.DIGIT_9) -> select(Slot.Animated)
-            input.wasKeyPressed(Key.DIGIT_0) -> select(Slot.Tilemap)
-        }
-    }
-}
+    private fun buildMenu(): CanvasLayer = CanvasLayer().apply {
+        name = "Menu"
+        layer = 100
 
-private class HudOverlay(private val slot: () -> DemoSwitcherRoot.Slot) : Node() {
-
-    override fun onDraw(renderer: Renderer) {
-        val name = when (slot()) {
-            DemoSwitcherRoot.Slot.SolarSystem -> "1. Solar system (nested transform composition)"
-            DemoSwitcherRoot.Slot.Scale -> "2. Scale hierarchy (parent scale -> child size)"
-            DemoSwitcherRoot.Slot.Spawner -> "3. Spawner (mutate during update/collide)"
-            DemoSwitcherRoot.Slot.Stress -> "4. Collision stress (world-transform cache)"
-            DemoSwitcherRoot.Slot.RotatingBox -> "5. Rotating box (ancestor rotation composes into children)"
-            DemoSwitcherRoot.Slot.TumblingSwarm -> "6. Tumbling swarm (elastic impulse + angular transfer)"
-            DemoSwitcherRoot.Slot.UiPlayground -> "7. UI playground (CanvasLayer + Panel + Button)"
-            DemoSwitcherRoot.Slot.Sprite -> "8. Sprite (texture render, nearest-neighbor, cross-backend)"
-            DemoSwitcherRoot.Slot.Animated -> "9. Animated sprite (engine-driven frame advance, cross-backend)"
-            DemoSwitcherRoot.Slot.Tilemap -> "0. Tilemap (atlas grid -> drawImage per cell, cross-backend)"
-        }
-        renderer.drawText(name, Vec2(8f, 18f), size = 16f, color = Color.WHITE)
-        renderer.drawText(
-            "keys: 1/2/3/4/5/6/7/8/9/0 switch | F1 opens debug HUD (checkboxes)",
-            Vec2(8f, 38f),
-            size = 12f,
-            color = Color(1f, 1f, 1f, 0.7f),
+        addChild(
+            Panel().apply {
+                name = "MenuCard"
+                color = Color(0.10f, 0.10f, 0.14f, 0.92f)
+                anchorLeft = 0.5f
+                anchorRight = 0.5f
+                anchorTop = 0f
+                anchorBottom = 0f
+                offsetLeft = -CARD_HALF_WIDTH
+                offsetRight = CARD_HALF_WIDTH
+                offsetTop = CARD_TOP
+                offsetBottom = CARD_TOP + CARD_HEIGHT
+            }
         )
+
+        addChild(
+            Label().apply {
+                name = "MenuTitle"
+                text = "engine-consistency demos — pick one"
+                fontSize = 20f
+                color = Color.WHITE
+                // Full-width anchor + zero vertical slack → text centered
+                // horizontally at a fixed top offset.
+                applyPreset(LayoutPreset.FULL_RECT)
+                anchorBottom = 0f
+                offsetLeft = 0f
+                offsetRight = 0f
+                offsetTop = TITLE_TOP
+                offsetBottom = TITLE_TOP
+            }
+        )
+
+        Slot.entries.forEachIndexed { index, slot ->
+            val top = BUTTONS_TOP + index * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP)
+            addChild(menuButton(catalog.getValue(slot).label, top) { select(slot) })
+        }
+    }
+
+    private companion object {
+        const val CARD_HALF_WIDTH = 200f
+        const val CARD_TOP = 70f
+        const val CARD_HEIGHT = 420f
+        const val TITLE_TOP = 90f
+        const val BUTTONS_TOP = 140f
     }
 }

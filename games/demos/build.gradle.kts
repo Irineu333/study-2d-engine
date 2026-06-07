@@ -10,6 +10,10 @@ dependencies {
     implementation(projects.engine)
     implementation(projects.engineSkiko)
     implementation(projects.engineLwjgl)
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlin.testJunit)
+    testImplementation(libs.junit)
 }
 
 application {
