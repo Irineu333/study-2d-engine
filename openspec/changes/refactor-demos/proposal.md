@@ -5,7 +5,7 @@ O módulo `:games:demos` cresceu para **10 slots** trocados por tecla (`1`–`0`
 ## What Changes
 
 - **BREAKING**: o catálogo de cenas cai de 10 para 5; navegação por teclas `1`–`0` é substituída por um **menu de UI** (botões, um por demo) com botão "← Menu" em cada demo. Vários nomes/slots de cena deixam de existir.
-- **Promove 1 → "Transforms"**: sistema solar (rotação aninhada) ganha **zoom/pan interativo via `Camera2D`** (scroll/teclas). Remove `ScaleHierarchyDemo` como slot próprio — a tentativa inicial de fundir a demo Scale aqui (um corpo de escala oscilante solto) foi descartada por poluir visualmente a cena; o invariante de escala dinâmica (parent-scale → child-size) fica sem cobertura de demo dedicada.
+- **Promove 1 → "Transforms"**: sistema solar (rotação aninhada) ganha **zoom/pan interativo via `Camera2D`** (scroll/teclas). Remove `ScaleHierarchyDemo` como slot próprio — o zoom da câmera escala a hierarquia aninhada de 4 níveis em uníssono, exercendo a mesma escala-composição (ancestor scale → tamanho renderizado do filho) que a demo Scale validava isoladamente; um corpo de pulso de escala dedicado foi cogitado mas descartado por poluir visualmente a cena.
 - **Funde 3 + 4 → "Spawn & Collide"**: `Area2D` trap + `RigidBody2D` quicando + spawn/despawn vivo no scene graph. Remove `CollisionStressDemo` como slot próprio.
 - **Mantém 5 standalone → "Rotating Frame"**: `CharacterBody2D.moveAndCollide` varrido em frame local rotativo (invariante sutil, preservado).
 - **Mantém 6 → "Tumbling Swarm"**: solver `RigidBody2D` completo (linear + angular + Coulomb).
@@ -24,7 +24,7 @@ O módulo `:games:demos` cresceu para **10 slots** trocados por tecla (`1`–`0`
 ### Modified Capabilities
 
 - `demos-sample`: catálogo de cenas reescrito (10 → 5 demos + menu de UI); navegação por teclas `1`–`0` substituída por menu de botões + botão "voltar"; requirement "No Camera2D in any demo" **removido**; FPS overlay por demo removido (profiler `F1` assume); título/descrição via `CanvasLayer`/`Label`; `hue()` extraída para helper compartilhado; cenas de sprite/animação/tilemap fundidas numa única "Sprites & Tiles"; cena de UI absorvida pelo menu/back-button.
-- `solar-system-demo`: passa a ser a demo "Transforms" — adiciona zoom/pan interativo via `Camera2D`; a "no-Camera2D convention" que esta capability fixava é removida. A demo Scale não é mais fundida aqui (corpo de pulso de escala descartado).
+- `solar-system-demo`: passa a ser a demo "Transforms" — adiciona zoom/pan interativo via `Camera2D`; a "no-Camera2D convention" que esta capability fixava é removida. A escala-composição da antiga demo Scale é exercida pelo zoom (sem corpo de pulso dedicado).
 
 ## Impact
 

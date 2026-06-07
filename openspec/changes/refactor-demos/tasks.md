@@ -15,9 +15,9 @@
 
 - [x] 3.1 Adicionar uma `Camera2D` (`current = true`) local à `SolarSystemDemo`, desmontada com a cena
 - [x] 3.2 Implementar zoom (escalar `bounds`) e pan (transladar `bounds.origin`) via scroll do mouse e/ou teclas
-- [x] 3.3 ~~Adicionar corpo de pulso de escala~~ — descartado: um objeto de escala solto polui a cena do sistema solar; o invariante de escala dinâmica (parent-scale → child-size) fica sem cobertura de demo dedicada
+- [x] 3.3 ~~Adicionar corpo de pulso de escala~~ — descartado: um objeto de escala solto polui a cena; o **zoom da câmera** já exercita a escala-composição (ancestor scale → tamanho renderizado do filho), escalando a hierarquia aninhada em uníssono pela mesma `Renderer.pushTransform`
 - [x] 3.4 Mover título/descrição da demo para `Label` em `CanvasLayer` (não sofre zoom da câmera)
-- [x] 3.5 Remover `ScaleHierarchyDemo.kt` (e `ScalePivot`) — a antiga demo Scale sai sem substituto na cena Transforms
+- [x] 3.5 Remover `ScaleHierarchyDemo.kt` (e `ScalePivot`) — sua lição de escala-composição é subsumida pelo zoom da câmera na cena Transforms
 
 ## 4. Spawn & Collide demo (funde Spawner + Collision stress)
 
