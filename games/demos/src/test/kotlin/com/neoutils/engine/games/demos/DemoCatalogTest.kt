@@ -16,6 +16,8 @@ import com.neoutils.engine.render.Texture
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.Camera2D
 import com.neoutils.engine.scene.CanvasLayer
+import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.Label
 import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.tree.SceneTree
@@ -23,16 +25,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-/** Scripted [Input] with a settable pointer, mouse-down and raw-click edge. */
+/** Scripted [Input] with a settable pointer, mouse-down, raw-click and Esc edge. */
 private class ScriptedInput : Input {
     override var pointerPosition: Vec2 = Vec2.ZERO
     var down: Boolean = false
     var clickedRaw: Boolean = false
+    var esc: Boolean = false
 
     override fun isKeyDown(key: Key) = false
-    override fun wasKeyPressed(key: Key) = false
+    override fun wasKeyPressed(key: Key) = esc && key == Key.ESCAPE
     override fun isMouseDown(button: MouseButton) = down && button == MouseButton.Left
     override fun wasMouseClickedRaw(button: MouseButton) = clickedRaw && button == MouseButton.Left
     override var mouseClickConsumed: Boolean = false
@@ -302,5 +306,111 @@ class DemoCatalogTest {
             tree.debug.widgets.none { it is SpawnCollideWidget },
             "the widget must be gone from tree.debug.widgets",
         )
+    }
+
+    // --- click-to-focus -----------------------------------------------------
+
+    private fun soloDemo(): Triple<SolarSystemDemo, GameLoop, ScriptedInput> {
+        val demo = SolarSystemDemo()
+        val tree = SceneTree(root = demo)
+        tree.resize(800f, 600f)
+        tree.textMeasurer = com.neoutils.engine.render.TextMeasurer { text, size ->
+            Vec2(text.length * size * 0.5f, size)
+        }
+        tree.start()
+        val input = ScriptedInput()
+        val loop = GameLoop(tree = tree, renderer = NoOpRenderer, input = input)
+        loop.tick(FRAME_NANOS) // finalize camera bounds to the surface
+        return Triple(demo, loop, input)
+    }
+
+    private fun findCircle(node: Node, name: String): Circle2D? {
+        if (node is Circle2D && node.name == name) return node
+        node.children.forEach { findCircle(it, name)?.let { hit -> return hit } }
+        return null
+    }
+
+    private fun focusName(demo: Node): String {
+        val overlay = demo.findChild("FocusOverlay") as? CanvasLayer ?: return ""
+        return (overlay.findChild("FocusName") as? Label)?.text ?: ""
+    }
+
+    @Test
+    fun `pickBody honors smallest-radius tiebreak and the pixel floor`() {
+        val (demo, _, _) = soloDemo()
+        val cam = demo.findChild("Camera") as Camera2D
+        cam.bounds = Rect(Vec2.ZERO, Vec2(800f, 600f)) // scale 1 → 12px floor
+
+        val earth = findCircle(demo, "Earth")!!
+        val moon = findCircle(demo, "Moon")!!
+        val mercury = findCircle(demo, "Mercury")!!
+
+        // Clicking the planet selects the planet; clicking the moon selects it.
+        assertSame(earth, demo.pickBody(earth.world().position, cam))
+        assertSame(moon, demo.pickBody(moon.world().position, cam))
+
+        // Zoomed out, the floor grows to 30 world px so both Earth and its Moon
+        // sit under the cursor at the moon — the smaller radius (moon) wins.
+        cam.bounds = Rect(Vec2.ZERO, Vec2(2000f, 1500f)) // scale 0.4 → 30px floor
+        assertSame(moon, demo.pickBody(moon.world().position, cam))
+
+        // The 12px floor makes a 3px Mercury clickable from 10px off-center.
+        cam.bounds = Rect(Vec2.ZERO, Vec2(800f, 600f))
+        assertSame(mercury, demo.pickBody(mercury.world().position + Vec2(10f, 0f), cam))
+
+        // Empty space picks nothing.
+        assertNull(demo.pickBody(Vec2(-5000f, -5000f), cam))
+    }
+
+    @Test
+    fun `focusing a body keeps the camera centered on it as it orbits`() {
+        val (demo, loop, input) = soloDemo()
+        val cam = demo.findChild("Camera") as Camera2D
+
+        // Freeze Earth's orbit so the down/up click lands deterministically.
+        val earthOrbit = (demo.findChild("Center") as Node2D).findChild("EarthOrbit") as Rotator
+        earthOrbit.angularVelocity = 0f
+        val earth = findCircle(demo, "Earth")!!
+        click(loop, input, cam.worldToScreen(earth.world().position, Vec2(800f, 600f)))
+        assertEquals("Earth", focusName(demo), "clicking Earth must focus it")
+
+        // Re-enable the orbit: after a tick the Rotator advances and the
+        // FocusController recenters on Earth's up-to-date world position.
+        earthOrbit.angularVelocity = 2f
+        loop.tick(FRAME_NANOS)
+        val center = cam.bounds.origin + cam.bounds.size * 0.5f
+        val target = earth.world().position
+        assertTrue(
+            (center - target).length < 0.5f,
+            "camera must stay centered on the focused body (got $center vs $target)",
+        )
+    }
+
+    @Test
+    fun `Esc, empty click and same-body click each unfocus`() {
+        val (demo, loop, input) = soloDemo()
+        val cam = demo.findChild("Camera") as Camera2D
+        val sun = findCircle(demo, "Sun")!!
+        val sunScreen = cam.worldToScreen(sun.world().position, Vec2(800f, 600f))
+
+        // Esc unfocuses.
+        click(loop, input, sunScreen)
+        assertEquals("Sun", focusName(demo))
+        input.esc = true
+        loop.tick(FRAME_NANOS)
+        input.esc = false
+        assertEquals("", focusName(demo), "Esc must clear the focus")
+
+        // Clicking empty space unfocuses.
+        click(loop, input, sunScreen)
+        assertEquals("Sun", focusName(demo))
+        click(loop, input, Vec2(5f, 5f))
+        assertEquals("", focusName(demo), "clicking empty space must clear the focus")
+
+        // Clicking the same body again toggles it off.
+        click(loop, input, sunScreen)
+        assertEquals("Sun", focusName(demo))
+        click(loop, input, sunScreen)
+        assertEquals("", focusName(demo), "clicking the focused body must toggle it off")
     }
 }

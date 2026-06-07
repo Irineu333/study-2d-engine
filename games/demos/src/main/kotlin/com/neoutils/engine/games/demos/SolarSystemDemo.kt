@@ -9,7 +9,10 @@ import com.neoutils.engine.math.Vec2
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.scene.Camera2D
+import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Circle2D
+import com.neoutils.engine.scene.Label
+import com.neoutils.engine.scene.LayoutPreset
 import com.neoutils.engine.scene.Node2D
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -30,6 +33,33 @@ class SolarSystemDemo : Node2D() {
 
     @Transient
     private var lastDragPointer: Vec2 = Vec2.ZERO
+
+    // Click-to-focus state. `focused == null` ⇒ FREE mode (the camera behaves
+    // exactly as before); non-null ⇒ LOCKED mode (camera follows + frames the
+    // body). The whole interaction derives from this single field. The target
+    // is stored as Circle2D so the ring/zoom can read `radius` directly.
+    @Transient
+    private var focused: Circle2D? = null
+
+    // Pointer-edge tracking to disambiguate a click from a drag on the same
+    // left button: a press records the anchor and arms `pendingClick`; moving
+    // past CLICK_SLOP_PX disarms it (it became a drag).
+    @Transient
+    private var pressAnchor: Vec2 = Vec2.ZERO
+
+    @Transient
+    private var pendingClick: Boolean = false
+
+    @Transient
+    private var wasMouseDown: Boolean = false
+
+    // Target framing width the locked camera lerps toward (in world units);
+    // scroll in locked mode scales it instead of panning.
+    @Transient
+    private var focusSize: Float = 0f
+
+    @Transient
+    private var focusLabel: Label? = null
 
     init {
         name = "SolarSystemDemo"
@@ -66,20 +96,155 @@ class SolarSystemDemo : Node2D() {
         val cam = findChild("Camera") as? Camera2D ?: return
         if (cam.bounds.size.x <= 0f) return
 
-        val scroll = input.scrollDelta.y
-        if (scroll != 0f && !input.scrollConsumed) {
-            val pointer = input.pointerPosition
-            val before = cam.screenToWorld(pointer, tree.size)
-            // Scroll up (negative y) zooms in (smaller bounds → closer).
-            val factor = (1f + scroll * ZOOM_STEP).coerceIn(0.5f, 2f)
-            val newSize = clampZoom(cam.bounds.size * factor)
-            cam.bounds = Rect(cam.bounds.origin, newSize)
-            val after = cam.screenToWorld(pointer, tree.size)
-            cam.bounds = Rect(cam.bounds.origin + (before - after), cam.bounds.size)
+        // Pointer edge-tracking runs in both modes: it disambiguates click vs
+        // drag, picks a body on release, and unfocuses on a drag. Esc unlocks.
+        updatePointer(cam, input, tree.size)
+        if (input.wasKeyPressed(Key.ESCAPE)) focused = null
+
+        if (focused != null) {
+            // LOCKED: scroll scales the framing target; the body stays centered.
+            // The follow + zoom lerp run in FocusController (after the Rotators
+            // advance this frame). No free pan/zoom here. Clear `dragging` so a
+            // later unfocus re-arms drag-pan cleanly.
+            dragging = false
+            val scroll = input.scrollDelta.y
+            if (scroll != 0f && !input.scrollConsumed) {
+                val factor = (1f + scroll * ZOOM_STEP).coerceIn(0.5f, 2f)
+                focusSize = (focusSize * factor).coerceIn(FOCUS_MIN_WIDTH, MAX_ZOOM_WIDTH)
+            }
+        } else {
+            freeZoom(cam, input, tree.size)
+            dragPan(cam, input, tree.size)
+            keyPan(cam, input, dt)
         }
 
-        dragPan(cam, input, tree.size)
-        keyPan(cam, input, dt)
+        updateFocusLabel()
+    }
+
+    // Free scroll-zoom around the cursor (the cursor's world point stays put).
+    // Extracted verbatim so the FREE branch is byte-identical to the original.
+    private fun freeZoom(cam: Camera2D, input: Input, size: Vec2) {
+        val scroll = input.scrollDelta.y
+        if (scroll == 0f || input.scrollConsumed) return
+        val pointer = input.pointerPosition
+        val before = cam.screenToWorld(pointer, size)
+        // Scroll up (negative y) zooms in (smaller bounds → closer).
+        val factor = (1f + scroll * ZOOM_STEP).coerceIn(0.5f, 2f)
+        val newSize = clampZoom(cam.bounds.size * factor)
+        cam.bounds = Rect(cam.bounds.origin, newSize)
+        val after = cam.screenToWorld(pointer, size)
+        cam.bounds = Rect(cam.bounds.origin + (before - after), cam.bounds.size)
+    }
+
+    // Edge-tracks the left button to tell a click from a drag — the click event
+    // is press-edge, not release (design D3), so we track it by hand. A press
+    // arms a click; crossing CLICK_SLOP_PX turns it into a drag (and unlocks
+    // before this frame's recenter); a release with the click still armed picks.
+    private fun updatePointer(cam: Camera2D, input: Input, size: Vec2) {
+        val down = input.isMouseDown(MouseButton.Left) && !input.mouseDragConsumed
+        if (down && !wasMouseDown) {
+            pressAnchor = input.pointerPosition
+            pendingClick = true
+        }
+        if (down && pendingClick &&
+            (input.pointerPosition - pressAnchor).length > CLICK_SLOP_PX
+        ) {
+            pendingClick = false
+            focused = null
+        }
+        if (!down && wasMouseDown && pendingClick) {
+            applyPick(pickBody(cam.screenToWorld(input.pointerPosition, size), cam))
+        }
+        if (!down) pendingClick = false
+        wasMouseDown = down
+    }
+
+    private fun applyPick(hit: Circle2D?) {
+        when {
+            hit == null -> focused = null        // empty space → unlock
+            hit === focused -> focused = null    // same body → toggle off
+            else -> {
+                focused = hit
+                focusSize = computeFocusWidth(hit)
+            }
+        }
+    }
+
+    // Candidate bodies for picking: Sun (direct Circle2D child of Center),
+    // planets (Circle2D under each *Orbit Rotator) and moons (Circle2D under a
+    // Rotator hanging off a planet) — the same traversal onDraw uses for trails.
+    private fun collectBodies(): List<Circle2D> {
+        val center = findChild("Center") as? Node2D ?: return emptyList()
+        val bodies = mutableListOf<Circle2D>()
+        for (child in center.children) {
+            if (child is Circle2D) bodies += child // Sun
+            if (child !is Rotator) continue
+            val planet = child.children.firstOrNull() as? Circle2D ?: continue
+            bodies += planet
+            for (moonOrbit in planet.children) {
+                if (moonOrbit !is Rotator) continue
+                (moonOrbit.children.firstOrNull() as? Circle2D)?.let { bodies += it }
+            }
+        }
+        return bodies
+    }
+
+    // Distance pick with a screen-pixel floor (so 2px moons stay clickable at
+    // any zoom). Among overlapping hits the smallest-radius body wins — the
+    // moon on top of its planet, also the front-most visually.
+    internal fun pickBody(clickWorld: Vec2, cam: Camera2D): Circle2D? {
+        val tree = tree ?: return null
+        val scale = if (cam.bounds.size.x > 0f) tree.size.x / cam.bounds.size.x else 1f
+        val minPickWorld = MIN_PICK_PX / scale
+        var best: Circle2D? = null
+        for (body in collectBodies()) {
+            val pickRadius = maxOf(body.radius, minPickWorld)
+            if ((body.world().position - clickWorld).length <= pickRadius) {
+                if (best == null || body.radius < best.radius) best = body
+            }
+        }
+        return best
+    }
+
+    private fun computeFocusWidth(body: Circle2D): Float {
+        val half = maxOf(
+            body.radius * FOCUS_RADIUS_MULT,
+            largestChildOrbit(body),
+            FOCUS_MIN_HALF,
+        )
+        val width = 2f * half * (1f + FOCUS_PADDING)
+        return width.coerceIn(FOCUS_MIN_WIDTH, MAX_ZOOM_WIDTH)
+    }
+
+    // Largest orbital radius among a body's moons (0 if it has none), so a
+    // planet frames its whole lunar system, not just its own disc.
+    private fun largestChildOrbit(body: Circle2D): Float {
+        var max = 0f
+        for (orbit in body.children) {
+            if (orbit !is Rotator) continue
+            val moon = orbit.children.firstOrNull() as? Node2D ?: continue
+            if (moon.transform.position.x > max) max = moon.transform.position.x
+        }
+        return max
+    }
+
+    // Called by FocusController as the last child each frame — after the
+    // Rotators advanced, so world() is current — to keep the body centered and
+    // lerp the framing toward focusSize. Splitting this out of onProcess is what
+    // keeps the follow jitter-free (a parent's onProcess runs before its
+    // descendants, so recentering there would lag a frame behind the orbit).
+    internal fun applyFocusFollow(dt: Float) {
+        val body = focused ?: return
+        val cam = findChild("Camera") as? Camera2D ?: return
+        if (cam.bounds.size.x <= 0f) return
+        val aspect = cam.bounds.size.y / cam.bounds.size.x
+        val width = cam.bounds.size.x + (focusSize - cam.bounds.size.x) * min(1f, FOCUS_LERP * dt)
+        val newSize = Vec2(width, width * aspect)
+        cam.bounds = Rect(body.world().position - newSize * 0.5f, newSize)
+    }
+
+    private fun updateFocusLabel() {
+        focusLabel?.text = focused?.name ?: ""
     }
 
     // Grab-and-drag pan: while the left button is held, the world point first
@@ -135,6 +300,17 @@ class SolarSystemDemo : Node2D() {
                 val moon = moonChild.children.firstOrNull() as? Node2D ?: continue
                 drawDashedCircle(renderer, planetWorld, moon.transform.position.x)
             }
+        }
+        // Selection ring around the focused body, world-space like the trails
+        // (this node has identity transform, so onDraw coords are world coords).
+        focused?.let { body ->
+            renderer.drawCircle(
+                center = body.world().position,
+                radius = body.radius + RING_GAP,
+                color = FOCUS_RING_COLOR,
+                filled = false,
+                thickness = FOCUS_RING_THICKNESS,
+            )
         }
         super.onDraw(renderer)
     }
@@ -200,6 +376,34 @@ class SolarSystemDemo : Node2D() {
                 bounds = Rect(Vec2.ZERO, initialSize)
             }
         )
+
+        // Screen-space name readout for the focused body (own CanvasLayer so it
+        // is immune to the camera view transform — invariant #6). Below the
+        // shared DemoOverlay header (layer 100); empty/hidden when free.
+        val label = Label().apply {
+            name = "FocusName"
+            fontSize = 14f
+            color = Color(0.4f, 0.85f, 1f, 1f)
+            applyPreset(LayoutPreset.FULL_RECT)
+            anchorBottom = 0f
+            offsetLeft = 0f
+            offsetRight = 0f
+            offsetTop = FOCUS_LABEL_TOP
+            offsetBottom = FOCUS_LABEL_TOP
+        }
+        focusLabel = label
+        addChild(
+            CanvasLayer().apply {
+                name = "FocusOverlay"
+                layer = 50
+                addChild(label)
+            }
+        )
+
+        // Processed last (after every Rotator advanced this frame) so the focus
+        // follow centers on each body's up-to-date world position. See
+        // applyFocusFollow for why this can't live in the parent's onProcess.
+        addChild(FocusController().also { it.demo = this })
     }
 
     // A planet is a (Rotator named "<Name>Orbit") with a single Circle2D child
@@ -256,6 +460,28 @@ class SolarSystemDemo : Node2D() {
         private const val PAN_FRACTION: Float = 0.8f
         private const val MIN_ZOOM_WIDTH: Float = 120f
         private const val MAX_ZOOM_WIDTH: Float = 4000f
+
+        // Click-to-focus tunables.
+        // Framing: half-extent = max(radius * MULT, largest child orbit, MIN_HALF);
+        // width = 2 * half * (1 + PADDING), floored at FOCUS_MIN_WIDTH (relaxed
+        // below the free MIN_ZOOM_WIDTH so a 2px moon can fill the view).
+        private const val FOCUS_RADIUS_MULT: Float = 6f
+        private const val FOCUS_PADDING: Float = 0.35f
+        private const val FOCUS_MIN_HALF: Float = 30f
+        private const val FOCUS_MIN_WIDTH: Float = 40f
+        // Exponential zoom convergence rate (per second) for bounds.size.
+        private const val FOCUS_LERP: Float = 8f
+        // Pixels the pointer may travel between press and release and still
+        // count as a click (above it, the gesture is a drag/pan).
+        private const val CLICK_SLOP_PX: Float = 5f
+        // Screen-pixel pick floor so tiny moons stay clickable at any zoom.
+        private const val MIN_PICK_PX: Float = 12f
+        // Selection ring: drawn at radius + gap, world-space, hollow.
+        private const val RING_GAP: Float = 6f
+        private const val FOCUS_RING_THICKNESS: Float = 2f
+        private val FOCUS_RING_COLOR = Color(0.4f, 0.85f, 1f, 0.9f)
+        // Just below the 50px DemoOverlay header.
+        private const val FOCUS_LABEL_TOP: Float = 62f
     }
 
     object Radii {
@@ -339,6 +565,20 @@ class SolarSystemDemo : Node2D() {
         val URANUS = Color(0.6f, 0.85f, 0.9f)
         val NEPTUNE = Color(0.25f, 0.4f, 0.85f)
         val TRITON = Color(0.8f, 0.8f, 0.95f)
+    }
+}
+
+// Last child of SolarSystemDemo: its onProcess runs after every Rotator
+// advanced this frame (pre-order traversal visits the parent and the orbit
+// subtrees first), so the focus follow recenters on up-to-date world positions.
+@Serializable
+class FocusController : Node2D() {
+
+    @Transient
+    var demo: SolarSystemDemo? = null
+
+    override fun onProcess(dt: Float) {
+        demo?.applyFocusFollow(dt)
     }
 }
 
