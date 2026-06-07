@@ -26,6 +26,10 @@ private const val SEED_BALLS = 8
 private const val MAX_BALLS = 42
 private const val TRAP_SIZE = 54f
 
+// Trap outline recolors with the mode: red sensor (Despawn) vs blue wall (Collide).
+private val TRAP_DESPAWN_COLOR = Color(1f, 0.2f, 0.2f, 0.6f)
+private val TRAP_COLLIDE_COLOR = Color(0.3f, 0.6f, 1f, 0.8f)
+
 /** Trap behavior toggled at runtime from the [SpawnCollideWidget]. */
 enum class TrapMode { DESPAWN, COLLIDE }
 
@@ -172,10 +176,13 @@ class SpawnCollideDemo : Node2D() {
     }
 
     // Exactly one collider is live per mode; the other is disabled so they never
-    // interact (and the sweep/broad-phase skip it).
+    // interact (and the sweep/broad-phase skip it). The visual recolors with the
+    // mode so the sensor (red) and the solid wall (blue) read apart at a glance.
     private fun applyTrapMode() {
-        trapSensor?.disabled = state.trapMode != TrapMode.DESPAWN
-        trapWall?.disabled = state.trapMode != TrapMode.COLLIDE
+        val collide = state.trapMode == TrapMode.COLLIDE
+        trapSensor?.disabled = collide
+        trapWall?.disabled = !collide
+        trapArt?.color = if (collide) TRAP_COLLIDE_COLOR else TRAP_DESPAWN_COLOR
     }
 
     private fun propagateTrapPosition() {
@@ -197,7 +204,7 @@ class SpawnCollideDemo : Node2D() {
                 Vec2(-h, -h),
             )
             thickness = 1f
-            color = Color(1f, 0.2f, 0.2f, 0.6f)
+            color = TRAP_DESPAWN_COLOR
         }
     }
 
