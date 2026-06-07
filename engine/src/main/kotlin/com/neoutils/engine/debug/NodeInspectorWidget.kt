@@ -76,6 +76,13 @@ class NodeInspectorWidget : ScreenDebugWidget() {
      */
     private fun computeLayout(node: Node, measurer: TextMeasurer): PanelLayout {
         val rows = buildRows(node)
+        // Share one value column across all key/value rows: place it after the
+        // widest key (floored at KEY_COL) so names never overlap their values.
+        val kvs = rows.filterIsInstance<Row.Kv>()
+        if (kvs.isNotEmpty()) {
+            val valueCol = maxOf(KEY_COL, INDENT + kvs.maxOf { measurer.measureText(it.key, TEXT_SIZE).x } + GAP)
+            for (kv in kvs) kv.valueCol = valueCol
+        }
         var contentHeight = DebugTheme.padding * 2f
         for (row in rows) contentHeight += row.height
         val panelWidth = rows.maxOf { it.width(measurer) } + DebugTheme.padding * 2f

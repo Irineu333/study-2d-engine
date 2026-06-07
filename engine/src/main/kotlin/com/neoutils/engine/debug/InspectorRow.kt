@@ -12,6 +12,8 @@ import com.neoutils.engine.scene.Node
  * Each variant owns its own layout; callers stack rows top-to-bottom and size
  * the panel from `width`/`height`. The selected-row highlight (a filled band)
  * is painted by the tree widget, which knows the panel width, not by the row.
+ * The lone exception is [Kv], whose value column is shared across the panel and
+ * so resolved by the layout pass (it depends on sibling rows, not just itself).
  */
 internal sealed interface Row {
     val height: Float
@@ -60,13 +62,19 @@ internal sealed interface Row {
             renderer.drawText(title, com.neoutils.engine.math.Vec2(x, y), TEXT_SIZE, SECTION_COLOR)
     }
 
-    /** Indented `key   value` pair with the value in a fixed column. */
+    /**
+     * Indented `key   value` pair. The value starts at [valueCol], a column
+     * shared by all `Kv` of a panel: the layout pass measures the widest key
+     * and assigns the same column to every row, so values align and a long key
+     * never overlaps its value. Defaults to [KEY_COL] (the column's floor).
+     */
     class Kv(val key: String, val value: String) : Row {
+        var valueCol: Float = KEY_COL
         override val height: Float get() = KV_H
-        override fun width(measurer: TextMeasurer): Float = KEY_COL + measurer.measureText(value, TEXT_SIZE).x
+        override fun width(measurer: TextMeasurer): Float = valueCol + measurer.measureText(value, TEXT_SIZE).x
         override fun draw(renderer: Renderer, x: Float, y: Float) {
             renderer.drawText(key, com.neoutils.engine.math.Vec2(x + INDENT, y), TEXT_SIZE, KEY_COLOR)
-            renderer.drawText(value, com.neoutils.engine.math.Vec2(x + KEY_COL, y), TEXT_SIZE, VALUE_COLOR)
+            renderer.drawText(value, com.neoutils.engine.math.Vec2(x + valueCol, y), TEXT_SIZE, VALUE_COLOR)
         }
     }
 }
