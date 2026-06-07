@@ -2,24 +2,27 @@
 
 ## Purpose
 
-Módulo executável `:games:demos` que hospeda múltiplos exercícios de consistência da engine (Transform orbit, Scale hierarchy, Spawner, Collision stress, Rotating box, Tumbling swarm) num único processo Skiko com troca por teclado. Serve como prova viva dos invariantes da engine: composição de transform por ancestrais, mutação durante traversal, kinematic CCD via `moveAndCollide`, parent frame rotativo e resposta de impulso angular.
+Módulo executável `:games:demos` que hospeda um conjunto de **5 demos** de consistência da engine (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) num único processo Skiko, navegadas por um menu de UI. Serve como prova viva dos invariantes da engine: composição de transform por ancestrais (com zoom/pan de `Camera2D` na demo `Transforms`), mutação durante traversal, kinematic CCD via `moveAndCollide`, parent frame rotativo, resposta de impulso angular e render de textura (sprite/tilemap) cross-backend.
 
 ## Requirements
 
 ### Requirement: Demos module exists as an executable Skiko sample
 
-O projeto SHALL prover um módulo `:games:demos` que depende de `:engine` e `:engine-skiko`, hospeda múltiplos exercícios de consistência da engine (Transform orbit, Scale hierarchy, Spawner, Collision stress, Rotating box, Tumbling swarm), e é executável via `./gradlew :games:demos:run`. O `Main.kt` MUST instanciar `SkikoHost().run(SceneTree(root = DemoSwitcherRoot()), GameConfig(...))` com `title = "engine-consistency demos"`, `width = 800`, `height = 600`. Os demos MUST rodar em coordenadas de pixel da surface (sem `Camera2D`) por design — o "mundo" do demo coincide com o retângulo da janela, e elementos sensíveis a `tree.size` MUST reagir explicitamente a mudanças dessa dimensão.
+O projeto SHALL prover um módulo `:games:demos` que depende de `:engine` e `:engine-skiko`, hospeda um conjunto de **5 demos** de consistência da engine (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) num único processo, e é executável via `./gradlew :games:demos:run`. O `Main.kt` MUST instanciar `SkikoHost().run(SceneTree(root = DemoSwitcherRoot()), GameConfig(...))` com `title = "engine-consistency demos"`, `width = 800`, `height = 600`.
+
+A navegação entre demos MUST ser feita por um **menu de UI** (não por teclas `1`–`0`): a raiz exibe um menu com um `Button` por demo; selecionar um botão carrega a demo; cada demo exibe um `Button` de voltar (uma seta ←, fundo transparente) que retorna ao menu. As demos rodam em coordenadas de pixel da surface por padrão, **exceto** a demo `Transforms`, que instala deliberadamente uma `Camera2D` local à cena (a antiga convenção "nenhuma demo usa `Camera2D`" foi removida). Elementos sensíveis a `tree.size` MUST reagir explicitamente a mudanças dessa dimensão.
 
 #### Scenario: Demos module runs from Gradle
 
 - **WHEN** um desenvolvedor executa `./gradlew :games:demos:run` da raiz do projeto
-- **THEN** uma janela desktop Skiko abre com o título `"engine-consistency demos"` exibindo o demo inicial (`1. Transform orbit`)
-- **AND** a janela permanece responsiva e teclas `1`-`6` trocam de demo
+- **THEN** uma janela desktop Skiko abre com o título `"engine-consistency demos"` exibindo o menu de demos
+- **AND** a janela permanece responsiva e clicar num botão do menu carrega a demo correspondente
 
-#### Scenario: No Camera2D in any demo
+#### Scenario: Camera2D is used only by the Transforms demo
 
 - **WHEN** os sources de `:games:demos` são inspecionados
-- **THEN** nenhum arquivo importa nem instancia `com.neoutils.engine.scene.Camera2D`
+- **THEN** apenas a cena `Transforms` (solar system) importa/instancia `com.neoutils.engine.scene.Camera2D`
+- **AND** nenhuma outra demo instancia `Camera2D`
 
 ### Requirement: BoundaryWalls keeps the four-wall perimeter aligned with tree.size
 
@@ -77,72 +80,66 @@ O módulo `:games:demos` SHALL prover uma função top-level `internal fun makeS
 
 #### Scenario: Demos do not define their own private makeWall
 
-- **WHEN** os sources de `CollisionStressDemo.kt`, `RotatingBoxDemo.kt` e `TumblingSwarmDemo.kt` são inspecionados
-- **THEN** nenhum deles declara `private fun makeWall(...)` (nem qualquer outra função privada equivalente que construa uma `StaticBody2D` com `CollisionShape2D + RectangleShape2D`)
+- **WHEN** os sources das demos que constroem paredes (`Rotating Frame` e qualquer demo que use arena própria) são inspecionados
+- **THEN** nenhum deles declara `private fun makeWall(...)` (nem qualquer outra função privada equivalente que construa uma `StaticBody2D` com `CollisionShape2D + RectangleShape2D`) — todos recorrem a `makeStaticWall` ou `BoundaryWalls`
 
-### Requirement: CollisionStressDemo and TumblingSwarmDemo use BoundaryWalls
+### Requirement: Spawn & Collide and Tumbling Swarm use BoundaryWalls
 
-`CollisionStressDemo` (demo 4) e `TumblingSwarmDemo` (demo 6) SHALL adicionar uma única instância de `BoundaryWalls` em `onEnter` no lugar de criar 4 paredes manualmente, e SHALL adicionar seus atores físicos (bolinhas/quadrados) como filhos diretos dessa instância — não como siblings dela no `onEnter` do demo. As bolinhas/quadrados de cada demo continuam batendo nas paredes via `moveAndCollide`, e o demo MUST funcionar corretamente quando a janela é redimensionada — bolinhas batem nas paredes nas novas posições no mesmo frame em que o resize é percebido.
+A demo `Spawn & Collide` (funde os antigos Spawner + Collision stress) e a demo `Tumbling Swarm` SHALL adicionar uma única instância de `BoundaryWalls` como arena container, e SHALL adicionar seus atores físicos (bolinhas/quadrados) como filhos diretos dessa instância — não como siblings dela no nó do demo. Os atores continuam batendo nas paredes via o solver/`moveAndCollide`, e cada demo MUST funcionar corretamente quando a janela é redimensionada — atores batem nas paredes nas novas posições no mesmo frame em que o resize é percebido.
 
-#### Scenario: CollisionStressDemo wires BoundaryWalls as arena
+#### Scenario: Spawn & Collide wires BoundaryWalls as arena
 
-- **WHEN** o source de `CollisionStressDemo.kt` é inspecionado
+- **WHEN** o source da demo `Spawn & Collide` é inspecionado
+- **THEN** ela instancia exatamente uma `BoundaryWalls` e a adiciona como filha do demo
+- **AND** as bolinhas spawnadas são adicionadas como filhas dessa instância de `BoundaryWalls`, não como filhas diretas do demo
+- **AND** o demo NÃO contém 4 chamadas separadas criando paredes manualmente
+
+#### Scenario: Tumbling Swarm wires BoundaryWalls as arena
+
+- **WHEN** o source da demo `Tumbling Swarm` é inspecionado
 - **THEN** `onEnter` instancia exatamente uma `BoundaryWalls` e a adiciona como filha do demo
-- **AND** as 30 `Ball`s são adicionadas como filhas dessa instância de `BoundaryWalls` (e.g. `arena.addChild(Ball(...))`), não como filhas diretas do demo
-- **AND** `onEnter` NÃO contém 4 chamadas separadas criando paredes manualmente
+- **AND** os quadrados `RigidBody2D` são adicionados como filhos dessa instância de `BoundaryWalls`
 
-#### Scenario: TumblingSwarmDemo wires BoundaryWalls as arena
+#### Scenario: Actors stay inside the resized window
 
-- **WHEN** o source de `TumblingSwarmDemo.kt` é inspecionado
-- **THEN** `onEnter` instancia exatamente uma `BoundaryWalls` e a adiciona como filha do demo
-- **AND** os 16 `TumblingSquare`s são adicionados como filhos dessa instância de `BoundaryWalls`, não como filhas diretas do demo
-- **AND** `onEnter` NÃO contém 4 chamadas separadas criando paredes manualmente
-
-#### Scenario: Balls in demo 4 stay inside the resized window
-
-- **GIVEN** demo `4 Collision stress` está ativo e a janela está em `800x600`
+- **GIVEN** a demo `Spawn & Collide` ou `Tumbling Swarm` está ativa e a janela está em `800x600`
 - **WHEN** o usuário redimensiona a janela para `1200x900`
-- **THEN** em poucos frames, bolinhas que cruzam o antigo perímetro batem na nova parede correspondente e quicam para dentro do novo retângulo
-- **AND** nenhuma bolinha desaparece ou fica presa numa barreira invisível dentro da nova área visível
-
-#### Scenario: Squares in demo 6 stay inside the resized window
-
-- **GIVEN** demo `6 Tumbling swarm` está ativo e a janela está em `800x600`
-- **WHEN** o usuário redimensiona a janela para `1200x900`
-- **THEN** em poucos frames, quadrados que cruzam o antigo perímetro batem na nova parede correspondente e quicam para dentro do novo retângulo
+- **THEN** em poucos frames, atores que cruzam o antigo perímetro batem na nova parede correspondente e quicam para dentro do novo retângulo
+- **AND** nenhum ator desaparece ou fica preso numa barreira invisível dentro da nova área visível
 
 ### Requirement: RotatingBoxDemo uses makeStaticWall for its local-frame walls
 
-`RotatingBoxDemo` (demo 5) SHALL chamar `makeStaticWall(position, size)` no lugar do antigo `private fun makeWall(position, size)` para construir suas 4 paredes em frame local do wrapper `RotatingBox`. As paredes MUST permanecer em frame local (filhas do wrapper rotativo) — elas NÃO devem ser substituídas por `BoundaryWalls`, porque devem girar com o wrapper, não acompanhar `tree.size`.
+A demo `Rotating Frame` SHALL chamar `makeStaticWall(position, size)` no lugar de um `private fun makeWall(position, size)` próprio para construir suas 4 paredes em frame local do wrapper rotativo. As paredes MUST permanecer em frame local (filhas do wrapper rotativo) — elas NÃO devem ser substituídas por `BoundaryWalls`, porque devem girar com o wrapper, não acompanhar `tree.size`.
 
 #### Scenario: RotatingBoxDemo uses the shared helper
 
-- **WHEN** o source de `RotatingBoxDemo.kt` é inspecionado
-- **THEN** `onEnter` chama `makeStaticWall(...)` 4 vezes (top/bottom/left/right)
-- **AND** as 4 paredes são adicionadas como filhas do `RotatingBox` wrapper (não como filhas diretas do demo)
-- **AND** `RotatingBoxDemo.kt` NÃO declara `private fun makeWall(...)`
+- **WHEN** o source da demo `Rotating Frame` é inspecionado
+- **THEN** ele chama `makeStaticWall(...)` 4 vezes (top/bottom/left/right)
+- **AND** as 4 paredes são adicionadas como filhas do wrapper rotativo (não como filhas diretas do demo)
+- **AND** o source da demo `Rotating Frame` NÃO declara `private fun makeWall(...)`
 
 #### Scenario: RotatingBoxDemo behavior is unchanged
 
-- **GIVEN** demo `5 Rotating box` está ativo
+- **GIVEN** a demo `Rotating Frame` está ativa
 - **WHEN** o usuário observa o comportamento por alguns segundos
 - **THEN** o wrapper continua rotacionando e quicando dentro de `tree.size` (envelope AABB)
 - **AND** as 4 paredes locais continuam girando solidárias ao wrapper
-- **AND** as 12 bolinhas continuam quicando dentro da caixa rotativa
+- **AND** as bolinhas continuam quicando dentro da caixa rotativa
 
-### Requirement: Documentation reflects resize-aware behavior
+### Requirement: Documentation reflects the five-demo catalog and resize-aware behavior
 
-`CLAUDE.md` SHALL incluir, nas descrições dos demos `4 Collision stress` e `6 Tumbling swarm` na seção "Para rodar Demos", uma nota explícita de que as paredes acompanham `tree.size` em tempo real durante resize da janela.
+A tabela "Games" do `CLAUDE.md` e a seção de demos do `README.md` SHALL refletir o catálogo de **5 demos** (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) com navegação por menu. A documentação SHALL mencionar que as demos com arena (`Spawn & Collide`, `Tumbling Swarm`) têm paredes resize-aware via `BoundaryWalls`.
 
-#### Scenario: CLAUDE.md mentions resize-aware walls for demo 4
+#### Scenario: README lists the five demos
 
-- **WHEN** `CLAUDE.md` é inspecionado
-- **THEN** a descrição do demo `4 Collision stress` menciona que as paredes acompanham `tree.size` (resize-aware) via `BoundaryWalls`
+- **WHEN** `README.md` é inspecionado
+- **THEN** as 5 demos aparecem com um resumo de uma linha cada
+- **AND** a navegação é descrita como menu de UI (não teclas `1`–`0`)
 
-#### Scenario: CLAUDE.md mentions resize-aware walls for demo 6
+#### Scenario: CLAUDE.md Games table reflects the new catalog
 
-- **WHEN** `CLAUDE.md` é inspecionado
-- **THEN** a descrição do demo `6 Tumbling swarm` menciona que as paredes acompanham `tree.size` (resize-aware) via `BoundaryWalls`
+- **WHEN** a tabela "Games" do `CLAUDE.md` é inspecionada
+- **THEN** a linha de `:games:demos` descreve o novo conjunto de demos sem listar 10 cenas numeradas
 
 ### Requirement: Demos module exposes an alternate LWJGL entrypoint
 
@@ -198,149 +195,97 @@ A task `run` default do plugin `application` MUST permanecer apontando para `com
 - **THEN** o processo iniciado NÃO usa `-XstartOnFirstThread`
 - **AND** a janela aberta é a janela Skiko/JFrame (não a janela GLFW)
 
-### Requirement: Demos scenes 1–6 behave identically (semantically) on both backends
+### Requirement: Demos behave identically (semantically) on both backends
 
-As cenas `1` Solar System, `2` Scale hierarchy, `3` Spawner, `4` Collision stress, `5` Rotating box, `6` Tumbling swarm SHALL produzir comportamento de gameplay semanticamente idêntico em ambos os entrypoints (`:games:demos:run` e `:games:demos:runLwjgl`). "Semanticamente idêntico" MUST ser interpretado como: mesmas key-bindings (`1`–`6` trocam de cena; `F1`/`F2`/`F3` togglam overlays via `tree.debug.showFps`/`tree.debug.showColliders`/`tree.debug.showMomentum`), mesma resposta a input (clique do mouse no Spawner adiciona bolinhas na posição esperada; arena boundaries reagem a resize), mesma evolução de física (mesmas trajetórias dado mesmo `physicsHz`), mesmas árvores de Nodes (cenas compartilham o mesmo código `DemoSwitcherRoot`).
+As cinco demos (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) e o menu de navegação SHALL produzir comportamento de gameplay semanticamente idêntico em ambos os entrypoints (`:games:demos:run` Skiko e `:games:demos:runLwjgl` LWJGL). "Semanticamente idêntico" MUST ser interpretado como: mesmo menu e mesmas demos disponíveis, mesma resposta a input (clique do mouse no menu/botões e no Spawner na posição esperada; arena boundaries reagem a resize; câmera da demo Transforms responde a scroll/arrasto/teclas), mesma evolução de física dado o mesmo `physicsHz`, mesmas árvores de Nodes (compartilham o código `DemoSwitcherRoot`).
 
-Diferenças puramente visuais (anti-aliasing edge-expand do NanoVG vs Skia GPU AA; fontstash vs Skia text shaping; sub-pixel positioning) MUST ser aceitas dentro de tolerância — não constituem regressão. Qualquer divergência semântica (cena rodando errado, F-key não togglando, mouse fora de posição, arena não acompanhando resize) MUST ser tratada como bug do backend e investigada antes do merge.
+Diferenças puramente visuais (anti-aliasing, text shaping, sub-pixel positioning) MUST ser aceitas dentro de tolerância. Qualquer divergência semântica MUST ser tratada como bug do backend e investigada antes do merge.
 
-#### Scenario: Switching scenes works identically on both backends
+#### Scenario: Menu navigation works identically on both backends
 
-- **WHEN** o usuário pressiona `1` … `6` em qualquer dos dois entrypoints
-- **THEN** a cena correspondente é exibida em ambos
-- **AND** o conjunto de cenas disponíveis é o mesmo
-
-#### Scenario: F1/F2/F3 toggles apply identically on both backends
-
-- **WHEN** o usuário pressiona `F1`, `F2` ou `F3` em qualquer dos dois entrypoints
-- **THEN** `tree.debug.showFps`, `tree.debug.showColliders`, `tree.debug.showMomentum` togglam respectivamente
-- **AND** o overlay correspondente aparece/desaparece via os widgets do `DebugOverlayLayer` auto-inserido pela engine (não via helper do host)
+- **WHEN** o usuário clica num botão de demo no menu em qualquer dos dois entrypoints
+- **THEN** a demo correspondente é carregada em ambos
+- **AND** o botão de voltar retorna ao menu em ambos
+- **AND** o conjunto de demos disponíveis é o mesmo
 
 #### Scenario: Spawner mouse click adds a ball at the click position on both backends
 
-- **GIVEN** a cena `3` Spawner está ativa
+- **GIVEN** a demo `Spawn & Collide` está ativa
 - **WHEN** o usuário clica com o botão esquerdo em `(x, y)` em pixels da janela (e nenhum `Button` da UI está sob o ponteiro)
 - **THEN** uma nova bolinha aparece com `position ≈ (x, y)` em ambos os backends
-- **AND** o trap central remove a bolinha quando ela entra via `onAreaEntered`
+- **AND** o trap central remove a bolinha quando ela entra via `onBodyEntered`
 
 #### Scenario: BoundaryWalls follow window resize on both backends
 
-- **GIVEN** as cenas `4` Collision stress, `5` Rotating box ou `6` Tumbling swarm estão ativas
+- **GIVEN** as demos `Spawn & Collide`, `Rotating Frame` ou `Tumbling Swarm` estão ativas
 - **WHEN** o usuário redimensiona a janela
-- **THEN** as 4 paredes (`topWall`/`bottomWall`/`leftWall`/`rightWall`) acompanham o novo `tree.size` no próximo `onPhysicsProcess` em ambos os backends
+- **THEN** as 4 paredes acompanham o novo `tree.size` no próximo `onPhysicsProcess` em ambos os backends
 
 ### Requirement: Each demo scene has a documented role exercising specific invariants
 
-A spec `demos-sample` SHALL incluir uma descrição por cena (`1`–`6`) explicando o que ela exercita do ponto de vista da engine — quais invariantes valida, qual sistema põe sob carga, qual diagnóstico visual oferece. Essa documentação MUST viver na spec (não em `CLAUDE.md` nem em `README.md`), de modo que o `README.md` possa fazer apenas o resumo de uma linha por cena e o `CLAUDE.md` possa permanecer livre de descrição cena-a-cena.
+A spec `demos-sample` SHALL incluir uma descrição por demo explicando o que ela exercita do ponto de vista da engine — quais invariantes valida, qual sistema põe sob carga, qual diagnóstico visual oferece. Essa documentação MUST viver na spec (não em `CLAUDE.md` nem em `README.md`). As descrições MUST cobrir, no mínimo:
 
-As descrições MUST cobrir, no mínimo:
+- **`Transforms`** (ex-Solar system): Sol amarelo central com 8 planetas e luas conhecidas orbitando seus pais; Saturno carrega `SaturnRing`. Exercita composição de transform aninhada em até 4 níveis. Adiciona uma `Camera2D` com **zoom/pan interativo** (scroll/teclas) — primeira cobertura de `Camera2D` entre as demos. O zoom também exercita **escala-composição**: ampliar/reduzir escala toda a hierarquia aninhada em uníssono (ancestor scale → tamanho renderizado do filho, o invariante que a antiga demo Scale validava isoladamente). O HUD/overlay vive em `CanvasLayer` e NÃO sofre o zoom da câmera.
+- **`Spawn & Collide`** (funde os antigos Spawner + Collision stress): clique/auto-spawn adiciona `RigidBody2D` bolinhas durante `onProcess`; um trap `Area2D` central as remove durante `onBodyEntered` (as bolinhas são `RigidBody2D`/bodies, então o evento é `onBodyEntered`, não `onAreaEntered`). As bolinhas quicam elasticamente entre si e nas paredes de uma `BoundaryWalls`. Exercita mutação segura durante traversal, sensor `Area2D`, solver `RigidBody2D` e cache de world-transform sob carga.
+- **`Rotating Frame`** (antigo Rotating box): `CharacterBody2D` bolinhas vivem como filhas de um wrapper que rotaciona e translada a cada frame; 4 paredes `StaticBody2D` são filhas do mesmo wrapper, em coordenadas locais. `moveAndCollide` opera no parent frame compartilhado, mantendo o sweep axis-aligned mesmo com a caixa girando em world. Exercita invalidação por mutação de ancestral sob carga real, em frame rotativo.
+- **`Tumbling Swarm`** (antigo Tumbling swarm): quadrados `RigidBody2D` (`restitution=1f`, `friction=0.4f`) com velocidade linear e angular, dentro de `BoundaryWalls`. O solver resolve cada contato pelo caminho rotated do sweep com impulso normal + Coulomb tangencial — spin perceptível em hits glancing.
+- **`Sprites & Tiles`** (funde os antigos Animated + Tilemap): um `TileMap` monta um chão a partir de um atlas real; um `AnimatedSprite2D` "corre" sobre ele (avanço de frame engine-driven). O player é um `CharacterBody2D` movendo-se sobre o chão de `StaticBody2D` via `moveAndCollide`. Sentinela cross-backend (Skiko + LWJGL) de `texture-rendering` (o caminho `Renderer.drawImage` é exercido pelo `AnimatedSprite2D` e pelo `TileMap`), `sprite-animation` e `tilemap-visual` numa só tela. Não inclui um `Sprite2D` estático separado — a antiga demo Sprite isolada não recebe um decorador dedicado aqui (o `Sprite2D` é só um wrapper fino de `drawImage`, já coberto pelos outros dois nós).
 
-- **Cena `1` Solar system**: Sol amarelo no centro com 8 planetas (Mercúrio→Netuno) e luas conhecidas (Lua na Terra; Io, Europa, Ganimedes, Calisto em Júpiter; Titã em Saturno; Tritão em Netuno) orbitando seus pais. Saturno carrega um `SaturnRing` (anel achatado via scale não-uniforme). Exercita o invariante de composição aninhada de transform (`Transform composition by ancestry` em `engine-core`) em até 4 níveis (Sol → órbita-planeta → planeta → órbita-lua → lua), validando que `world()` cacheia corretamente sob mutação simultânea de múltiplos ancestrais por frame.
-- **Cena `2` Scale hierarchy**: Pai com `scale` oscilando faz o filho crescer e encolher. Exercita composição de scale via `Shape.onRender` ao longo da cadeia de ancestrais.
-- **Cena `3` Spawner**: Clique do mouse adiciona bolinhas durante `onUpdate`; um trap central (`Area2D`) remove durante `onAreaEntered`. Exercita mutação durante traversal (`Safe mutation during scene traversal` em `engine-core`). `F2` mostra que o overlay de colliders sai do `GameHost` e usa cores distintas para `Area2D` vs `PhysicsBody2D`.
-- **Cena `4` Collision stress**: 30 `RigidBody2D` bolinhas (`restitution=1f`, `friction=0f`) dentro de uma arena `BoundaryWalls` (4 `StaticBody2D` que acompanham `tree.size` no resize). O engine solver integra cada bolinha (sem `moveAndCollide` no script), sweep com TOI loop, e aplica impulso bilateral (linear + angular) em cada contato — bola pesada empurra bola leve (transferência de momento), sem tunneling estrutural mesmo em alta velocidade. `F2` mostra os AABBs das `CollisionShape2D` (vermelho para Bodies). `F3` mostra `Σp`, `ΣL`, `ΣKE` com sparklines: KE permanece constante (elástico).
-- **Cena `5` Rotating box**: 12 `CharacterBody2D` bolinhas vivem como filhas de um `Node2D` "caixa" que rotaciona **e** translada a cada frame (envelope AABB quicando nas paredes da scene). 4 `StaticBody2D` paredes são filhas do mesmo wrapper rotativo, em coordenadas locais. `moveAndCollide` opera no parent frame compartilhado (= local da caixa), de modo que o sweep continua axis-aligned mesmo com a caixa girando em world — bolinhas batem corretamente em paredes e em siblings sem tunelar. Exercita o invariante de invalidação por mutação de ancestral sob carga real de colisão e em frame rotativo não-estacionário. `F2` mostra os AABBs envelopados dos `CollisionShape2D` rotacionados em world.
-- **Cena `6` Tumbling swarm**: 16 quadrados `RigidBody2D` (`restitution=1f`, `friction=0.4f`) com velocidade linear e angular iniciais, dentro de `BoundaryWalls` (paredes acompanham `tree.size` no resize). O engine solver resolve cada contato pelo caminho rotated do sweep (`sweepRotatedRectRotatedRect`) com leading-corner contact point, impulso normal + Coulomb tangencial — squares quicam elasticamente contra paredes e entre si, com spin perceptível em hits glancing. `F2` mostra os OBBs rotacionados envelope. `F3` mostra `ΣL` (angular momentum) conservado em hits elásticos frictionless e drift sob fricção.
-
-#### Scenario: Spec describes all six scenes
+#### Scenario: Spec describes all five demos
 
 - **WHEN** `openspec/specs/demos-sample/spec.md` é aberto
-- **THEN** existe uma seção (Requirement) cobrindo as cenas `1` Solar system, `2` Scale hierarchy, `3` Spawner, `4` Collision stress, `5` Rotating box, `6` Tumbling swarm
-- **AND** cada cena tem ao menos um parágrafo descrevendo o invariante ou sistema que exercita
+- **THEN** existe uma seção (Requirement) cobrindo as demos `Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`
+- **AND** cada demo tem ao menos um parágrafo descrevendo o invariante ou sistema que exercita
 - **AND** o conteúdo dessa Requirement não duplica detalhe de implementação (esses ficam nas specs `engine-core`, `rigid-body-2d`, `kinematic-move-and-collide`)
 
 #### Scenario: README.md can summarize without losing detail
 
-- **WHEN** o `README.md` resume a cena em uma única linha
-- **THEN** o leitor que quer o detalhe completo (invariantes exercitados, parâmetros de física, what F-keys mostram) encontra o material em `openspec/specs/demos-sample/spec.md`
-- **AND** o `CLAUDE.md` pode permanecer livre de descrição cena-a-cena
+- **WHEN** o `README.md` resume cada demo em uma única linha
+- **THEN** o leitor que quer o detalhe completo encontra o material em `openspec/specs/demos-sample/spec.md`
+- **AND** o `CLAUDE.md` pode permanecer livre de descrição demo-a-demo (apenas a tabela "Games" de uma linha)
 
-### Requirement: Demos scene 7 validates ui-foundation in both backends
+### Requirement: A navigation menu hosts the demos and validates ui-foundation
 
-The `:games:demos` module SHALL include a scene `7` "UI playground" accessible via the same `DemoSwitcherRoot` keybinding scheme as scenes `1`–`6` (pressing `7` switches to it). Scene 7 SHALL contain at minimum:
+O módulo `:games:demos` SHALL prover um **menu de navegação** construído com primitivas de UI (`CanvasLayer` + `Button` + `Panel` + `Label`), exibido pela raiz `DemoSwitcherRoot` na inicialização. O menu MUST conter um `Button` por demo (5 botões), cada um conectado a `pressed` para carregar a demo correspondente via `addChild`/`removeChild`. Cada demo carregada MUST exibir um overlay `CanvasLayer` contendo um `Label` de título, um `Label` de descrição e um `Button` de voltar (uma seta ←) que retorna ao menu. Esse mecanismo absorve a antiga demo de UI dedicada — `Button` (estados normal/hover/press/disabled, signal `pressed`, hit-test, click-consumption), `Panel`, `Label`, anchors e z-order ficam exercitados continuamente em toda tela.
 
-- Two `CanvasLayer` children of the demo root, with different `layer` values (e.g. `layer = 0` for the HUD layer, `layer = 10` for the menu layer), proving the z-order requirement.
-- In the **menu layer** (top-most): three `Button` instances centered on the screen labeled "Start", "Settings", "Quit", each connected to `pressed` and printing a known string via `Log.i` (or equivalent observable mechanism). The buttons SHALL exercise all four color states (`normalColor`, `hoverColor`, `pressedColor`, `disabledColor`); at least one of the three SHALL be `disabled = true` at startup to validate the disabled visual.
-- In the **HUD layer** (below the menu): a `Panel` and two `Label`s rendering `"Score: 0"` and `"Lives: 3"` at bottom-left, proving HUDs do not zoom with `Camera2D`.
-- A background world (e.g. a single `ColorRect` filling the canvas) — its sole purpose is to make screen-space UI visibly distinct from world-space content.
+#### Scenario: Menu shows one button per demo
 
-Because the MVP does not ship anchors (deferred to `ui-anchors`), `UiPlaygroundDemo` SHALL recompute HUD and menu positions in `onProcess` reading `tree.size`, keeping the HUD pinned to bottom-left and the menu horizontally centered when the user resizes the window.
+- **WHEN** a aplicação inicia
+- **THEN** o menu exibe 5 botões, um por demo (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`)
 
-Scene 7 SHALL behave semantically identically in both `:games:demos:run` (Skiko) and `:games:demos:runLwjgl` (LWJGL) entrypoints: same buttons in same positions, same hover/press visuals, same `pressed` signal emission, same HUD layout. Purely visual differences (AA, text rendering) SHALL be accepted within tolerance.
+#### Scenario: Clicking a demo button loads it and consumes the click
 
-#### Scenario: Pressing 7 switches to the UI playground
+- **WHEN** o usuário clica num botão de demo
+- **THEN** o menu é removido e a demo correspondente é adicionada à árvore
+- **AND** o clique é consumido (`tree.input.wasMouseClicked(Left)` retorna `false` para nós de gameplay nesse tick)
 
-- **WHEN** the user presses `7` on either entrypoint
-- **THEN** the displayed scene contains the menu (3 buttons centered) and the HUD (Score/Lives at bottom-left)
+#### Scenario: Back button returns to the menu
 
-#### Scenario: Clicking Start emits pressed signal
+- **GIVEN** uma demo está carregada e exibe seu overlay com o `Button` de voltar (seta ←)
+- **WHEN** o usuário clica na seta de voltar
+- **THEN** a demo é removida e o menu volta a ser exibido
 
-- **WHEN** the user clicks the "Start" button rect on either entrypoint
-- **THEN** the attached handler runs exactly once
-- **AND** the click is consumed (any gameplay script checking `tree.input.wasMouseClicked(Left)` sees `false`)
+### Requirement: Per-demo title/description use CanvasLayer Labels, not raw drawText, and no per-demo FPS
 
-#### Scenario: Disabled button does not respond
+As demos SHALL exibir título e descrição via `Label` dentro de um `CanvasLayer` (screen-space), não via `renderer.drawText` cru no `onDraw` do nó de gameplay. Nenhuma demo SHALL desenhar um contador de FPS próprio — o `ProfilerWidget` (acionado por `F1`) é a única fonte de FPS. Métricas auxiliares (contagem de corpos, contatos, velocidade) SHALL ser expostas via `tree.debug` (gizmos/profiler) quando necessárias, não via texto no canto.
 
-- **WHEN** one button is `disabled = true` at startup (e.g. "Settings") and the user clicks its rect
-- **THEN** the button renders with `disabledColor`
-- **AND** `pressed` does NOT emit
-- **AND** the click is NOT consumed (passes through to the world / any other UI below)
+#### Scenario: No demo draws its own FPS counter
 
-#### Scenario: HUD layer remains in screen position when window resized
+- **WHEN** os sources das demos são inspecionados
+- **THEN** nenhum `onDraw` de demo computa `1f / dt` para exibir FPS nem desenha string contendo `"fps"` via `drawText`
 
-- **WHEN** the user drags the window border to resize the surface
-- **THEN** the "Score: 0" and "Lives: 3" labels remain at the bottom-left corner with constant pixel offsets
-- **AND** the buttons remain centered horizontally relative to the new surface width
+#### Scenario: Demo title is a Label in a CanvasLayer
 
-#### Scenario: Menu layer renders on top of HUD layer
+- **WHEN** uma demo está carregada
+- **THEN** seu título e descrição são renderizados por nós `Label` filhos de um `CanvasLayer`
+- **AND** ao usar a câmera da demo `Transforms`, o título/descrição NÃO sofrem zoom (vivem em screen-space)
 
-- **WHEN** the menu layer (`layer = 10`) Button overlaps the HUD layer (`layer = 0`) Panel at some screen position
-- **THEN** the menu Button is visible (drawn on top)
-- **AND** clicking that overlap region triggers the menu Button's `pressed`, not the HUD
+### Requirement: A single shared hue helper replaces duplicated copies
 
-#### Scenario: Scene 7 runs in both backends
+O módulo `:games:demos` SHALL prover uma única função/objeto helper de cor (`hue(h: Float): Color` ou equivalente) compartilhada pelas demos que coloram atores por índice. Nenhuma demo SHALL declarar sua própria cópia privada de `hue(...)`.
 
-- **WHEN** the user opens scene 7 via `./gradlew :games:demos:run` and then via `./gradlew :games:demos:runLwjgl`
-- **THEN** the menu, HUD, button states, and signal emissions behave identically (modulo backend-specific AA/text rendering differences)
+#### Scenario: hue is defined once
 
-### Requirement: Demos includes a static Sprite2D scene as the texture-rendering sentinel
-
-The `:games:demos` module SHALL include a scene that displays at least one static `Sprite2D` loading a PNG asset from `games/demos/src/main/resources/`. This scene is the living sentinel for the `texture-rendering` capability: it MUST render the same texture **identically (semantically)** on both backends — Skiko (default entrypoint) and LWJGL (`runLwjgl` task) — proving `Renderer.drawImage` + `tree.textures` work end-to-end before any animation or tilemap is built on top. The sprite MUST be sampled with nearest-neighbor (crisp pixel-art when scaled by camera/zoom).
-
-#### Scenario: Sprite scene renders on the Skiko backend
-
-- **WHEN** the demos app runs on Skiko and the sprite scene is shown
-- **THEN** the PNG appears on screen, centered at its node position, with crisp (non-blurred) pixels when scaled
-
-#### Scenario: Sprite scene renders identically on the LWJGL backend
-
-- **WHEN** the demos app runs via the `runLwjgl` task and the sprite scene is shown
-- **THEN** the same PNG appears in the same place with the same nearest-neighbor crispness as on Skiko
-
-### Requirement: Demos includes an AnimatedSprite2D scene as the animation sentinel
-
-The `:games:demos` module SHALL include a scene that displays at least one `AnimatedSprite2D` cycling a real multi-frame sheet from `games/demos/src/main/resources/` (e.g. a 17-frame fruit or the 12-frame Run sheet). This scene is the living sentinel for the `sprite-animation` capability: it MUST visibly advance frames over time and render **identically (semantically)** on both backends — Skiko (default) and LWJGL (`runLwjgl`).
-
-#### Scenario: Animation advances over time on Skiko
-
-- **WHEN** the demos app runs on Skiko and the animation scene is shown
-- **THEN** the sprite cycles through its frames over time (not a frozen frame)
-
-#### Scenario: Animation renders identically on LWJGL
-
-- **WHEN** the demos app runs via `runLwjgl` and the animation scene is shown
-- **THEN** the sprite cycles through the same frames at the same rate as on Skiko
-
-### Requirement: Demos includes a TileMap scene as the tilemap sentinel
-
-The `:games:demos` module SHALL include a scene that displays a `TileMap` assembling a piece of terrain from a real atlas (e.g. `Terrain (16x16).png`) in `games/demos/src/main/resources/`. This scene is the living sentinel for the `tilemap-visual` capability: it MUST render the grid of tiles in the correct positions and **identically (semantically)** on both backends — Skiko (default) and LWJGL (`runLwjgl`).
-
-#### Scenario: TileMap renders terrain on Skiko
-
-- **WHEN** the demos app runs on Skiko and the tilemap scene is shown
-- **THEN** the terrain tiles appear assembled in their grid positions with crisp pixels
-
-#### Scenario: TileMap renders identically on LWJGL
-
-- **WHEN** the demos app runs via `runLwjgl` and the tilemap scene is shown
-- **THEN** the same tiles appear in the same grid positions as on Skiko
+- **WHEN** os sources de `:games:demos` são grepados por `fun hue(`
+- **THEN** existe exatamente uma definição, num helper compartilhado
+- **AND** nenhuma demo individual declara um `private fun hue(...)` próprio

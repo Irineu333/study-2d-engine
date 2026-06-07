@@ -2,19 +2,19 @@
 
 ## Purpose
 
-Slot 1 of `:games:demos` hosts `SolarSystemDemo` — a code-only scene with a Sun, 8 planets, 7 known moons (Moon; Io, Europa, Ganymede, Callisto; Titan; Triton) and a `SaturnRing`. Each planetary and lunar orbit is a `Rotator` pivot with its own `angularVelocity`, exercising the A1 transform-composition invariant in up to four nested levels (Sun → planet-orbit → planet → moon-orbit → moon). The capability fixes the slot, the tree topology, the resize semantics, the no-Camera2D convention, and the location of tunable constants.
+The `Transforms` demo of `:games:demos` (reached via the menu's `Transforms` button) hosts `SolarSystemDemo` — a code-only scene with a Sun, 8 planets, 7 known moons (Moon; Io, Europa, Ganymede, Callisto; Titan; Triton) and a `SaturnRing`. Each planetary and lunar orbit is a `Rotator` pivot with its own `angularVelocity`, exercising the A1 transform-composition invariant in up to four nested levels (Sun → planet-orbit → planet → moon-orbit → moon). The scene also installs a `Camera2D` (`current = true`) with interactive zoom/pan — the only demo using a camera — so zoom additionally exercises ancestor→child scale composition. The capability fixes the menu entry, the tree topology, the resize semantics, the interactive camera, and the location of tunable constants.
 
 ## Requirements
 
 ### Requirement: Slot 1 of demos hosts SolarSystemDemo
 
-O módulo `:games:demos` SHALL ter, no slot 1 do `DemoSwitcherRoot` (acionado pela tecla `1`), uma cena instanciada por `SolarSystemDemo` em vez de `TransformOrbitDemo`. O enum interno `DemoSwitcherRoot.Slot` MUST renomear o valor `Orbit` para `SolarSystem`. O factory map MUST mapear `Slot.SolarSystem to ::SolarSystemDemo`. O slot inicial (campo `active`) MUST permanecer `Slot.SolarSystem` (continua sendo o demo padrão na inicialização). A classe `TransformOrbitDemo` MUST NOT existir mais no source tree do módulo após esta change.
+O módulo `:games:demos` SHALL hospedar a cena `SolarSystemDemo` como a demo **`Transforms`**, alcançada pelo botão `Transforms` do **menu de navegação** (não mais pela tecla `1`). O enum interno `DemoSwitcherRoot.Slot` (ou equivalente) MUST referenciar a cena como `Transforms`/`SolarSystem`, mapeada para `::SolarSystemDemo`. A classe `TransformOrbitDemo` MUST NOT existir no source tree do módulo. O título exibido pela demo MUST ser renderizado por um `Label` em `CanvasLayer` (não por `drawText` cru) com a string descrevendo a composição de transform + câmera.
 
-#### Scenario: Pressing key 1 selects the solar system demo
+#### Scenario: Selecting Transforms in the menu loads the solar system demo
 
-- **WHEN** o módulo `:games:demos` é executado e o usuário pressiona a tecla `1` durante a execução (ou na inicialização, pois é o slot default)
+- **WHEN** o usuário clica no botão `Transforms` do menu
 - **THEN** a cena ativa é uma instância de `SolarSystemDemo`
-- **AND** o HUD overlay exibe a string `"1. Solar system (nested transform composition)"` na primeira linha
+- **AND** o overlay da demo exibe, via `Label` em `CanvasLayer`, o título da demo `Transforms`
 
 #### Scenario: TransformOrbitDemo no longer exists
 
@@ -24,7 +24,7 @@ O módulo `:games:demos` SHALL ter, no slot 1 do `DemoSwitcherRoot` (acionado pe
 
 ### Requirement: SolarSystemDemo builds a fixed scene of sun, planets, moons and ring
 
-`SolarSystemDemo` SHALL ser uma `class SolarSystemDemo : Node2D()` que, no seu `init`, constrói (via método privado `buildTree()`) uma árvore com exatamente a seguinte topologia e quantidades:
+`SolarSystemDemo` SHALL ser uma `class SolarSystemDemo : Node2D()` que, no seu `init`, constrói (via método privado `buildTree()`) uma árvore com exatamente a seguinte topologia e quantidades de corpos celestes:
 
 - 1 `Node2D` filho direto chamado `Center` (sem visual próprio), posicionado em `(tree.width / 2f, tree.height / 2f)` quando `tree.size` é conhecido.
 - Sob `Center`: 1 `Circle2D` chamado `Sun` em posição local `Vec2.ZERO`.
@@ -35,7 +35,7 @@ O módulo `:games:demos` SHALL ter, no slot 1 do `DemoSwitcherRoot` (acionado pe
 - Sob `Saturn`: 1 `SaturnRing` (nó visual customizado), e 1 `Rotator` `TitanOrbit` contendo 1 `Circle2D` `Titan`.
 - Sob `Neptune`: 1 `Rotator` `TritonOrbit` contendo 1 `Circle2D` `Triton`.
 
-Total: 1 root + 1 Center + 1 Sun + 8 planets + 7 moons + 1 ring + 16 Rotator pivots = 35 nodes (≈30 efetivos + ring + 7 lunar-orbit pivots). Não MUST haver outros nós além desses.
+Além da topologia de corpos celestes acima, a cena PODE conter nós adicionais introduzidos pela câmera: um `Camera2D` (`current = true`). Esses nós extras MUST ser nomeados e identificáveis, e MUST NOT alterar a topologia/contagem dos corpos celestes descrita acima.
 
 #### Scenario: All eight planets are present under Center
 
@@ -73,7 +73,7 @@ Total: 1 root + 1 Center + 1 Sun + 8 planets + 7 moons + 1 ring + 16 Rotator piv
 
 ### Requirement: Center repositions on viewport resize
 
-`SolarSystemDemo` SHALL ter um `onProcess(dt: Float)` que, sempre que `tree.size` muda em relação à última observação, reposiciona o nó `Center` para `Vec2(tree.width / 2f, tree.height / 2f)`. A implementação MUST seguir o mesmo idiom de cache de `lastSize` usado pelo `TransformOrbitDemo` atual (campo `@Transient private var lastSize: Vec2 = Vec2.ZERO`, early-return se `tree.size == lastSize`). A implementação MUST NOT recomputar raios orbitais dos planetas nem reposicionar planetas/luas em resize — apenas o `Center` se move.
+`SolarSystemDemo` SHALL ter um `onProcess(dt: Float)` que, sempre que `tree.size` muda em relação à última observação, reposiciona o nó `Center` para `Vec2(tree.width / 2f, tree.height / 2f)`. A implementação MUST seguir o idiom de cache de `lastSize` (campo `@Transient private var lastSize: Vec2 = Vec2.ZERO`, early-return se `tree.size == lastSize`). A implementação MUST NOT recomputar raios orbitais dos planetas nem reposicionar planetas/luas em resize — apenas o `Center` se move.
 
 #### Scenario: Center follows viewport center
 
@@ -85,14 +85,32 @@ Total: 1 root + 1 Center + 1 Sun + 8 planets + 7 moons + 1 ring + 16 Rotator piv
 - **WHEN** o demo está rodando e `tree.size` permanece constante entre dois frames consecutivos
 - **THEN** o `transform` do `Center` NÃO MUST ser reatribuído nesse segundo frame (verificável por instrumentação ou por inspeção do código: a guarda `if (tree.size == lastSize) return` aparece antes de qualquer escrita em transform)
 
-### Requirement: Demo runs without Camera2D
+### Requirement: Transforms scene provides interactive Camera2D zoom/pan
 
-`SolarSystemDemo` MUST NOT instanciar nem adicionar nenhum `Camera2D` à árvore. Os visuais MUST permanecer em coordenadas de surface (pixels), seguindo a convenção documentada em `DemoSwitcherRoot` ("Demos run in raw surface pixels (no Camera2D) by design"). Os raios orbitais MUST ser computados em `buildTree()` em função de `tree.size` capturado naquele momento (ou de um valor default razoável quando `tree` ainda for `null` — ver D4 do design).
+A demo `Transforms` SHALL instalar uma `Camera2D` (`current = true`) local à cena, cujo `bounds: Rect` define o retângulo de mundo enquadrado. O usuário MUST poder fazer **zoom** (encolhendo/expandindo `bounds`, scroll do mouse) e **pan** (transladando `bounds.origin`). O pan MUST estar disponível por **arrasto do mouse** (segurar o botão esquerdo e mover — grab-and-drag, com o ponto de mundo sob o cursor pinado durante o arrasto) **e** por teclas (setas). O drag-pan MUST honrar `mouseDragConsumed` (arrastar um painel de debug não arrasta o sistema solar). A câmera MUST ser desmontada junto com a cena ao retornar ao menu, de modo que as demais demos sigam em pixels de surface crus (sem `Camera2D`). O overlay de UI da demo (título/descrição/back-button) vive em `CanvasLayer` e MUST NOT sofrer a view transform da câmera.
 
-#### Scenario: No Camera2D in source
+Além de enquadrar a cena, o zoom **exercita a escala-composição**: a view scale da câmera é empilhada via `Renderer.pushTransform` no topo do world pass e compõe com o transform local de cada nó, então ampliar/reduzir escala a hierarquia aninhada inteira (Sol → órbita → planeta → lua) em uníssono — a mesma propagação `ancestor scale → tamanho renderizado do filho` que a antiga demo `Scale hierarchy` validava isoladamente. Por isso a demo Scale não precisa de slot próprio nem de um corpo de pulso de escala dedicado.
 
-- **WHEN** o source de `SolarSystemDemo.kt` é inspecionado
-- **THEN** o arquivo NÃO importa nem instancia `com.neoutils.engine.scene.Camera2D`
+#### Scenario: Scrolling zooms the solar system
+
+- **GIVEN** a demo `Transforms` está ativa
+- **WHEN** o usuário rola o scroll do mouse
+- **THEN** o sistema solar é ampliado/reduzido (a `Camera2D.bounds` muda de escala)
+- **AND** toda a hierarquia aninhada (planetas e luas) escala em uníssono, demonstrando a escala-composição ancestor → filho
+- **AND** o título/descrição em `CanvasLayer` permanecem do mesmo tamanho em pixels (não sofrem zoom)
+
+#### Scenario: Dragging the mouse pans the solar system
+
+- **GIVEN** a demo `Transforms` está ativa
+- **WHEN** o usuário segura o botão esquerdo do mouse e arrasta sobre a cena
+- **THEN** o sistema solar acompanha o cursor (a `Camera2D.bounds.origin` translada), mantendo o ponto de mundo agarrado sob o cursor
+- **AND** soltar o botão encerra o pan
+
+#### Scenario: Camera is scoped to the Transforms scene
+
+- **WHEN** o usuário retorna ao menu e carrega outra demo
+- **THEN** a `Camera2D` da demo `Transforms` foi desmontada
+- **AND** a outra demo renderiza em pixels de surface crus
 
 ### Requirement: Rotator becomes configurable per-instance
 
@@ -144,21 +162,22 @@ O arquivo `SolarSystemDemo.kt` SHALL declarar uma classe top-level `class Saturn
 - **WHEN** um contribuidor quer reduzir a velocidade de Júpiter pela metade
 - **THEN** a edição é feita em uma única linha dentro de uma companion object (ex.: `const val JUPITER_OMEGA = 0.065f`), sem alterar o corpo de `buildTree`
 
-### Requirement: HUD label reflects new demo
+### Requirement: Transforms title/description shown via CanvasLayer Label
 
-`DemoSwitcherRoot.HudOverlay` SHALL exibir, quando o slot ativo é o do sistema solar, a string `"1. Solar system (nested transform composition)"` (texto exato) na primeira linha do overlay. As entradas para os demais slots (2-6) MUST permanecer inalteradas.
+A demo `Transforms` SHALL exibir seu título e descrição via nós `Label` dentro de um `CanvasLayer` (screen-space), não via `drawText` cru num HUD overlay. O texto MUST descrever a composição de transform aninhada e a câmera interativa. O título/descrição MUST NOT sofrer o zoom/pan da `Camera2D` da cena (vivem em screen-space).
 
-#### Scenario: HUD reflects solar system label
+#### Scenario: Transforms title is a Label in a CanvasLayer
 
-- **WHEN** o demo de sistema solar está ativo e `HudOverlay.onDraw` é executado
-- **THEN** o renderer recebe uma chamada `drawText("1. Solar system (nested transform composition)", ...)` na primeira linha do overlay
+- **WHEN** a demo `Transforms` está ativa
+- **THEN** seu título e descrição são renderizados por nós `Label` filhos de um `CanvasLayer`
+- **AND** ao aplicar zoom/pan na câmera, o título/descrição NÃO escalam nem transladam (permanecem em pixels de tela)
 
-### Requirement: CLAUDE.md item 1 of demos list reflects new demo
+### Requirement: CLAUDE.md Games table reflects the Transforms demo
 
-O arquivo `CLAUDE.md` (raiz do repo) SHALL ter o primeiro item da lista numerada da seção "Para rodar Demos" reescrito para descrever o `SolarSystemDemo` (Sol, planetas, luas conhecidas, anel de Saturno, e a pedagogia de composição de transform aninhada). O texto MUST mencionar que o demo continua exercitando o invariante de composição (A1), agora em até 4 níveis (Sol → órbita-planeta → planeta → órbita-lua → lua). Os itens `2` a `6` MUST permanecer inalterados.
+O arquivo `CLAUDE.md` (raiz do repo) SHALL descrever, na linha de `:games:demos` da tabela "Games", o catálogo de 5 demos incluindo a demo `Transforms` (com `Camera2D`), sem listar cenas numeradas `1`–`0`. O texto MUST mencionar que `Transforms` exercita a composição de transform aninhada com zoom/pan de `Camera2D`.
 
-#### Scenario: CLAUDE.md describes the new demo
+#### Scenario: CLAUDE.md describes the Transforms demo
 
 - **WHEN** o arquivo `CLAUDE.md` é lido
-- **THEN** o item `1` da seção "Para rodar Demos" contém as palavras "Solar system" (ou equivalente em português) e menciona a composição aninhada de transform
-- **AND** os itens `2` a `6` permanecem com o mesmo texto que tinham antes desta change
+- **THEN** a linha de `:games:demos` da tabela "Games" menciona a demo `Transforms` com `Camera2D` e a composição aninhada de transform
+- **AND** não há lista numerada de cenas `1`–`0` para os demos
