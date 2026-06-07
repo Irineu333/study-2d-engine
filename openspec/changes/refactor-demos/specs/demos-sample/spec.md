@@ -83,7 +83,7 @@ A spec `demos-sample` SHALL incluir uma descrição por demo explicando o que el
 
 ### Requirement: Demos behave identically (semantically) on both backends
 
-As cinco demos (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) e o menu de navegação SHALL produzir comportamento de gameplay semanticamente idêntico em ambos os entrypoints (`:games:demos:run` Skiko e `:games:demos:runLwjgl` LWJGL). "Semanticamente idêntico" MUST ser interpretado como: mesmo menu e mesmas demos disponíveis, mesma resposta a input (clique do mouse no menu/botões e no Spawner na posição esperada; arena boundaries reagem a resize; câmera da demo Transforms responde a scroll/teclas), mesma evolução de física dado o mesmo `physicsHz`, mesmas árvores de Nodes (compartilham o código `DemoSwitcherRoot`).
+As cinco demos (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) e o menu de navegação SHALL produzir comportamento de gameplay semanticamente idêntico em ambos os entrypoints (`:games:demos:run` Skiko e `:games:demos:runLwjgl` LWJGL). "Semanticamente idêntico" MUST ser interpretado como: mesmo menu e mesmas demos disponíveis, mesma resposta a input (clique do mouse no menu/botões e no Spawner na posição esperada; arena boundaries reagem a resize; câmera da demo Transforms responde a scroll/arrasto/teclas), mesma evolução de física dado o mesmo `physicsHz`, mesmas árvores de Nodes (compartilham o código `DemoSwitcherRoot`).
 
 Diferenças puramente visuais (anti-aliasing, text shaping, sub-pixel positioning) MUST ser aceitas dentro de tolerância. Qualquer divergência semântica MUST ser tratada como bug do backend e investigada antes do merge.
 

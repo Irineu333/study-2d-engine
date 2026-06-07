@@ -123,6 +123,33 @@ class DemoCatalogTest {
     }
 
     @Test
+    fun `dragging the mouse pans the Transforms camera`() {
+        val tree = SceneTree(root = SolarSystemDemo())
+        tree.resize(800f, 600f)
+        tree.textMeasurer = com.neoutils.engine.render.TextMeasurer { text, size -> Vec2(text.length * size * 0.5f, size) }
+        tree.start()
+        val input = ScriptedInput()
+        val loop = GameLoop(tree = tree, renderer = NoOpRenderer, input = input)
+        loop.tick(FRAME_NANOS) // finalize camera bounds
+
+        val cam = tree.root.findChild("Camera") as Camera2D
+        val before = cam.bounds.origin
+
+        // Grab and drag down-right: the camera follows the cursor, so bounds.origin
+        // shifts up-left (the grabbed world point stays pinned under the cursor).
+        input.down = true
+        input.pointerPosition = Vec2(400f, 300f)
+        loop.tick(FRAME_NANOS) // arm the drag (no motion yet)
+        input.pointerPosition = Vec2(460f, 340f)
+        loop.tick(FRAME_NANOS) // pan applied
+        input.down = false
+
+        val after = cam.bounds.origin
+        assertTrue(after.x < before.x, "dragging right must shift bounds.origin left (got ${before.x} -> ${after.x})")
+        assertTrue(after.y < before.y, "dragging down must shift bounds.origin up (got ${before.y} -> ${after.y})")
+    }
+
+    @Test
     fun `solar system keeps its celestial topology plus a current camera`() {
         val demo = SolarSystemDemo()
         val center = demo.findChild("Center") as Node2D

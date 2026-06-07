@@ -1,6 +1,8 @@
 package com.neoutils.engine.games.demos
 
+import com.neoutils.engine.input.Input
 import com.neoutils.engine.input.Key
+import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Transform
 import com.neoutils.engine.math.Vec2
@@ -22,6 +24,12 @@ class SolarSystemDemo : Node2D() {
 
     @Transient
     private var lastSize: Vec2 = Vec2.ZERO
+
+    @Transient
+    private var dragging: Boolean = false
+
+    @Transient
+    private var lastDragPointer: Vec2 = Vec2.ZERO
 
     init {
         name = "SolarSystemDemo"
@@ -49,9 +57,9 @@ class SolarSystemDemo : Node2D() {
         updateCamera(dt)
     }
 
-    // Scroll zooms around the cursor (cursor world point stays put); arrow keys
-    // pan. Zoom and pan only touch Camera2D.bounds — the HUD overlay lives in a
-    // CanvasLayer and is immune to this view transform.
+    // Scroll zooms around the cursor (cursor world point stays put); left-drag
+    // and arrow keys pan. Zoom and pan only touch Camera2D.bounds — the HUD
+    // overlay lives in a CanvasLayer and is immune to this view transform.
     private fun updateCamera(dt: Float) {
         val tree = tree ?: return
         val input = tree.input ?: return
@@ -70,6 +78,29 @@ class SolarSystemDemo : Node2D() {
             cam.bounds = Rect(cam.bounds.origin + (before - after), cam.bounds.size)
         }
 
+        dragPan(cam, input, tree.size)
+        keyPan(cam, input, dt)
+    }
+
+    // Grab-and-drag pan: while the left button is held, the world point first
+    // grabbed stays pinned under the cursor — shifting bounds.origin by the
+    // world-space delta the cursor moved. Honors mouseDragConsumed so dragging a
+    // debug panel does not also drag the solar system.
+    private fun dragPan(cam: Camera2D, input: Input, size: Vec2) {
+        if (input.isMouseDown(MouseButton.Left) && !input.mouseDragConsumed) {
+            if (dragging) {
+                val worldPrev = cam.screenToWorld(lastDragPointer, size)
+                val worldNow = cam.screenToWorld(input.pointerPosition, size)
+                cam.bounds = Rect(cam.bounds.origin + (worldPrev - worldNow), cam.bounds.size)
+            }
+            dragging = true
+            lastDragPointer = input.pointerPosition
+        } else {
+            dragging = false
+        }
+    }
+
+    private fun keyPan(cam: Camera2D, input: Input, dt: Float) {
         val pan = cam.bounds.size.x * PAN_FRACTION * dt
         var dx = 0f
         var dy = 0f

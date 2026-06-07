@@ -69,7 +69,7 @@ Além da topologia de corpos celestes acima, a cena PODE conter nós adicionais 
 
 ### Requirement: Transforms scene provides interactive Camera2D zoom/pan
 
-A demo `Transforms` SHALL instalar uma `Camera2D` (`current = true`) local à cena, cujo `bounds: Rect` define o retângulo de mundo enquadrado. O usuário MUST poder fazer **zoom** (encolhendo/expandindo `bounds`) e **pan** (transladando `bounds.origin`) de forma interativa via input (scroll do mouse e/ou teclas). A câmera MUST ser desmontada junto com a cena ao retornar ao menu, de modo que as demais demos sigam em pixels de surface crus (sem `Camera2D`). O overlay de UI da demo (título/descrição/back-button) vive em `CanvasLayer` e MUST NOT sofrer a view transform da câmera.
+A demo `Transforms` SHALL instalar uma `Camera2D` (`current = true`) local à cena, cujo `bounds: Rect` define o retângulo de mundo enquadrado. O usuário MUST poder fazer **zoom** (encolhendo/expandindo `bounds`, scroll do mouse) e **pan** (transladando `bounds.origin`). O pan MUST estar disponível por **arrasto do mouse** (segurar o botão esquerdo e mover — grab-and-drag, com o ponto de mundo sob o cursor pinado durante o arrasto) **e** por teclas (setas). O drag-pan MUST honrar `mouseDragConsumed` (arrastar um painel de debug não arrasta o sistema solar). A câmera MUST ser desmontada junto com a cena ao retornar ao menu, de modo que as demais demos sigam em pixels de surface crus (sem `Camera2D`). O overlay de UI da demo (título/descrição/back-button) vive em `CanvasLayer` e MUST NOT sofrer a view transform da câmera.
 
 Além de enquadrar a cena, o zoom **exercita a escala-composição**: a view scale da câmera é empilhada via `Renderer.pushTransform` no topo do world pass e compõe com o transform local de cada nó, então ampliar/reduzir escala a hierarquia aninhada inteira (Sol → órbita → planeta → lua) em uníssono — a mesma propagação `ancestor scale → tamanho renderizado do filho` que a antiga demo `Scale hierarchy` validava isoladamente. Por isso a demo Scale não precisa de slot próprio nem de um corpo de pulso de escala dedicado.
 
@@ -80,6 +80,13 @@ Além de enquadrar a cena, o zoom **exercita a escala-composição**: a view sca
 - **THEN** o sistema solar é ampliado/reduzido (a `Camera2D.bounds` muda de escala)
 - **AND** toda a hierarquia aninhada (planetas e luas) escala em uníssono, demonstrando a escala-composição ancestor → filho
 - **AND** o título/descrição em `CanvasLayer` permanecem do mesmo tamanho em pixels (não sofrem zoom)
+
+#### Scenario: Dragging the mouse pans the solar system
+
+- **GIVEN** a demo `Transforms` está ativa
+- **WHEN** o usuário segura o botão esquerdo do mouse e arrasta sobre a cena
+- **THEN** o sistema solar acompanha o cursor (a `Camera2D.bounds.origin` translada), mantendo o ponto de mundo agarrado sob o cursor
+- **AND** soltar o botão encerra o pan
 
 #### Scenario: Camera is scoped to the Transforms scene
 

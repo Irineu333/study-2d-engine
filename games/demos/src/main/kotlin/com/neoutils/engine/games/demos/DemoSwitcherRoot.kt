@@ -32,7 +32,7 @@ class DemoSwitcherRoot : Node() {
     private val catalog: Map<Slot, Entry> = mapOf(
         Slot.Transforms to Entry(
             label = "Transforms",
-            description = "Nested orbit composition + scale pulse + Camera2D zoom/pan",
+            description = "Nested orbit composition + Camera2D: scroll to zoom, drag or arrows to pan",
             factory = ::SolarSystemDemo,
         ),
         Slot.SpawnCollide to Entry(
