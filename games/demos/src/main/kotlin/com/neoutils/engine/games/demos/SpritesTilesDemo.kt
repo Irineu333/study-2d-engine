@@ -7,7 +7,6 @@ import com.neoutils.engine.physics.CollisionShape2D
 import com.neoutils.engine.physics.RectangleShape2D
 import com.neoutils.engine.scene.AnimatedSprite2D
 import com.neoutils.engine.scene.Node2D
-import com.neoutils.engine.scene.Sprite2D
 import com.neoutils.engine.scene.TileMap
 import com.neoutils.engine.scene.TileSet
 import kotlinx.serialization.Serializable
@@ -22,19 +21,18 @@ private const val GROUND_ROWS = 2
 private const val PLAYER_W = 44f
 private const val PLAYER_H = 72f
 private const val PLAYER_SCALE = 2.5f
-private const val DECORATION_SCALE = 2.5f
 private const val WALK_SPEED = 120f
 private const val GRAVITY = 900f
 private const val WALL_THICKNESS = 20f
 
 /**
- * Funde os antigos `Sprite` + `Animated` + `Tilemap`: um `TileMap` monta o chão
- * a partir do atlas real, um `AnimatedSprite2D` (dentro do player) "corre" sobre
- * ele com avanço de frame engine-driven, e um `Sprite2D` estático decora a cena.
- * O player é um `CharacterBody2D` que cai por gravidade e anda sobre o chão de
- * `StaticBody2D` via `moveAndCollide` (movimento separado por eixo), virando ao
- * bater nas paredes laterais. Sentinela cross-backend (Skiko + LWJGL) de
- * `texture-rendering`, `sprite-animation` e `tilemap-visual` numa só tela.
+ * Funde os antigos `Animated` + `Tilemap`: um `TileMap` monta o chão a partir do
+ * atlas real e um `AnimatedSprite2D` (dentro do player) "corre" sobre ele com
+ * avanço de frame engine-driven. O player é um `CharacterBody2D` que cai por
+ * gravidade e anda sobre o chão de `StaticBody2D` via `moveAndCollide` (movimento
+ * separado por eixo), virando ao bater nas paredes laterais. Sentinela
+ * cross-backend (Skiko + LWJGL) de `texture-rendering` (via `drawImage` do
+ * `AnimatedSprite2D`/`TileMap`), `sprite-animation` e `tilemap-visual`.
  */
 @Serializable
 class SpritesTilesDemo : Node2D() {
@@ -68,20 +66,6 @@ class SpritesTilesDemo : Node2D() {
         addChild(
             makeStaticWall(Vec2(w + WALL_THICKNESS / 2f, h / 2f), Vec2(WALL_THICKNESS, h))
                 .apply { name = "RightWall" }
-        )
-
-        // Static decorative sprite: a single-frame apple item resting on the
-        // ground (not a second character — exercises Sprite2D's whole-texture
-        // draw with a non-redundant visual).
-        addChild(
-            Sprite2D().apply {
-                name = "Apple"
-                texturePath = "demos/sprites/apple.png"
-                transform = Transform(
-                    position = Vec2(110f, groundTop - 14f),
-                    scale = Vec2(DECORATION_SCALE, DECORATION_SCALE),
-                )
-            }
         )
 
         // The running player, spawned above the floor so it visibly falls onto it.

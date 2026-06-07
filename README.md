@@ -58,7 +58,7 @@ A executável `:games:demos` expõe 5 demos navegadas por um **menu de UI** (um 
 - **Spawn & Collide** — clique/auto-spawn de bolinhas `RigidBody2D` numa `BoundaryWalls`; trap `Area2D` central as remove no `onBodyEntered` (mutação segura durante traversal + impulse solver).
 - **Rotating Frame** — sweep `moveAndCollide` em frame rotativo (`CharacterBody2D` dentro de uma caixa que gira e translada).
 - **Tumbling Swarm** — quadrados `RigidBody2D` com spin numa `BoundaryWalls`; OBB rotated sweep + fricção Coulomb tangencial.
-- **Sprites & Tiles** — `TileMap` (chão) + `AnimatedSprite2D` correndo + `Sprite2D` decorativo; player `CharacterBody2D` sobre `StaticBody2D`. Sentinela cross-backend (Skiko + LWJGL).
+- **Sprites & Tiles** — `TileMap` (chão) + `AnimatedSprite2D` correndo; player `CharacterBody2D` sobre `StaticBody2D`. Sentinela cross-backend (Skiko + LWJGL).
 
 As demos com arena (**Spawn & Collide**, **Tumbling Swarm**) têm paredes resize-aware via `BoundaryWalls` — redimensionar a janela move as paredes em tempo real. O FPS sai do canto de cada demo; use o **Profiler** (`F1`) como fonte de verdade.
 

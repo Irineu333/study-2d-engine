@@ -30,7 +30,7 @@ Problemas: cobertura sobreposta (3 demos de física quase-irmãs; 3 demos de tex
 | **Spawn & Collide** | 3 + 4 | mutação durante traversal; `Area2D` trigger; `RigidBody2D` solver + cache | — |
 | **Rotating Frame** | 5 (mantida) | `CharacterBody2D.moveAndCollide` em frame rotativo | — |
 | **Tumbling Swarm** | 6 | solver `RigidBody2D` completo (linear+angular+Coulomb) | — |
-| **Sprites & Tiles** | 8 + 9 + 0 | `Sprite2D` + `AnimatedSprite2D` + `TileMap`; `CharacterBody2D` sobre `StaticBody2D` | — |
+| **Sprites & Tiles** | 9 + 0 | `AnimatedSprite2D` + `TileMap` (drawImage); `CharacterBody2D` sobre `StaticBody2D` | — |
 
 Mantemos **5 e 6 separadas** de propósito: o CLAUDE.md distingue `CharacterBody2D` (controle direto, sweep) de `RigidBody2D` (integração + solver). Uma única "caixa de coisas quicando" misturaria os dois modelos e turvaria a lição. Alternativa considerada (fundir 5+6): rejeitada por esse motivo pedagógico.
 

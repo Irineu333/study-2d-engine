@@ -28,7 +28,7 @@
 
 ## 5. Sprites & Tiles demo (funde Sprite + Animated + Tilemap)
 
-- [x] 5.1 Criar a demo `Sprites & Tiles`: `TileMap` (chão a partir do atlas real) + `AnimatedSprite2D` correndo + `Sprite2D` estático decorativo
+- [x] 5.1 Criar a demo `Sprites & Tiles`: `TileMap` (chão a partir do atlas real) + `AnimatedSprite2D` correndo (Sprite2D estático decorativo removido a pedido — drawImage já coberto por AnimatedSprite2D/TileMap)
 - [x] 5.2 Tornar o player um `CharacterBody2D` que se move sobre o chão de `StaticBody2D` (chão sólido via `makeStaticWall`/`StaticBody2D` à mão) usando `moveAndCollide`
 - [x] 5.3 Adicionar overlay de título/descrição via `CanvasLayer`/`Label`
 - [x] 5.4 Remover `SpriteDemo.kt`, `AnimatedSpriteDemo.kt`, `TileMapDemo.kt`
