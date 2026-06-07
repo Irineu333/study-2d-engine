@@ -55,6 +55,8 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 
 `DebugRegistry` SHALL NOT be a `Node`, SHALL NOT be `@Serializable`, and SHALL NOT persist across `SceneTree` lifetimes — pure runtime state. Each `SceneTree` instance SHALL own its own `DebugRegistry` (no static or singleton sharing across trees).
 
+The illustrative custom widget named in the scenarios below SHALL be a hypothetical example (`ExampleWidget`), not any concrete widget shipped by a specific game module — the registry contract is engine-level and independent of `:games:demos`.
+
 #### Scenario: Built-ins are accessible via convenience fields
 
 - **WHEN** a `SceneTree` is constructed and `start()` is called
@@ -63,9 +65,9 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 
 #### Scenario: register routes by subtype
 
-- **GIVEN** a `WorldDebugWidget` instance `axes` and a `ScreenDebugWidget` instance `hud2`
-- **WHEN** `tree.debug.register(axes)` and `tree.debug.register(hud2)` are called
-- **THEN** `axes.parent` SHALL be the world container child of `DebugLayer`
+- **GIVEN** a `WorldDebugWidget` instance `world` and a `ScreenDebugWidget` instance `hud2`
+- **WHEN** `tree.debug.register(world)` and `tree.debug.register(hud2)` are called
+- **THEN** `world.parent` SHALL be the world container child of `DebugLayer`
 - **AND** `hud2.parent` SHALL be the screen container child of `DebugLayer`
 - **AND** `tree.debug.widgets` SHALL include both, in registration order
 
@@ -78,8 +80,8 @@ A subclass author SHALL choose the appropriate base for the gizmo they are drawi
 
 #### Scenario: find returns instance by type
 
-- **GIVEN** a custom widget `AxesWidget : WorldDebugWidget` registered exactly once
-- **WHEN** `tree.debug.find<AxesWidget>()` is called
+- **GIVEN** a custom widget `ExampleWidget : WorldDebugWidget` registered exactly once
+- **WHEN** `tree.debug.find<ExampleWidget>()` is called
 - **THEN** the registered instance SHALL be returned
 
 #### Scenario: Two SceneTrees do not share registry state
@@ -237,11 +239,13 @@ never recover entries gated out by `Log.config`.
 
 When `enabled = false`, the HUD SHALL emit zero draw calls and SHALL NOT consume any mouse click via `tree.hitTestUI` — `Input.wasMouseClicked` SHALL pass through unchanged.
 
+The user-registered widget named in the scenario below SHALL be a hypothetical example (`ExampleWidget`, `title = "Example"`), not a class shipped by a specific game module — the HUD's one-row-per-widget contract is engine-level and independent of `:games:demos`.
+
 #### Scenario: HUD lists one row per registered widget
 
-- **GIVEN** the built-ins plus one user-registered `AxesWidget` are in `tree.debug.widgets`
+- **GIVEN** the built-ins plus one user-registered `ExampleWidget` (with `title = "Example"`) are in `tree.debug.widgets`
 - **WHEN** `tree.debug.hud.enabled = true` and a frame is rendered
-- **THEN** the rendered HUD `Panel` SHALL contain exactly one `Button` child per registered widget (excluding the HUD itself), including an `Axes` row
+- **THEN** the rendered HUD `Panel` SHALL contain exactly one `Button` child per registered widget (excluding the HUD itself), including an `Example` row
 - **AND** the label order SHALL match registration order
 
 #### Scenario: Clicking a row flips the target widget's enabled
@@ -280,15 +284,25 @@ The engine SHALL provide an internal `DebugToggleNode` inside `ScreenDebugCanvas
 
 ### Requirement: register/unregister can be called from game code
 
-`tree.debug.register(widget)` and `tree.debug.unregister(widget)` SHALL be callable from any non-engine call site (game `Main.kt`, script bridge, test) after `tree.start()` has returned, without requiring any internal engine cooperation. Registering a widget SHALL make it appear in the HUD on the next time the HUD's `enabled` transitions to `true`.
+`tree.debug.register(widget)` and `tree.debug.unregister(widget)` SHALL be callable from any non-engine call site (game `Main.kt`, a game `Node`'s `onEnter`/`onExit`, script bridge, test) after `tree.start()` has returned, without requiring any internal engine cooperation. Registering a widget SHALL make it appear in the HUD on the next time the HUD's `enabled` transitions to `true`. Unregistering a widget SHALL remove its row from the HUD on the next re-evaluation.
+
+The custom widget named in the scenarios below SHALL be a hypothetical example (`ExampleWidget`, `title = "Example"`), not a class shipped by a specific game module — the extension contract is engine-level and independent of `:games:demos`.
 
 #### Scenario: Custom widget registered post-start appears in HUD
 
 - **GIVEN** `tree.start()` has run
-- **WHEN** a game registers `AxesWidget : WorldDebugWidget` via `tree.debug.register(AxesWidget())`
+- **WHEN** a game registers `ExampleWidget : WorldDebugWidget` (with `title = "Example"`) via `tree.debug.register(ExampleWidget())`
 - **AND** the user opens the HUD via `debugHudKey`
-- **THEN** a row labeled `"[ ] Axes"` SHALL appear in the HUD Panel
+- **THEN** a row labeled `"[ ] Example"` SHALL appear in the HUD Panel
 - **AND** clicking that row SHALL flip the widget's `enabled`
+
+#### Scenario: Custom widget unregistered from game code leaves the HUD
+
+- **GIVEN** a custom widget registered via `tree.debug.register(...)` and showing a HUD row
+- **WHEN** the game calls `tree.debug.unregister(widget)` (e.g. from a `Node`'s `onExit`)
+- **AND** the HUD list is re-evaluated
+- **THEN** the widget SHALL no longer appear in `tree.debug.widgets`
+- **AND** its row SHALL be absent from the HUD Panel
 
 ### Requirement: GameHost.render does not draw
 

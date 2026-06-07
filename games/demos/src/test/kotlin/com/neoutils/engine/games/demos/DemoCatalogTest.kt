@@ -6,6 +6,10 @@ import com.neoutils.engine.input.MouseButton
 import com.neoutils.engine.loop.GameLoop
 import com.neoutils.engine.math.Rect
 import com.neoutils.engine.math.Vec2
+import com.neoutils.engine.physics.Area2D
+import com.neoutils.engine.physics.CollisionShape2D
+import com.neoutils.engine.physics.RectangleShape2D
+import com.neoutils.engine.physics.StaticBody2D
 import com.neoutils.engine.render.Color
 import com.neoutils.engine.render.Renderer
 import com.neoutils.engine.render.Texture
@@ -166,5 +170,137 @@ class DemoCatalogTest {
         val camera = demo.findChild("Camera") as? Camera2D
         assertNotNull(camera, "Transforms demo must install a Camera2D")
         assertTrue(camera.current, "the camera must be current")
+    }
+
+    /** Loads the Spawn & Collide demo via its menu button and returns it. */
+    private fun loadSpawnCollide(tree: SceneTree, loop: GameLoop, input: ScriptedInput): SpawnCollideDemo {
+        loop.tick(FRAME_NANOS) // resolve the anchor layout
+        val button = menuButtons(tree).first { it.name == "Spawn & Collide" }
+        val rect = button.screenRect()!!
+        click(loop, input, Vec2(rect.origin.x + rect.size.x / 2f, rect.origin.y + rect.size.y / 2f))
+        return tree.root.findChild("SpawnCollideDemo") as SpawnCollideDemo
+    }
+
+    @Test
+    fun `spawn collide trap exposes two sibling colliders in the arena`() {
+        val (tree, loop) = newTree()
+        val input = loop.input as ScriptedInput
+        val demo = loadSpawnCollide(tree, loop, input)
+
+        val arena = demo.findChild("BoundaryWalls") as Node2D
+        val sensor = arena.findChild("TrapSensor")
+        val wall = arena.findChild("TrapWall")
+        assertNotNull(sensor, "trap sensor must be a direct child of the arena")
+        assertNotNull(wall, "trap wall must be a direct child of the arena")
+        assertTrue(sensor is Area2D, "TrapSensor must be an Area2D")
+        assertTrue(wall is StaticBody2D, "TrapWall must be a StaticBody2D")
+        // Both carry a CollisionShape2D + RectangleShape2D of the same size.
+        for (collider in listOf(sensor, wall)) {
+            val cs = collider.children.firstOrNull { it is CollisionShape2D } as? CollisionShape2D
+            assertNotNull(cs, "each trap collider must carry a CollisionShape2D")
+            assertTrue(cs.shape is RectangleShape2D, "trap collider shape must be a rectangle")
+        }
+    }
+
+    @Test
+    fun `trap mode toggles which collider is disabled`() {
+        val (tree, loop) = newTree()
+        val input = loop.input as ScriptedInput
+        val demo = loadSpawnCollide(tree, loop, input)
+        val arena = demo.findChild("BoundaryWalls") as Node2D
+        val sensor = arena.findChild("TrapSensor") as Area2D
+        val wall = arena.findChild("TrapWall") as StaticBody2D
+
+        // Default Despawn: sensor live, wall dormant — never both at once.
+        demo.state.trapMode = TrapMode.DESPAWN
+        loop.tick(FRAME_NANOS)
+        assertTrue(!sensor.disabled, "Despawn must keep the sensor live")
+        assertTrue(wall.disabled, "Despawn must disable the wall")
+
+        demo.state.trapMode = TrapMode.COLLIDE
+        loop.tick(FRAME_NANOS)
+        assertTrue(sensor.disabled, "Collide must disable the sensor")
+        assertTrue(!wall.disabled, "Collide must keep the wall live")
+    }
+
+    @Test
+    fun `dragging the trap clamps to the surface and suppresses the spawn`() {
+        val (tree, loop) = newTree()
+        val input = loop.input as ScriptedInput
+        val demo = loadSpawnCollide(tree, loop, input)
+        val arena = demo.findChild("BoundaryWalls") as Node2D
+
+        // Quiesce spawning and despawning so the ball count is a clean witness.
+        demo.state.autoSpawnEnabled = false
+        demo.state.trapMode = TrapMode.COLLIDE
+        loop.tick(FRAME_NANOS)
+        val before = arena.children.count { it is Ball }
+
+        // Grab the trap at its center, with a raw click on the press edge.
+        input.pointerPosition = Vec2(400f, 300f)
+        input.down = true
+        input.clickedRaw = true
+        loop.tick(FRAME_NANOS)
+        input.clickedRaw = false
+        // Drag far past the bottom-right corner: position must clamp inside.
+        input.pointerPosition = Vec2(10_000f, 10_000f)
+        loop.tick(FRAME_NANOS)
+        input.down = false
+        loop.tick(FRAME_NANOS)
+
+        val half = 27f // TRAP_SIZE / 2
+        assertEquals(800f - half, demo.state.trapPosition.x, 0.5f, "trap x must clamp to surface - half")
+        assertEquals(600f - half, demo.state.trapPosition.y, 0.5f, "trap y must clamp to surface - half")
+        val after = arena.children.count { it is Ball }
+        assertEquals(before, after, "dragging the trap must not spawn a ball")
+    }
+
+    @Test
+    fun `auto-spawn gate stops the automatic drip`() {
+        val (tree, loop) = newTree()
+        val input = loop.input as ScriptedInput
+        val demo = loadSpawnCollide(tree, loop, input)
+        val arena = demo.findChild("BoundaryWalls") as Node2D
+
+        // Collide mode so the trap never despawns balls during the count.
+        demo.state.trapMode = TrapMode.COLLIDE
+
+        demo.state.autoSpawnEnabled = false
+        loop.tick(FRAME_NANOS)
+        val gatedStart = arena.children.count { it is Ball }
+        repeat(180) { loop.tick(FRAME_NANOS) } // ~3s: the drip would fire many times if on
+        val gatedEnd = arena.children.count { it is Ball }
+        assertEquals(gatedStart, gatedEnd, "auto-spawn off must freeze the ball count")
+
+        demo.state.autoSpawnEnabled = true
+        repeat(180) { loop.tick(FRAME_NANOS) }
+        val resumed = arena.children.count { it is Ball }
+        assertTrue(resumed > gatedEnd, "auto-spawn on must resume the drip (got $gatedEnd -> $resumed)")
+    }
+
+    @Test
+    fun `SpawnCollideWidget is registered on enter and unregistered on exit`() {
+        val (tree, loop) = newTree()
+        val input = loop.input as ScriptedInput
+        loadSpawnCollide(tree, loop, input)
+
+        assertNotNull(
+            tree.debug.find<SpawnCollideWidget>(),
+            "loading the demo must register a SpawnCollideWidget",
+        )
+
+        // Back to the menu removes the demo, firing onExit -> unregister.
+        val back = (tree.root.findChild("DemoOverlay") as CanvasLayer).findChild("BackButton") as Button
+        val backRect = back.screenRect()!!
+        click(loop, input, Vec2(backRect.origin.x + backRect.size.x / 2f, backRect.origin.y + backRect.size.y / 2f))
+
+        assertNull(
+            tree.debug.find<SpawnCollideWidget>(),
+            "returning to the menu must unregister the SpawnCollideWidget",
+        )
+        assertTrue(
+            tree.debug.widgets.none { it is SpawnCollideWidget },
+            "the widget must be gone from tree.debug.widgets",
+        )
     }
 }

@@ -7,7 +7,6 @@ import com.neoutils.engine.tree.SceneTree
 fun main() {
     val tree = SceneTree(root = DemoSwitcherRoot())
     tree.start()
-    tree.debug.register(AxesWidget())
     LwjglHost().run(
         tree = tree,
         config = GameConfig(title = "engine-consistency demos", width = 800, height = 600),
