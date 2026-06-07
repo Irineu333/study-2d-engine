@@ -52,7 +52,7 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 
 ## Demos
 
-A executável `:games:demos` expõe 5 demos navegadas por um **menu de UI** (um botão por demo; cada demo tem um botão "← Menu" para voltar) — não há mais teclas `1`–`0`. Cada demo exercita um aspecto da engine. Detalhe completo em [`openspec/specs/demos-sample/`](./openspec/specs/demos-sample/spec.md).
+A executável `:games:demos` expõe 5 demos navegadas por um **menu de UI** (um botão por demo; cada demo tem um botão de voltar (seta ←)) — não há mais teclas `1`–`0`. Cada demo exercita um aspecto da engine. Detalhe completo em [`openspec/specs/demos-sample/`](./openspec/specs/demos-sample/spec.md).
 
 - **Transforms** — composição aninhada de transform (Sol → órbita → planeta → lua) + `Camera2D` com zoom (scroll) e pan (arrastar o mouse ou setas); o zoom escala a hierarquia em uníssono (escala-composição).
 - **Spawn & Collide** — clique/auto-spawn de bolinhas `RigidBody2D` numa `BoundaryWalls`; trap `Area2D` central as remove no `onBodyEntered` (mutação segura durante traversal + impulse solver).

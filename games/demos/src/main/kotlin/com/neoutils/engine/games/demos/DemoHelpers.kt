@@ -67,38 +67,41 @@ internal class DemoOverlay(
             }
         )
 
+        // Just an arrow glyph: transparent background (a faint highlight only on
+        // hover/press marks it interactive), vertically centered in the header
+        // so it sits between the title and description lines.
+        val backTop = (HEADER_HEIGHT - BACK_SIZE) / 2f
         addChild(
             Button().apply {
                 name = "BackButton"
-                text = "← Menu"
-                textSize = 15f
-                // Neutral palette matching the menu buttons / charcoal card —
-                // no clashing accent hue. A touch lighter than default so it
-                // reads as a control sitting on the dark header bar.
-                normalColor = Color(0.26f, 0.27f, 0.30f, 1f)
-                hoverColor = Color(0.36f, 0.38f, 0.43f, 1f)
-                pressedColor = Color(0.16f, 0.17f, 0.20f, 1f)
+                text = "←"
+                textSize = 22f
+                normalColor = Color(1f, 1f, 1f, 0f)
+                hoverColor = Color(1f, 1f, 1f, 0.12f)
+                pressedColor = Color(1f, 1f, 1f, 0.22f)
                 textColor = Color.WHITE
                 anchorLeft = 0f
                 anchorTop = 0f
                 anchorRight = 0f
                 anchorBottom = 0f
                 offsetLeft = MARGIN
-                offsetTop = MARGIN
-                offsetRight = MARGIN + BACK_WIDTH
-                offsetBottom = MARGIN + BACK_HEIGHT
+                offsetTop = backTop
+                offsetRight = MARGIN + BACK_SIZE
+                offsetBottom = backTop + BACK_SIZE
                 pressed.connect { onBack() }
             }
         )
 
+        // Title + description stacked, vertically centered as a block in the
+        // header (so the arrow lands between the two lines).
         addChild(
             Label().apply {
                 name = "Title"
                 text = title
                 fontSize = 16f
                 color = Color.WHITE
-                offsetLeft = MARGIN + BACK_WIDTH + 14f
-                offsetTop = MARGIN + 4f
+                offsetLeft = MARGIN + BACK_SIZE + 12f
+                offsetTop = TEXT_TOP
             }
         )
 
@@ -108,17 +111,19 @@ internal class DemoOverlay(
                 text = description
                 fontSize = 12f
                 color = Color(1f, 1f, 1f, 0.7f)
-                offsetLeft = MARGIN + BACK_WIDTH + 14f
-                offsetTop = MARGIN + 23f
+                offsetLeft = MARGIN + BACK_SIZE + 12f
+                offsetTop = TEXT_TOP + 18f
             }
         )
     }
 
     private companion object {
-        const val MARGIN = 8f
-        const val BACK_WIDTH = 112f
-        const val BACK_HEIGHT = 36f
-        const val HEADER_HEIGHT = 52f
+        const val MARGIN = 10f
+        const val BACK_SIZE = 34f
+        const val HEADER_HEIGHT = 50f
+        // Title (16px) + gap + description (12px) ≈ 30px block, centered in the
+        // 50px header → 10px top padding; the arrow centers on the same midline.
+        const val TEXT_TOP = 10f
     }
 }
 

@@ -9,7 +9,7 @@ Problemas: cobertura sobreposta (3 demos de física quase-irmãs; 3 demos de tex
 **Goals:**
 
 - Reduzir de 10 slots para **5 demos densas**, preservando a cobertura de invariantes e **ganhando** cobertura de `Camera2D`. A escala-composição da antiga demo Scale (ancestor scale → tamanho renderizado do filho) é exercida pelo **zoom da câmera**, que escala a hierarquia aninhada de 4 níveis em uníssono pela mesma `Renderer.pushTransform` — não precisa de um corpo de pulso dedicado.
-- Substituir a navegação por teclas + HUD de texto cru por um **menu de UI real** (botões) com botão "← Menu" em cada demo — fazendo do próprio launcher a vitrine viva de `ui-foundation`.
+- Substituir a navegação por teclas + HUD de texto cru por um **menu de UI real** (botões) com botão de voltar em cada demo — fazendo do próprio launcher a vitrine viva de `ui-foundation`.
 - Eliminar redundância: `hue()` compartilhada; FPS por demo removido (profiler assume); título/descrição via `Label`/`CanvasLayer`; métricas via `tree.debug`.
 - Manter os dois entrypoints e a sentinela cross-backend (#4) intactos.
 
@@ -39,7 +39,7 @@ Mantemos **5 e 6 separadas** de propósito: o CLAUDE.md distingue `CharacterBody
 `DemoSwitcherRoot` deixa de desenhar `HudOverlay` por `drawText` e de pollar teclas `1`–`0`. Em vez disso:
 
 - A raiz mostra um **menu** (`CanvasLayer`) com um `Button` por demo (5 botões) + `Panel`/`Label` de título. Selecionar um botão (`pressed`) troca a cena ativa.
-- Cada demo carrega um **overlay** `CanvasLayer` com `Label` de título, `Label` de descrição e um `Button` "← Menu" que volta ao menu.
+- Cada demo carrega um **overlay** `CanvasLayer` com `Label` de título, `Label` de descrição e um `Button` de voltar que volta ao menu.
 
 Isso absorve a antiga demo 7: `Button` (estados hover/press/disabled, `pressed` signal, hit-test, click-consumption), `Panel`, `Label`, anchors e z-order ficam exercitados **continuamente, em toda tela**. Alternativa (manter teclas `1`–`0` como atalho): descartada — o usuário pediu navegação por menu + botão voltar; manter teclas duplicaria caminhos e enfraqueceria o papel do menu como sentinela de UI.
 
@@ -65,7 +65,7 @@ Remove o `instantFps`/`drawText` por demo. `F1` (ProfilerWidget) é a fonte de F
 
 - **[Quebra de testes/specs existentes]** As specs `demos-sample` e `solar-system-demo` têm cenários amarrados aos nomes/slots/teclas atuais e à convenção "sem Camera2D". → Mitigação: deltas `MODIFIED`/`REMOVED`/`RENAMED` explícitos; atualizar/recriar os testes de unidade que verificam topologia/slots para o novo catálogo.
 - **[Perda do nº fixo de nós do solar system]** A demo Transforms adiciona um `Camera2D`, mudando a contagem de nós que `solar-system-demo` fixa. → Mitigação: a spec delta atualiza as contagens/escopo; a câmera é um nó nomeado verificável. (Um corpo de pulso de escala foi cogitado para fundir a demo Scale, mas descartado por poluir a cena — o zoom da câmera já exercita a escala-composição ancestor→filho.)
-- **[Menu como ponto único de navegação]** Se o `Button`/hit-test regredir, todas as demos ficam inacessíveis. → Mitigação: o menu usa o mesmo `Button` shipped já coberto por `ui-foundation`; teste de fumaça garante que o menu monta e que "← Menu" volta.
+- **[Menu como ponto único de navegação]** Se o `Button`/hit-test regredir, todas as demos ficam inacessíveis. → Mitigação: o menu usa o mesmo `Button` shipped já coberto por `ui-foundation`; teste de fumaça garante que o menu monta e que o botão de voltar volta ao menu.
 - **[Camera2D só numa demo]** Cobertura de câmera fica restrita a uma cena. → Aceitável: Pong já cobre câmera em gameplay; aqui o objetivo é didático/visual, não exaustivo.
 - **[Esforço de reescrita]** Remoção de 6 arquivos + reescrita de 2 + 2 novos. → Mitigação: fusões são recombinação de código existente (helpers já prontos), não lógica nova de física/render.
 

@@ -4,7 +4,7 @@
 
 O projeto SHALL prover um módulo `:games:demos` que depende de `:engine` e `:engine-skiko`, hospeda um conjunto de **5 demos** de consistência da engine (`Transforms`, `Spawn & Collide`, `Rotating Frame`, `Tumbling Swarm`, `Sprites & Tiles`) num único processo, e é executável via `./gradlew :games:demos:run`. O `Main.kt` MUST instanciar `SkikoHost().run(SceneTree(root = DemoSwitcherRoot()), GameConfig(...))` com `title = "engine-consistency demos"`, `width = 800`, `height = 600`.
 
-A navegação entre demos MUST ser feita por um **menu de UI** (não por teclas `1`–`0`): a raiz exibe um menu com um `Button` por demo; selecionar um botão carrega a demo; cada demo exibe um `Button` "← Menu" que retorna ao menu. As demos rodam em coordenadas de pixel da surface por padrão, **exceto** a demo `Transforms`, que instala deliberadamente uma `Camera2D` local à cena (a antiga convenção "nenhuma demo usa `Camera2D`" foi removida). Elementos sensíveis a `tree.size` MUST reagir explicitamente a mudanças dessa dimensão.
+A navegação entre demos MUST ser feita por um **menu de UI** (não por teclas `1`–`0`): a raiz exibe um menu com um `Button` por demo; selecionar um botão carrega a demo; cada demo exibe um `Button` de voltar (uma seta ←, fundo transparente) que retorna ao menu. As demos rodam em coordenadas de pixel da surface por padrão, **exceto** a demo `Transforms`, que instala deliberadamente uma `Camera2D` local à cena (a antiga convenção "nenhuma demo usa `Camera2D`" foi removida). Elementos sensíveis a `tree.size` MUST reagir explicitamente a mudanças dessa dimensão.
 
 #### Scenario: Demos module runs from Gradle
 
@@ -91,7 +91,7 @@ Diferenças puramente visuais (anti-aliasing, text shaping, sub-pixel positionin
 
 - **WHEN** o usuário clica num botão de demo no menu em qualquer dos dois entrypoints
 - **THEN** a demo correspondente é carregada em ambos
-- **AND** o botão "← Menu" retorna ao menu em ambos
+- **AND** o botão de voltar retorna ao menu em ambos
 - **AND** o conjunto de demos disponíveis é o mesmo
 
 #### Scenario: Spawner mouse click adds a ball at the click position on both backends
@@ -126,7 +126,7 @@ A tabela "Games" do `CLAUDE.md` e a seção de demos do `README.md` SHALL reflet
 
 ### Requirement: A navigation menu hosts the demos and validates ui-foundation
 
-O módulo `:games:demos` SHALL prover um **menu de navegação** construído com primitivas de UI (`CanvasLayer` + `Button` + `Panel` + `Label`), exibido pela raiz `DemoSwitcherRoot` na inicialização. O menu MUST conter um `Button` por demo (5 botões), cada um conectado a `pressed` para carregar a demo correspondente via `addChild`/`removeChild`. Cada demo carregada MUST exibir um overlay `CanvasLayer` contendo um `Label` de título, um `Label` de descrição e um `Button` "← Menu" que retorna ao menu. Esse mecanismo absorve a antiga demo de UI dedicada — `Button` (estados normal/hover/press/disabled, signal `pressed`, hit-test, click-consumption), `Panel`, `Label`, anchors e z-order ficam exercitados continuamente em toda tela.
+O módulo `:games:demos` SHALL prover um **menu de navegação** construído com primitivas de UI (`CanvasLayer` + `Button` + `Panel` + `Label`), exibido pela raiz `DemoSwitcherRoot` na inicialização. O menu MUST conter um `Button` por demo (5 botões), cada um conectado a `pressed` para carregar a demo correspondente via `addChild`/`removeChild`. Cada demo carregada MUST exibir um overlay `CanvasLayer` contendo um `Label` de título, um `Label` de descrição e um `Button` de voltar (uma seta ←) que retorna ao menu. Esse mecanismo absorve a antiga demo de UI dedicada — `Button` (estados normal/hover/press/disabled, signal `pressed`, hit-test, click-consumption), `Panel`, `Label`, anchors e z-order ficam exercitados continuamente em toda tela.
 
 #### Scenario: Menu shows one button per demo
 
@@ -141,8 +141,8 @@ O módulo `:games:demos` SHALL prover um **menu de navegação** construído com
 
 #### Scenario: Back button returns to the menu
 
-- **GIVEN** uma demo está carregada e exibe seu overlay com o `Button` "← Menu"
-- **WHEN** o usuário clica em "← Menu"
+- **GIVEN** uma demo está carregada e exibe seu overlay com o `Button` de voltar (seta ←)
+- **WHEN** o usuário clica na seta de voltar
 - **THEN** a demo é removida e o menu volta a ser exibido
 
 ### Requirement: Per-demo title/description use CanvasLayer Labels, not raw drawText, and no per-demo FPS
@@ -174,6 +174,6 @@ O módulo `:games:demos` SHALL prover uma única função/objeto helper de cor (
 
 ### Requirement: Demos scene 7 validates ui-foundation in both backends
 
-**Reason**: A demo de UI dedicada (`UiPlaygroundDemo`, slot 7) é absorvida pelo menu de navegação e pelo botão "← Menu" presente em toda demo, que passam a exercitar `CanvasLayer`/`Button`/`Panel`/`Label`/anchors/z-order/click-consumption continuamente.
+**Reason**: A demo de UI dedicada (`UiPlaygroundDemo`, slot 7) é absorvida pelo menu de navegação e pelo botão de voltar presente em toda demo, que passam a exercitar `CanvasLayer`/`Button`/`Panel`/`Label`/anchors/z-order/click-consumption continuamente.
 
 **Migration**: A cobertura de `ui-foundation` é garantida pela nova requirement "A navigation menu hosts the demos and validates ui-foundation". Nenhum slot `7` é necessário; `UiPlaygroundDemo.kt` é removido.

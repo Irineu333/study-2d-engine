@@ -4,13 +4,13 @@ O módulo `:games:demos` cresceu para **10 slots** trocados por tecla (`1`–`0`
 
 ## What Changes
 
-- **BREAKING**: o catálogo de cenas cai de 10 para 5; navegação por teclas `1`–`0` é substituída por um **menu de UI** (botões, um por demo) com botão "← Menu" em cada demo. Vários nomes/slots de cena deixam de existir.
+- **BREAKING**: o catálogo de cenas cai de 10 para 5; navegação por teclas `1`–`0` é substituída por um **menu de UI** (botões, um por demo) com botão de voltar em cada demo. Vários nomes/slots de cena deixam de existir.
 - **Promove 1 → "Transforms"**: sistema solar (rotação aninhada) ganha **zoom/pan interativo via `Camera2D`** (scroll/teclas). Remove `ScaleHierarchyDemo` como slot próprio — o zoom da câmera escala a hierarquia aninhada de 4 níveis em uníssono, exercendo a mesma escala-composição (ancestor scale → tamanho renderizado do filho) que a demo Scale validava isoladamente; um corpo de pulso de escala dedicado foi cogitado mas descartado por poluir visualmente a cena.
 - **Funde 3 + 4 → "Spawn & Collide"**: `Area2D` trap + `RigidBody2D` quicando + spawn/despawn vivo no scene graph. Remove `CollisionStressDemo` como slot próprio.
 - **Mantém 5 standalone → "Rotating Frame"**: `CharacterBody2D.moveAndCollide` varrido em frame local rotativo (invariante sutil, preservado).
 - **Mantém 6 → "Tumbling Swarm"**: solver `RigidBody2D` completo (linear + angular + Coulomb).
-- **Funde 8 + 9 + 0 → "Sprites & Tiles"**:: `TileMap` (chão) + `AnimatedSprite2D` correndo + `Sprite2D` decorativo; player como `CharacterBody2D` sobre `StaticBody2D`. Remove `SpriteDemo`, `AnimatedSpriteDemo`, `TileMapDemo` como slots próprios.
-- **Absorve a demo 7 (UI)**: o próprio menu + o botão "← Menu" presente em toda demo passam a exercitar `CanvasLayer`/`Button`/`Panel`/`Label`/anchors/z-order/click-consumption continuamente. Remove `UiPlaygroundDemo` como slot dedicado.
+- **Funde 8 + 9 + 0 → "Sprites & Tiles"**: `TileMap` (chão) + `AnimatedSprite2D` correndo + `Sprite2D` decorativo; player como `CharacterBody2D` sobre `StaticBody2D`. Remove `SpriteDemo`, `AnimatedSpriteDemo`, `TileMapDemo` como slots próprios.
+- **Absorve a demo 7 (UI)**: o próprio menu + o botão de voltar presente em toda demo passam a exercitar `CanvasLayer`/`Button`/`Panel`/`Label`/anchors/z-order/click-consumption continuamente. Remove `UiPlaygroundDemo` como slot dedicado.
 - **Remove redundância transversal**: extrai `hue()` para um helper compartilhado; remove o tracking de FPS + `drawText` por demo (profiler em `F1` é a fonte de verdade); título/descrição de cada demo migram de `drawText` cru para `Label` em `CanvasLayer`; métricas (contagem de corpos, contatos, velocidade) passam por `tree.debug` (gizmos/profiler) em vez de texto no canto.
 - **BREAKING**: a convenção "nenhuma demo usa `Camera2D`" é **removida** — a demo "Transforms" passa a usar `Camera2D` deliberadamente.
 - `MainLwjgl` continua apontando para a mesma raiz, mantendo a sentinela do invariante #4 (a demo "Sprites & Tiles" segue rodando cross-backend).
