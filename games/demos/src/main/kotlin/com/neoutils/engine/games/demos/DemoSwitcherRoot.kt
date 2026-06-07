@@ -120,7 +120,7 @@ class DemoSwitcherRoot : Node() {
         addChild(
             Label().apply {
                 name = "MenuTitle"
-                text = "engine-consistency demos — pick one"
+                text = "demos"
                 fontSize = 20f
                 color = Color.WHITE
                 // Full-width anchor + zero vertical slack → text centered

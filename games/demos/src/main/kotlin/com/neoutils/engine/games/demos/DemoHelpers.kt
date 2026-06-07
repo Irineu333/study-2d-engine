@@ -5,7 +5,6 @@ import com.neoutils.engine.render.Color
 import com.neoutils.engine.scene.Button
 import com.neoutils.engine.scene.CanvasLayer
 import com.neoutils.engine.scene.Label
-import com.neoutils.engine.scene.LayoutPreset
 
 /**
  * Maps a hue fraction `h ∈ [0, 1)` to a saturated RGB color, cycling through
@@ -50,7 +49,13 @@ internal class DemoOverlay(
             Button().apply {
                 name = "BackButton"
                 text = "← Menu"
-                textSize = 14f
+                textSize = 15f
+                // Accent colors so the back action reads as the primary control
+                // on the overlay, distinct from the neutral menu buttons.
+                normalColor = Color(0.20f, 0.46f, 0.66f, 1f)
+                hoverColor = Color(0.28f, 0.56f, 0.78f, 1f)
+                pressedColor = Color(0.14f, 0.34f, 0.50f, 1f)
+                textColor = Color.WHITE
                 anchorLeft = 0f
                 anchorTop = 0f
                 anchorRight = 0f
@@ -69,8 +74,8 @@ internal class DemoOverlay(
                 text = title
                 fontSize = 16f
                 color = Color.WHITE
-                offsetLeft = MARGIN + BACK_WIDTH + 12f
-                offsetTop = MARGIN + 4f
+                offsetLeft = MARGIN + BACK_WIDTH + 14f
+                offsetTop = MARGIN + 6f
             }
         )
 
@@ -80,33 +85,16 @@ internal class DemoOverlay(
                 text = description
                 fontSize = 12f
                 color = Color(1f, 1f, 1f, 0.7f)
-                offsetLeft = MARGIN + BACK_WIDTH + 12f
-                offsetTop = MARGIN + 22f
-            }
-        )
-
-        addChild(
-            Label().apply {
-                name = "Hint"
-                text = "F1 opens the debug HUD"
-                fontSize = 11f
-                color = Color(1f, 1f, 1f, 0.45f)
-                // Centered horizontally near the top via a full-width anchor:
-                // slack-centering aligns the measured text on the surface.
-                applyPreset(LayoutPreset.FULL_RECT)
-                anchorBottom = 0f
-                offsetTop = MARGIN
-                offsetBottom = MARGIN
-                offsetLeft = 0f
-                offsetRight = 0f
+                offsetLeft = MARGIN + BACK_WIDTH + 14f
+                offsetTop = MARGIN + 24f
             }
         )
     }
 
     private companion object {
         const val MARGIN = 8f
-        const val BACK_WIDTH = 96f
-        const val BACK_HEIGHT = 30f
+        const val BACK_WIDTH = 112f
+        const val BACK_HEIGHT = 36f
     }
 }
 
