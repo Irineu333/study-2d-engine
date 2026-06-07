@@ -34,6 +34,7 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 | Demos         | Skiko (+LWJGL)   | Kotlin    | 6 cenas exercitando invariantes; sentinela do segundo backend de render   |
 | Snake         | Skiko            | Python    | gameplay discreto/tick-based; mutação dinâmica de scene graph             |
 | Hello World   | Skiko            | —         | exemplo code-only mínimo (um `Label` centralizado)                        |
+| Platformer    | Skiko            | Lua       | platformer mínimo (gravidade, pulo, andar) — `TileMap` + `CharacterBody2D` + `AnimatedSprite2D` |
 
 ## Exemplos
 
@@ -44,6 +45,7 @@ A meta de longo prazo é cobrir o ciclo completo: do scene graph mínimo até um
 ./gradlew :games:demos:run       # backend padrão: Skiko
 ./gradlew :games:demos:runLwjgl  # segundo backend: LWJGL
 ./gradlew :games:snake:run
+./gradlew :games:platformer:run  # backend padrão: Skiko + Lua (assets Pixel Adventure 1)
 ```
 
 > **macOS** — o backend LWJGL precisa rodar no main thread do processo (`-XstartOnFirstThread`), pois GLFW liga em Cocoa via `NSApp`. A task `runLwjgl` injeta essa flag automaticamente; quem invocar `MainLwjglKt` manualmente via `java -cp ...` precisa adicionar a flag à linha de comando. Linux e Windows não exigem.

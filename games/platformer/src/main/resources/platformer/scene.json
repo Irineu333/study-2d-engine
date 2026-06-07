@@ -1,0 +1,169 @@
+{
+  "version": 2,
+  "root": {
+    "type": "com.neoutils.engine.scene.Node",
+    "name": "PlatformerRoot",
+    "properties": {},
+    "children": [
+      {
+        "type": "com.neoutils.engine.scene.Camera2D",
+        "name": "MainCamera",
+        "properties": {
+          "bounds": { "origin": { "x": 0.0, "y": 0.0 }, "size": { "x": 320.0, "y": 180.0 } },
+          "current": true,
+          "aspectMode": "FIT"
+        },
+        "children": []
+      },
+
+      {
+        "type": "com.neoutils.engine.scene.TileMap",
+        "name": "Sky",
+        "properties": {
+          "tileSet": { "texturePath": "platformer/assets/bg/sky.png", "tileWidth": 64, "tileHeight": 64 },
+          "columns": 5,
+          "rows": 3,
+          "tiles": [
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0
+          ]
+        },
+        "children": []
+      },
+
+      {
+        "type": "com.neoutils.engine.scene.TileMap",
+        "name": "Terrain",
+        "properties": {
+          "tileSet": { "texturePath": "platformer/assets/tiles/terrain.png", "tileWidth": 16, "tileHeight": 16 },
+          "columns": 20,
+          "rows": 12,
+          "tiles": [
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  6,  7,  8, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1,  6,  7,  8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+             6,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  8,
+            28, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 30
+          ]
+        },
+        "children": []
+      },
+
+      {
+        "type": "com.neoutils.engine.scene.AnimatedSprite2D",
+        "name": "Apple",
+        "properties": {
+          "transform": { "position": { "x": 216.0, "y": 64.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+          "texturePath": "platformer/assets/items/apple.png",
+          "frameCount": 17,
+          "fps": 14.0,
+          "loop": true,
+          "playing": true
+        },
+        "children": []
+      },
+
+      {
+        "type": "com.neoutils.engine.physics.StaticBody2D",
+        "name": "Ground",
+        "properties": {
+          "transform": { "position": { "x": 0.0, "y": 160.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 }
+        },
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 160.0, "y": 16.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 320.0, "y": 32.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
+      },
+
+      {
+        "type": "com.neoutils.engine.physics.StaticBody2D",
+        "name": "PlatformA",
+        "properties": {
+          "transform": { "position": { "x": 192.0, "y": 80.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 }
+        },
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 24.0, "y": 8.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 48.0, "y": 16.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
+      },
+
+      {
+        "type": "com.neoutils.engine.physics.StaticBody2D",
+        "name": "PlatformB",
+        "properties": {
+          "transform": { "position": { "x": 64.0, "y": 112.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 }
+        },
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 24.0, "y": 8.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 48.0, "y": 16.0 } },
+              "disabled": false
+            },
+            "children": []
+          }
+        ]
+      },
+
+      {
+        "type": "com.neoutils.engine.physics.CharacterBody2D",
+        "name": "Player",
+        "properties": {
+          "transform": { "position": { "x": 40.0, "y": 60.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 }
+        },
+        "script": "scripts/player.lua",
+        "children": [
+          {
+            "type": "com.neoutils.engine.physics.CollisionShape2D",
+            "name": "shape",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "shape": { "type": "com.neoutils.engine.physics.RectangleShape2D", "size": { "x": 14.0, "y": 24.0 } },
+              "disabled": false
+            },
+            "children": []
+          },
+          {
+            "type": "com.neoutils.engine.scene.AnimatedSprite2D",
+            "name": "Sprite",
+            "properties": {
+              "transform": { "position": { "x": 0.0, "y": -4.0 }, "scale": { "x": 1.0, "y": 1.0 }, "rotation": 0.0 },
+              "texturePath": "platformer/assets/characters/idle.png",
+              "frameCount": 11,
+              "fps": 12.0,
+              "loop": true,
+              "playing": true
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

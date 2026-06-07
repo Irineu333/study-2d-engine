@@ -57,6 +57,7 @@ Os módulos `:shared` e `:desktopApp` do template KMP foram **removidos** durant
 | `:games:demos`       | Skiko + LWJGL | Kotlin    | cenas exercitando invariantes (transform aninhado, colisão, frame rotativo, render de textura cross-backend); expõe `runLwjgl` como sentinela do invariante #4 |
 | `:games:snake`       | Skiko         | Python    | primeiro validador de gameplay discreto/tick-based e mutação dinâmica de scene graph dirigida por script                          |
 | `:games:hello-world` | Skiko         | —         | exemplo code-only mínimo — um único `Label` centralizado, sem bundle nem scripting                                                |
+| `:games:platformer`  | Skiko         | Lua       | validador de plataforma — fecha a cadeia textura/sprite/tilemap: céu e terreno por `TileMap`, chão sólido por `StaticBody2D` à mão, player `CharacterBody2D` + `AnimatedSprite2D` (gravidade, pulo, andar, flip) via `move_and_collide` |
 
 ## Coding Conventions
 
