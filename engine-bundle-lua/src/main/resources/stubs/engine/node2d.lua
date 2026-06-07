@@ -48,6 +48,19 @@ function AnimatedSprite2D:play() end
 ---Pause frame advance, holding the current frame.
 function AnimatedSprite2D:pause() end
 
+---@class TileSet
+---@field texture_path string Classpath path of the atlas image
+---@field tile_width integer Width of one atlas cell, in texture pixels
+---@field tile_height integer Height of one atlas cell, in texture pixels
+local TileSet = {}
+
+---@class TileMap : Node2D
+---@field tile_set TileSet Atlas the tile indices address
+---@field columns integer Map width in cells
+---@field rows integer Map height in cells
+---@field tiles integer[] Row-major atlas indices; -1 is an empty cell
+local TileMap = {}
+
 ---@class Line2D : Node2D
 ---@field points Vec2[]
 ---@field thickness number

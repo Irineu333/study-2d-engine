@@ -39,6 +39,8 @@ import com.neoutils.engine.scene.Node
 import com.neoutils.engine.scene.Node2D
 import com.neoutils.engine.scene.Polygon2D
 import com.neoutils.engine.scene.Sprite2D
+import com.neoutils.engine.scene.TileMap
+import com.neoutils.engine.scene.TileSet
 import com.neoutils.engine.scene.Timer
 import com.neoutils.engine.serialization.NodeRef
 import com.neoutils.engine.serialization.NodeRegistry
@@ -459,6 +461,8 @@ class LuaScriptHost internal constructor(internal val globals: Globals) : Script
         put("Circle2D", Circle2D::class.java)
         put("Sprite2D", Sprite2D::class.java)
         put("AnimatedSprite2D", AnimatedSprite2D::class.java)
+        put("TileMap", TileMap::class.java)
+        put("TileSet", TileSet::class.java)
         put("Line2D", Line2D::class.java)
         put("Polygon2D", Polygon2D::class.java)
         put("Area2D", Area2D::class.java)
