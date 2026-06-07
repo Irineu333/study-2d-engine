@@ -22,6 +22,7 @@ private const val GROUND_ROWS = 2
 private const val PLAYER_W = 44f
 private const val PLAYER_H = 72f
 private const val PLAYER_SCALE = 2.5f
+private const val DECORATION_SCALE = 2.5f
 private const val WALK_SPEED = 120f
 private const val GRAVITY = 900f
 private const val WALL_THICKNESS = 20f
@@ -69,14 +70,16 @@ class SpritesTilesDemo : Node2D() {
                 .apply { name = "RightWall" }
         )
 
-        // Static decorative sprite standing on the ground to the left.
+        // Static decorative sprite: a single-frame apple item resting on the
+        // ground (not a second character — exercises Sprite2D's whole-texture
+        // draw with a non-redundant visual).
         addChild(
             Sprite2D().apply {
-                name = "Decoration"
-                texturePath = "demos/sprites/idle.png"
+                name = "Apple"
+                texturePath = "demos/sprites/apple.png"
                 transform = Transform(
-                    position = Vec2(90f, groundTop - 40f),
-                    scale = Vec2(PLAYER_SCALE, PLAYER_SCALE),
+                    position = Vec2(110f, groundTop - 14f),
+                    scale = Vec2(DECORATION_SCALE, DECORATION_SCALE),
                 )
             }
         )
