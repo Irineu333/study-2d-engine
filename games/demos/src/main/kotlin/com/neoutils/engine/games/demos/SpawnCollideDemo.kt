@@ -179,7 +179,7 @@ class Trap : Area2D() {
     }
 
     companion object {
-        const val SIZE: Float = 90f
+        const val SIZE: Float = 54f
     }
 }
 
