@@ -20,6 +20,7 @@
 ---@field ColorRect ColorRect
 ---@field Circle2D Circle2D
 ---@field Sprite2D Sprite2D
+---@field AnimatedSprite2D AnimatedSprite2D
 ---@field Line2D Line2D
 ---@field Polygon2D Polygon2D
 ---@field CanvasLayer CanvasLayer

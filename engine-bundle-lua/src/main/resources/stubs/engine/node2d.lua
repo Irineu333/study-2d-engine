@@ -34,6 +34,20 @@ local Circle2D = {}
 ---@field flip_h boolean Mirror horizontally (visual only)
 local Sprite2D = {}
 
+---@class AnimatedSprite2D : Node2D
+---@field texture_path string Classpath path of the horizontal sheet asset
+---@field frame_count integer Number of equally-sized frames in the sheet (>= 1)
+---@field fps number Frame advance rate (frames per second)
+---@field loop boolean Wrap to frame 0 after the last when true
+---@field playing boolean Engine advances frames while true
+---@field current_frame integer Index of the frame currently shown
+---@field flip_h boolean Mirror horizontally (visual only)
+local AnimatedSprite2D = {}
+---Start (or resume) frame advance.
+function AnimatedSprite2D:play() end
+---Pause frame advance, holding the current frame.
+function AnimatedSprite2D:pause() end
+
 ---@class Line2D : Node2D
 ---@field points Vec2[]
 ---@field thickness number
