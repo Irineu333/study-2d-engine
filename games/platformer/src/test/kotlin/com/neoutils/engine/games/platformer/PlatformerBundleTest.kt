@@ -125,11 +125,14 @@ class PlatformerBundleTest {
         fun tick() { loop.tick(FRAME_NANOS); input.endTick() }
 
         val player = root.findChild("Player") as CharacterBody2D
+        val sprite = player.findChild("Sprite") as AnimatedSprite2D
 
         // Settle on the ground first (start x=40 has open sky above — no platform).
         repeat(90) { tick() }
         val groundedX = player.position.x
         val groundedY = player.position.y
+        // Idle while standing still.
+        assertTrue(sprite.texturePath.endsWith("idle.png"), "standing still should show idle (got ${sprite.texturePath})")
 
         // One jump edge-press: track the arc's peak (y shrinks upward), then it
         // must rise well above the resting height before falling back.
@@ -140,10 +143,24 @@ class PlatformerBundleTest {
         assertTrue(peakY < groundedY - 20f, "a jump should lift the player off the floor (peak=$peakY, floor=$groundedY)")
         assertTrue(player.position.y in (groundedY - 2f)..(groundedY + 2f), "player should land back on the floor")
 
-        // Hold right for half a second: the player must travel to the right.
+        // Hold right for half a second: the player must travel to the right and
+        // the script must swap the sprite to the run sheet, facing right (no flip).
         input.held.add(Key.ARROW_RIGHT)
         repeat(30) { tick() }
         assertTrue(player.position.x > groundedX + 5f, "holding right should move the player right")
+        assertTrue(sprite.texturePath.endsWith("run.png"), "running should swap to the run sheet (got ${sprite.texturePath})")
+        assertTrue(sprite.frameCount == 12, "run sheet has 12 frames (got ${sprite.frameCount})")
+        assertTrue(!sprite.flipH, "moving right should not flip the sprite")
         input.held.remove(Key.ARROW_RIGHT)
+
+        // Hold left: same run sheet, now flipped to face left.
+        input.held.add(Key.ARROW_LEFT)
+        repeat(20) { tick() }
+        assertTrue(sprite.flipH, "moving left should flip the sprite to face left")
+        input.held.remove(Key.ARROW_LEFT)
+
+        // Stop: back to idle.
+        repeat(10) { tick() }
+        assertTrue(sprite.texturePath.endsWith("idle.png"), "stopping should return to idle (got ${sprite.texturePath})")
     }
 }

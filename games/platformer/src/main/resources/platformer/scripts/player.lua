@@ -23,9 +23,12 @@ local function set_animation(self, state)
     self._state = state
     local a = ANIM[state]
     local sprite = self._sprite
-    sprite.texture_path = a.path
-    sprite.frame_count = a.frames
-    sprite.current_frame = 0
+    -- Lua bindings resolve properties by their exact Kotlin (camelCase) name —
+    -- there is no snake_case conversion (see LuaReflect), so these must match
+    -- AnimatedSprite2D's `texturePath`/`frameCount`/`currentFrame`/`flipH`.
+    sprite.texturePath = a.path
+    sprite.frameCount = a.frames
+    sprite.currentFrame = 0
     sprite.playing = true
 end
 
@@ -101,7 +104,7 @@ return {
         elseif self._vx > MOVE_EPS then
             self._facing_left = false
         end
-        self._sprite.flip_h = self._facing_left
+        self._sprite.flipH = self._facing_left
 
         -- Animation state from motion: airborne -> jump (rising) / fall
         -- (descending); grounded -> run (moving) / idle (still).

@@ -24,7 +24,7 @@
 - [x] 4.1 `_ready`: cachear referência ao `AnimatedSprite2D` filho e os pares estado→(sheet, frameCount); constantes GRAVITY/MOVE_SPEED/JUMP_SPEED.
 - [x] 4.2 `_physics_process(dt)`: gravidade (`velocity.y += GRAVITY*dt`); input horizontal (esquerda/direita ⇒ `velocity.x`); pulo quando `on_floor` e tecla de pulo.
 - [x] 4.3 Movimento: `move_and_collide(velocity * dt)`; zerar componente normal no contato; setar `on_floor` pelo contato com normal pra cima.
-- [x] 4.4 Animação: escolher estado (idle/run/jump/fall) por `velocity`/`on_floor` e aplicar `texture_path`+`frame_count`; `flip_h` por `sign(velocity.x)`.
+- [x] 4.4 Animação: escolher estado (idle/run/jump/fall) por `velocity`/`on_floor` e aplicar `texture_path`+`frame_count`; `flip_h` por `sign(velocity.x)`. **Correção**: as bindings Lua resolvem propriedades pelo nome exato do Kotlin (camelCase, sem conversão snake_case em `LuaReflect`); usar `texturePath`/`frameCount`/`currentFrame`/`flipH` — snake_case cai no fallback `rawset` e não chega ao `AnimatedSprite2D` (trava no idle, sem correr/espelhar).
 - [x] 4.5 Tratar `frameCount == 1` (Jump/Fall) como quadro estático.
 
 ## 5. Tuning e validação manual
